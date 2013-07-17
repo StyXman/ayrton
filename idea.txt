@@ -1,0 +1,64 @@
+16:14 < rbistolfi> StyXman_: viste sh.py (creo que se llamaba asi)
+16:15 < rbistolfi> yep, http://amoffat.github.io/sh/
+16:15 < lalita> rbistolfi: [#6208] sh 1.08 — sh v1.08 documentation
+16:15 < ralsina_> StucKman: iterpipes esta piola para "shellscriptear en python"
+16:16 < StucKman> rbistolfi: sh se quiere hacer el banana, no me gusta
+16:17 < rbistolfi> yeah
+16:17 < StucKman> bah
+16:17 < rbistolfi> es como muy magico
+16:17 < StucKman> debería pegarle otra mirada
+16:18 < StucKman> porque ls () | wc ('-l') no me suena muy feo
+16:18 < StucKman> si se pueden hacer cosas así, hay que pensárselo
+16:19 < StucKman> sobre todo si derepente a un comando en particular lo podés luego implementar como una función que en vez del output en texto te devuelve una estructura mas piola de 
+                  usar
+16:19 < StucKman> hmmm
+16:22 -!- exos_ [~quassel@56-11-245-190.fibertel.com.ar] has joined #pyar
+16:23 < rbistolfi> complicado de generalizar eso
+16:24 < StucKman> rbistolfi: uhm?
+16:25 -!- exos [~quassel@56-11-245-190.fibertel.com.ar] has quit [Ping timeout: 248 seconds]
+16:26 < rbistolfi> digo, para un comando en particular ya se puede hacer no?
+16:27 < facundobatista> rbistolfi, StucKman, what about...
+16:27 < facundobatista> sh = Sh()
+16:28 < facundobatista> a = sh("ls") | sh("grep foo") | sh("wc -l")
+16:28 < StucKman> rbistolfi: sigo sin entenderte
+16:28 < facundobatista> ?
+16:28 < StucKman> facundobatista: fuchi :-P
+16:28 < facundobatista> StucKman, qué parte?
+16:28 < StucKman> bah, puede ser
+
+16:29 < StucKman> pero me interesa el hecho de que derepente a wc() la puedas implementar como una función que devuelve una terna en vez de un string con tres enteros
+16:30 < StucKman> es decir, (1, 2, 3) en vez de "1 2 3"
+16:30 < StucKman> con sh() se podría...
+16:30 < StucKman> hmmm
+16:31 < facundobatista> StucKman, el tema ahí es lo que dice rbistolfi, un perno para generalizar
+16:31 < facundobatista> necesitás código para wc, otro para ls, otro para grep, otro para find, otro para...
+16:31 -!- zoid_ [~awainer@186.153.145.242] has joined #pyar
+16:31 < rbistolfi> claro, si es para wc nomas, lo haces con popen
+16:31 < StucKman> el único tema es que derepente todo lo que sea ejecución de comandos pasa a ser un ciudadano de segunda
+16:32 < StucKman> facundobatista: of course you do :)
+16:32 < StucKman> pero la mayoría no necesitan
+16:32 < StucKman> grep no necesita, ls capaz sea overkill, etc
+16:32 < StucKman> find tampoco
+16:32 < StucKman> pero wc es un caso simple, ifconfig ya me parece mas interesante
+16:33 < StucKman> y no, no son generalizables, cada uno es su propio quilombo
+16:34 < StucKman> por ejemplo, ls  a secas, mejor andá por el lado de os.readdir()
+16:34 < StucKman> ls -l, ok, pero es readdir+stat
+16:34 < StucKman> y así
+16:34 < Zzzoom> StucKman: por gente como vos existe emacs
+16:34 < facundobatista> es que si vas a hacer un código para find, que acepte los parámetros
+16:34 < StucKman> Zzzoom: hehehehe
+16:34 < facundobatista> como métodos
+16:34 < facundobatista> "no escala"
+16:35 < StucKman> facundobatista: como métodos?
+16:35 < StucKman> find() es "una función"
+16:35 < StucKman> habrá que ver
+16:35 < facundobatista> StucKman, -exec, etc
+16:35 < facundobatista> anyway
+16:35 < facundobatista> me fui
+16:35 < facundobatista> ci parliamo dopo
+16:36 < rbistolfi> o/
+16:36 < StucKman> facundobatista: find (". -name foo.cpp") o find ([".", -"-name", foo]), donde foo= "foo.cpp" :)
+16:37 < facundobatista> StucKman, Find(".").name("foo.cpp").exec("blah")
+16:37  * facundobatista no está
+16:37 < facundobatista> (chau)
+16:37 < rbistolfi> nada puede ser peor que subprocess asi que dale para adelante :P
