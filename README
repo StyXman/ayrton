@@ -1,6 +1,9 @@
+ayrton - a shell like language with the power of python
+
 Thanks to:
 
-rbilstolfi, marianoguerra, facundo batista, ralsina, Andrew Moffat and
-Richard Jones, the guy in this video (thanks again, ralsina):
+rbilstolfi, marianoguerra, facundobatista, ralsina, Andrew Moffat for
+[sh](http://amoffat.github.io/sh/) and Richard Jones for this talk
+(thanks again, ralsina):
 
 http://www.youtube.com/watch?feature=player_embedded&v=H2yfXnUb1S4
