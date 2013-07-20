@@ -1,9 +1,10 @@
 #! /usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-# NOTE: try to keep this module as bare as possible
-# no useless imports, no prints, definetely no logging...
-# any new line makes it more difficult to debug with python's state machine
+# (c) 2013 Marcos Dione <mdione@grulic.org.ar>
+# for licensing details see the file LICENSE.txt
+
+__version__= '0.1'
 
 import os
 import sys
@@ -52,8 +53,9 @@ class Namespace (dict):
         return ans
 
 if __name__=='__main__':
-    script= compile (file (sys.argv[1]).read (), sys.argv[1], 'exec')
+    s= compile (open (sys.argv[1]).read (), sys.argv[1], 'exec')
     n= Namespace ()
+
     # we have to toy with the argv
     n['sys']= sys
     sys.argv.pop (0)
