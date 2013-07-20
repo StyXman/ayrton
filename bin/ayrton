@@ -26,7 +26,7 @@ def polute (d):
                 'mkdir', 'remove' ],
         'time': [ 'sleep', ],
 
-        'ayrton.file_test'= [ '_a', '_b', '_c', '_d', '_e', '_f', '_g', '_h',
+        'ayrton.file_test': [ '_a', '_b', '_c', '_d', '_e', '_f', '_g', '_h',
                               '_k', '_p', '_r', '_s', '_u', '_w', '_x', '_L',
                               '_N', '_S', '_nt', '_ot' ],
         }
