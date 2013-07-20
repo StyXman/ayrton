@@ -4,7 +4,7 @@
 import os
 import sys
 
-class runner (object):
+class Runner (object):
     def __init__ (self, exe):
         self.exe= exe
 
@@ -13,23 +13,15 @@ class runner (object):
 
 bi= sys.modules['__main__'].__builtins__
 
-class namespace (object):
+class Namespace (object):
     def __getitem__ (self, k):
-        return getattr (self, k)
-
-    def __getattribute__ (self, k):
-        # we will give precedence to builtins instead of executables
-        # if an import gets in the way to an actual executable,
-        # try «import foo as bar»
+        # we cannot use any builting here because that leads to a infinite recursion
         try:
-            # we cannot try to store bi as an attribute of self
-            # otherwise we get an infinite recursion
             ans= bi.__dict__[k]
-        except KeyError:
-            ans= runner (k)
+        except bi.KeyError:
+            ans= Runner (k)
 
         return ans
 
-if __name__=='__main__':
-    sys.modules['__main__'].__builtins__= namespace ()
-    ls ("-l")
+d= Namespace ()
+sys.modules['__main__'].__builtins__= d
