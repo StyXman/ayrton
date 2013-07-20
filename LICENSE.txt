@@ -1,0 +1,5 @@
+The problem of licensing this code is not yet clear to me. I want it to be
+equivalent to Bash (GPLv3, I guess), but as this is code that runs code on top
+of code, I want to make sure that that's the proper license. Unitl I find it,
+suffice to say that if you got this code, you can use it as it better fits your
+needs, no strings attached.
