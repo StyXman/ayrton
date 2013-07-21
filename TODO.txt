@@ -6,3 +6,5 @@
 * export ENVVAR=foo
 * document
 * renames? getcwv -> pwd, zip -> ziplist?
+* referencing non-existant envvars (FOO) is replaced by a Runner.
+* revert commit 18e7bc5.
