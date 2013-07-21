@@ -58,10 +58,10 @@ class Locals (dict):
 if __name__=='__main__':
     s= compile (open (sys.argv[1]).read (), sys.argv[1], 'exec')
     g= Globals ()
-    l= Locals ()
+    # l= Locals ()
 
     # remove ayrton from the arguments
     sys.argv.pop (0)
 
     # fire!
-    exec (s, g, l)
+    exec (s, g)

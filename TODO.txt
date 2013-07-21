@@ -8,3 +8,5 @@
 * document
 * renames? getcwv -> pwd, zip -> ziplist?
 * enable tracing
+* referencing non-existant envvars (FOO) is replaced by a Runner.
+* revert commit 18e7bc5.
