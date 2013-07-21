@@ -5,4 +5,4 @@
 * redirection!
 * export ENVVAR=foo
 * document
-* what to do with envvars? have a locals?
+* renames? getcwv -> pwd, zip -> ziplist?
