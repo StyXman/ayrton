@@ -46,7 +46,7 @@ class Globals (dict):
             try:
                 ans= super ().__getitem__ (k)
             except KeyError:
-                ans= Runner (k)
+                ans= Runner._create (k)
 
         return ans
 
