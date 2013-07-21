@@ -1,3 +1,4 @@
+* use sh instead of Runner
 * finish expansions
 * __bool__, &&, ||, |
 * with chdir(...)
@@ -6,3 +7,4 @@
 * export ENVVAR=foo
 * document
 * renames? getcwv -> pwd, zip -> ziplist?
+* enable tracing
