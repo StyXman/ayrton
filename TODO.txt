@@ -1,0 +1,6 @@
+* finish expansions
+* __bool__, &&, ||
+* with chdir(...)
+* check what happens to lists and dicts as executable params.
+* redirection!
+* what to do with envvars? have a locals?
