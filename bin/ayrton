@@ -10,14 +10,11 @@ import sh
 import importlib
 import builtins
 
-class Runner (object):
+class Runner (sh.Command):
     # this class changes the behaviour of sh.Command
     # so is more shell scripting freindly
-    def __init__ (self, exe):
-        self.exe= exe
-
-    def __call__ (self, args):
-        os.system ("%s %s" % (self.exe, args))
+    def __init__ (self, *args, **kwargs):
+        super ().__init__ (*args, **kwargs)
 
 def polute (d):
     # these functions will be loaded from each module and put in the globals
