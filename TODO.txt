@@ -1,6 +1,8 @@
 * finish expansions
-* __bool__, &&, ||
+* __bool__, &&, ||, |
 * with chdir(...)
 * check what happens to lists and dicts as executable params.
 * redirection!
+* export ENVVAR=foo
+* document
 * what to do with envvars? have a locals?
