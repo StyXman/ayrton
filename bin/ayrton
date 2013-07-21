@@ -25,6 +25,7 @@ def polute (d):
         'os': [ 'chdir', 'getcwd', 'uname', 'chmod', 'chown', 'link', 'listdir',
                 'mkdir', 'remove' ],
         'time': [ 'sleep', ],
+        'sys': [ 'argv', ],
 
         'ayrton.file_test': [ '_a', '_b', '_c', '_d', '_e', '_f', '_g', '_h',
                               '_k', '_p', '_r', '_s', '_u', '_w', '_x', '_L',
