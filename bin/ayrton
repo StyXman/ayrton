@@ -25,7 +25,7 @@ def polute (d):
         'os': [ 'chdir', 'getcwd', 'uname', 'chmod', 'chown', 'link', 'listdir',
                 'mkdir', 'remove' ],
         'time': [ 'sleep', ],
-        'sys': [ 'argv', ],
+        'sys': [ 'argv', 'exit' ],
 
         'ayrton.file_test': [ '_a', '_b', '_c', '_d', '_e', '_f', '_g', '_h',
                               '_k', '_p', '_r', '_s', '_u', '_w', '_x', '_L',
@@ -37,7 +37,7 @@ def polute (d):
         for function in functions:
             d[function]= getattr (m, function)
 
-class Namespace (dict):
+class Globals (dict):
     def __init__ (self):
         super ().__init__ ()
         polute (self)
@@ -53,13 +53,18 @@ class Namespace (dict):
 
         return ans
 
+class Locals (dict):
+    def __init__ (self):
+        super ().__init__ ()
+        self.update (os.environ)
+
 if __name__=='__main__':
     s= compile (open (sys.argv[1]).read (), sys.argv[1], 'exec')
-    n= Namespace ()
+    g= Globals ()
+    l= Locals ()
 
-    # we have to toy with the argv
-    n['sys']= sys
+    # remove ayrton from the arguments
     sys.argv.pop (0)
 
     # fire!
-    exec (s, n)
+    exec (s, g, l)
