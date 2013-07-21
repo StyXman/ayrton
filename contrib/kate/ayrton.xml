@@ -38,8 +38,6 @@
 			<item> or </item>
 		</list>
 		<list name="commands">
-			<item> exec </item>
-			<item> print </item>
 		</list>
 		<list name="flow">
 			<item> assert </item>
@@ -73,6 +71,8 @@
 			<item> buffer </item>
 			<item> callable </item>
 			<item> chdir </item>
+			<item> chmod </item>
+			<item> chown </item>
 			<item> chr </item>
 			<item> classmethod </item>
 			<item> cmp </item>
@@ -85,13 +85,16 @@
 			<item> divmod </item>
 			<item> enumerate </item>
 			<item> eval </item>
+			<item> exec </item>
 			<item> execfile </item>
+			<item> exit </item>
 			<item> file </item>
 			<item> filter </item>
 			<item> float </item>
 			<item> format </item>
 			<item> frozenset </item>
 			<item> getattr </item>
+			<item> getcwd </item>
 			<item> globals </item>
 			<item> hasattr </item>
 			<item> hash </item>
@@ -105,28 +108,34 @@
 			<item> issubclass </item>
 			<item> iter </item>
 			<item> len </item>
+			<item> link </item>
 			<item> list </item>
+			<item> listdir </item>
 			<item> locals </item>
 			<item> long </item>
 			<item> map </item>
 			<item> max </item>
 			<item> min </item>
+			<item> mkdir </item>
 			<item> next </item>
 			<item> object </item>
 			<item> oct </item>
 			<item> open </item>
 			<item> ord </item>
 			<item> pow </item>
+			<item> print </item>
 			<item> property </item>
 			<item> range </item>
 			<item> raw_input </item>
 			<item> reduce </item>
 			<item> reload </item>
+			<item> remove </item>
 			<item> repr </item>
 			<item> reversed </item>
 			<item> round </item>
 			<item> set </item>
 			<item> setattr </item>
+			<item> sleep </item>
 			<item> slice </item>
 			<item> sorted </item>
 			<item> staticmethod </item>
@@ -135,6 +144,7 @@
 			<item> super </item>
 			<item> tuple </item>
 			<item> type </item>
+			<item> uname </item>
 			<item> unichr </item>
 			<item> unicode </item>
 			<item> vars </item>
@@ -142,6 +152,7 @@
 			<item> zip </item>
 		</list>
 		<list name="specialvars">
+			<item> argv </item>
 			<item> None </item>
 			<item> self </item>
 			<item> True </item>
