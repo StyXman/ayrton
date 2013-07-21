@@ -50,15 +50,10 @@ class Globals (dict):
 
         return ans
 
-class Locals (dict):
-    def __init__ (self):
-        super ().__init__ ()
-        self.update (os.environ)
-
 if __name__=='__main__':
     s= compile (open (sys.argv[1]).read (), sys.argv[1], 'exec')
     g= Globals ()
-    # l= Locals ()
+    # l= os.environ.copy ()
 
     # remove ayrton from the arguments
     sys.argv.pop (0)
