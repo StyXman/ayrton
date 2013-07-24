@@ -9,6 +9,7 @@ import sys
 import sh
 import importlib
 import builtins
+import _io
 
 class Runner (sh.Command):
     # this class changes the behaviour of sh.Command
@@ -27,12 +28,16 @@ def polute (d):
         'ayrton.file_test': [ '_a', '_b', '_c', '_d', '_e', '_f', '_g', '_h',
                               '_k', '_p', '_r', '_s', '_u', '_w', '_x', '_L',
                               '_N', '_S', '_nt', '_ot' ],
+        'ayrton.expansion': [ 'bash', ],
         }
 
     for module, functions in builtins.items ():
         m= importlib.import_module (module)
         for function in functions:
             d[function]= getattr (m, function)
+
+    for std in ('stdin', 'stdout', 'stderr'):
+        d[std]= getattr (sys, std).buffer
 
 class Globals (dict):
     def __init__ (self):
