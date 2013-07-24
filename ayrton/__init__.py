@@ -23,6 +23,8 @@ import sh
 import importlib
 import builtins
 
+__version__= '0.1a'
+
 class CommandWrapper (sh.Command):
     # this class changes the behaviour of sh.Command
     # so is more shell scripting freindly
@@ -71,8 +73,14 @@ class Globals (dict):
 
         return ans
 
-def main ():
-    s= compile (open (sys.argv[1]).read (), sys.argv[1], 'exec')
+def main (script=None):
+    if script is None:
+        script= open (sys.argv[1]).read ()
+        _file= sys.argv[1]
+    else:
+        _file= 'arg_to_main'
+
+    s= compile (script, _file, 'exec')
     g= Globals ()
     # l= os.environ.copy ()
 
