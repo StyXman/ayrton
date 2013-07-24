@@ -9,7 +9,7 @@
 16:17 < StucKman> debería pegarle otra mirada
 16:18 < StucKman> porque ls () | wc ('-l') no me suena muy feo
 16:18 < StucKman> si se pueden hacer cosas así, hay que pensárselo
-16:19 < StucKman> sobre todo si derepente a un comando en particular lo podés luego implementar como una función que en vez del output en texto te devuelve una estructura mas piola de 
+16:19 < StucKman> sobre todo si derepente a un comando en particular lo podés luego implementar como una función que en vez del output en texto te devuelve una estructura mas piola de
                   usar
 16:19 < StucKman> hmmm
 16:22 -!- exos_ [~quassel@56-11-245-190.fibertel.com.ar] has joined #pyar
@@ -62,3 +62,215 @@
 16:37  * facundobatista no está
 16:37 < facundobatista> (chau)
 16:37 < rbistolfi> nada puede ser peor que subprocess asi que dale para adelante :P
+
+14:52 < StucKman_> rbistolfi: vos has usado sh, no? te resulta muy molesto hacer cosas como
+14:52 < StucKman_> sh.cp ("-rv foo/{a,b,cd} bar/")
+14:53 < StucKman_> a mí el tema de dar todo el comando en un solo string me da cosita
+14:53 < StucKman_> y estba viendo quese puede hacer
+14:53 < StucKman_> sh.cp (v=True, r=True...)
+14:53 < StucKman_> pero el problema está, justamente, en ...
+14:54 < StucKman_> y no encuentro una forma de escribir eso que quede lindo :(
+14:54 < StucKman_> taba pensando en __1 para el último param, __2 para el penúltimo, etc
+14:54 < rbistolfi> el otro dia pensaba ese mismo problema
+14:54 < StucKman_> heeh
+14:54 < StucKman_> y no sólo eso
+14:55 < StucKman_> tá también el tema de que los parámetros que pasás con a=foo, b=bar, después salen ordenados
+14:55 < StucKman_> errr, *des*ordenados
+14:55 < rbistolfi> llegue a la conclusion de que r=True tiene sentido porque efectivamente r es un bool en el "lenguaje objeto"
+14:55 < StucKman_> así questaba pensando an hacer uso de OrderedDict
+14:55 < rbistolfi> claro
+14:55 < StucKman_> pero eso te lleva a
+14:56 < StucKman_> sh.cp(od(v=True, r=True, ...))
+14:56 < StucKman_> o s/os/_/ o algo por el estilo
+14:56 -!- nessita [~nessita@host218.190-136-104.telecom.net.ar] has quit [Quit: leaving]
+14:57 < StucKman_> y aún así tengo el tema de dónde van los parámetros sin nombre
+14:57 < StucKman_> en eso me caga feo python :(
+14:57 < StucKman_> toi >< así de ponerme a hacear esa parte
+14:57 < StucKman_> (as in, toquetear el intérprete de python)
+14:57 < StucKman_> lo cual sé que es un áujero negro
+14:57 < rbistolfi> pasa que despues mantener los parches ...
+14:59 < rbistolfi> StucKman_: si acepta *args y *kwargs y haces un helper para manejarlos ?
+14:59 < rbistolfi> a mi se me aparecio generando html, en casos como <input type="radio" checked ...
+14:59 < StucKman_> rbistolfi: ok, pero qué hacés con los posicionales?
+14:59 -!- leroy [~leroy@189.26.236.27.static.gvt.net.br] has quit [Read error: No route to host]
+14:59 < facundobatista> StucKman_, en el momento en que entrás en "miren que lindo que hice pero no le anda a nadie porque tienen que recompilar python", perdiste
+14:59 < StucKman_> c\omo le decís dónde van?
+14:59 < StucKman_> facundobatista: yes, I know
+14:59 < rbistolfi> html.input("checked"), html.input(checked=True ... etc
+15:00 < StucKman_> rbistolfi: me gusta más el checked=True
+15:00 < facundobatista> StucKman_, me parece que tu problema son algunos programas que no saben usar argumentos... para el resto, no importa si están desordenados
+15:01 < StucKman_> facundobatista: cuando decís algunos decís el 90%, no?
+15:01 < facundobatista> StucKman_, si estás en un Solaris 1995, sí; en un debian moderno creería que no
+15:01 < perrito666> cual seria la diferencia entre un solaris 1995 y un debian moderno, un año?
+15:01 < StucKman_> facundobatista: eso porque estás pensando sólo en comandos de los core utils o algo por el estilo
+15:02 < StucKman_> pensate tb un ejecutable hecho in house
+15:02 < rbistolfi> perrito666: :D
+15:03 < rbistolfi> StucKman_: como dice facundobatista, hay programas que son molestosos, como find y muchos que hasta le podes pasar opciones al final
+15:03 < StucKman_> exacto
+15:03 < StucKman_> es cierto que find masomenos lo reemplazás por un buen os.walk
+15:04 < StucKman_> pero lo bueno de find es que ya tiene programados unos cuantos filtros que co os.walk los harías a mano
+15:04 < facundobatista> rbistolfi, no entiendo, decís que a find le importa el orden de los parámetros?
+15:04 < StucKman_> facundobatista: of course
+15:04 < facundobatista> StucKman_, ejemplo?
+15:04 -!- jenri [~emaldonad@190.12.102.162] has joined #pyar
+15:05 -!- jenri [~emaldonad@190.12.102.162] has left #pyar []
+15:05 < StucKman_> facundobatista: find <dir> <options>
+15:05 < rbistolfi> facundobatista: find te exige que le pases el parametro obligatorio antes que las opciones
+15:05 < StucKman_> y como options son filtros, sí importan el orden
+15:05 < rbistolfi> debe ser el unico que funciona asi
+15:05 < rbistolfi> que tal un objeto ShellArgs() al que le pasas *args y *kwargs, y que se pueda customizar como armas el comando
+15:05 < StucKman_> seh, tratá de hacerle eso a git o bzr
+15:05 < rbistolfi> cuando tenes que especializar, especializas
+15:06 < facundobatista> StucKman_, rbistolfi: qué pedorro!
+15:06 < facundobatista> se acabó la mentira GNU!
+15:06 < rbistolfi> el tema es como le decis, se ve complejo
+15:06 < rbistolfi> jaja
+15:06 < StucKman_> facundobatista: find es muy específico
+15:06 < facundobatista> StucKman_, es que para find esos no son parámetros
+15:06 < facundobatista> son parte de una "expresión"
+15:06 < facundobatista> también tiene parámetros
+15:06 < rbistolfi> necesitarias un dsl para especificar el orden o algo asi
+15:06 < facundobatista> -H, -L, etc
+15:06 < StucKman_> porque aún si el directorio a escanear fuera en el último lugar, los filtro s y qué hacer en caso de match son posicionales
+15:07 < StucKman_> por ejemplo
+15:07 < facundobatista> y esos deberían (no lo probé) poder ir en cualquier lado
+15:08 < rbistolfi> facundobatista: ya, pero el problema no es tanto find, sino que los comandos pueden poner restricciones mas o menos arbitrarias
+15:09 < rbistolfi> asi que necesitas un mecanismo para declarar la una especificacion que legisle como armar el comando
+15:09 < rbistolfi> s/la//
+15:09 < StucKman_>      find dirname -delete -name quux  If the user hoped to delete only files named quux they will get an unpleasant surprise; this command will attempt to delete
+                   everything at or below the starting point dirname. This is because find evaluates the items on the command line as an expression.
+15:09 < facundobatista> rbistolfi, o no tratar de encajar un cuadrado en un círculo
+15:10 < StucKman_> facundobatista: para las opciones pavas si, pero cuando va una acción , la acción va al último de la expresión
+15:10 < rbistolfi> y, hay una chance de que sea inviable el asunto, pero tampoco vas a dejar de probar :)
+15:11 < marianoguerra> StucKman_: y una chance del patro builder para ese caso de arg ordenados? y si lo usas como callable que pase los args como se le cante?
+15:11 < facundobatista> rbistolfi, sin embargo, uno de los problemas que nos interesaba solucionar era lo del pipe
+15:11 < facundobatista> rbistolfi, si yo pudiera hacer
+15:11 < StucKman_> marianoguerra: tell me more
+15:11 < facundobatista> a = sh("ls -l") | sh("grep foo")
+15:11 < marianoguerra> sh.cp.flags("c", "f").arg("foo").arg("bar")
+15:11 < facundobatista> estaría contento
+15:11 < marianoguerra> ahi que vaya guardandolos en una lista
+15:12 < StucKman_> marianoguerra: a lo qstring, I dsse
+15:12 < StucKman_> pero se vuelve über verbose
+15:12 < facundobatista> StucKman_, un ORM contra el shell! :p
+15:12 < StucKman_> alguien que viene del shell programming te tira esa sintaxis por la cabeza :-P
+15:12 < marianoguerra> sh.cp.flag("a").arg("foo").flag("b").arg(asd="lala") seria cp -a foo -b --asd lala
+15:12 < StucKman_> facundobatista: ésa es la parte fácil :-P
+15:13 < facundobatista> marianoguerra, prefiero escribir sh("cp -a foo -b --asd lala")
+15:13 < marianoguerra> podes hacer que sea un solo metodo y que vaya acumulando, si los metes adentro mas de uno van en el prden que se te cante, de a uno se acumulan en orden
+15:13 < StucKman_> facundobatista: yo también :(
+15:13 < facundobatista> marianoguerra, pero no es lo mismo
+15:13 < marianoguerra> facundobatista: que no es lo mismo?
+15:14 < marianoguerra> StucKman_: estoy proponiendo, no digo que sea lindo
+15:14 < StucKman_> marianoguerra: .arg() es demasiado verbose
+15:14 < StucKman_> marianoguerra: heeh :)
+15:14 < facundobatista> marianoguerra, StucKman_, rbistolfi, el problema es que a nivel de shell, es distinto pasar "-f" y "3" como dos cosas separadas, que "-f 3"
+15:14 < marianoguerra> StucKman_: operator overloading the da arcadas? :P
+15:14 < StucKman_> facundobatista: no, para el shell, -f y 3 son lo mismo
+15:14 < facundobatista> si uno hace sh("cp -a foo -b --asd lala"), ¿cómo cortás eso en tokens?
+15:14 < marianoguerra> sh.cp > "a" > ("b", "asd")
+15:14 < StucKman_> marianoguerra: dije verbose
+15:15 < rbistolfi> tambien podes hacer -ab == -a -b
+15:15 < rbistolfi> en muchos casos
+15:15 < marianoguerra> sh.cp > [("a", "foo"), "b", ("asd", "lala")]
+15:15 < marianoguerra> a python le faltan atoms/symbils
+15:15 < marianoguerra> symbols*
+15:15 < rbistolfi> el estlo X pasa opciones largas con un solo guion
+15:15 < rbistolfi> -config
+15:16 < StucKman_> rbistolfi: ugh, cierto
+15:16 < StucKman_> find hace lo mismo, ahora que lo pienso
+15:16 < rbistolfi> yep
+15:16 < StucKman_> hmmm
+15:16 < marianoguerra> StucKman_: y si haces como tu idea original pero que si pasas tuplas respete el orden?
+15:17 < rbistolfi> ejecutas command -h antes, y parseas la salida :P
+15:17 < StucKman_> marianoguerra: pero entonces perdés la sintaxis f=foo, bar=baz -> -f foo --bar baz
+15:17 < StucKman_> rbistolfi: juaz
+15:17 < rbistolfi> la api tiene que quedar linda o es un perno para usar
+15:17 < StucKman_> rbistolfi: exacto
+15:18 < StucKman_> supongo que por ahora no tratar de cagar tan alto
+15:18 < StucKman_> me voy a dedicar a otra parte del problema
+15:18 < rbistolfi> manejar el 90% que si anda, y despues
+15:19 < rbistolfi> despues vemos :)
+15:19 < StucKman_> y al mismo tiempo ver porqué la arbitrariedad de f (a, c, b=3) y no f (a, b=3, c)
+15:19 < StucKman_> con un poco de suerte sólo es algo que *eventuaaaalmente* pueda entrar en python :)
+15:20 < StucKman_> (o sea, da acá a 5 años)
+15:20 < marianoguerra> si python tuviese atoms seria algo como sh.cp(:r, :v, "foo/{a,b,cd}", "bar/") :)
+15:20 < StucKman_> ;-P
+15:20 < facundobatista> StucKman_, en la definición o en la llamada?
+15:20 < StucKman_> facundobatista: definición?
+15:20 < StucKman_> de f?
+15:20 < StucKman_> facundobatista: en la llamada
+15:21 < StucKman_> por lo pronto está esto: http://www.python.org/dev/peps/pep-3102/
+15:21 < lalita> StucKman_: [#6286] PEP 3102 -- Keyword-Only Arguments
+15:21 < facundobatista> StucKman_, o sea, querés poder hacer f(5, b=3, 7)
+15:21 < facundobatista> StucKman_, cómo definiste f?
+15:21 < StucKman_> facundobatista: buena pregunta :)
+15:23 < marianoguerra> StucKman_: o podes hacer [globals()[l] = Option(l) for l in string.ascii_letters]
+15:24 < rbistolfi> che si armamos un test case para esto?
+15:24 < marianoguerra> et voila sh.cp(a, b, C, "lala", o("long-option", "option value"))
+15:24 < marianoguerra> eso si, no uses variables de un caracter :P
+15:24 < marianoguerra> i principalmente ;)
+15:24 < StucKman_> marianoguerra: yo ya estoy haciendo negradas en los globals :)
+15:25 < StucKman_> errr, chanchadas
+15:25 < marianoguerra> o podrias definirlas como _a, etc
+15:25 < marianoguerra> como te ves reescribiendo el ast :P
+15:25 < StucKman_> marianoguerra: te olvidás de los dígitos :)
+15:25 < StucKman_> marianoguerra: hmmm!
+15:25 < StucKman_> :-P
+15:25 < rbistolfi> killall -9
+15:25 < StucKman_> rbistolfi: clárh
+15:25 < marianoguerra> StucKman_: sh.killall(o(9))
+15:26 < marianoguerra> StucKman_: sh.killall(_(9))
+15:26 < StucKman_> marianoguerra: mestrania, o(9)=o(1) :-P
+15:26 < marianoguerra> StucKman_: :D
+15:26  * StucKman_ se tira a un pozo
+15:26 < marianoguerra> StucKman_: sh.killall(_9)
+15:26 < StucKman_> marianoguerra: https://github.com/StyXman/ayrton/blob/master/bin/ayrton
+15:27 < lalita> StucKman_: [#6287] ayrton/bin/ayrton at master · StyXman/ayrton · GitHub
+15:27 < StucKman_> esto anda: https://github.com/StyXman/ayrton/blob/master/doc/examples/hello_world.ay
+15:27 < lalita> StucKman_: [#6288] ayrton/doc/examples/hello_world.ay at master · StyXman/ayrton · GitHub
+15:27 < rbistolfi> killall() - 9 # defini __sub__
+15:27 < rbistolfi> :P
+15:27 < StucKman_> rbistolfi: juaz
+15:28 < StucKman_> el problema es que seguro que el parser no se banca f(a, b=3, c)
+15:28 < StucKman_> sino, se lo mandaría y haría malabares con el AST por detrás
+15:28 < rbistolfi> pero capaz que la sugerencia de marianoguerra es aceptable si los corner cases son pocos
+15:28 < StucKman_> al fin y al cabo ya estoy compilando y ejecutando el programa yo
+15:28 < rbistolfi> osea, pedi que solo para los corner cases se haga
+15:29 < rbistolfi> f(o("a"), o(b=3), o("c")
+15:29 < rbistolfi> )
+15:29 < StucKman_> pero mejor me dedico a tener algo más usable por otro lado
+15:29 < rbistolfi> y eso se traduce a -a --b=3 -c
+15:29 < StucKman_> rbistolfi: still too verbose, creo
+15:30 < rbistolfi> ya
+15:30 < rbistolfi> eso seria para el 10% que no cae en el caso generico
+15:31 < StucKman_> ok
+15:31 < StucKman_> StyXman: escuchaste bein todo? :-P
+15:32  * StucKman_ vuelve a laburar
+15:32 < rbistolfi> lo peor es que el 10% es una suposicion, anda saber cual es el numero real
+15:32 < rbistolfi> capaz es altisimo
+15:33 -!- kobain [~kobian@unaffiliated/kobain] has joined #pyar
+15:39 -!- mrjohns [~neal@unaffiliated/mrjohns] has joined #pyar
+15:41 -!- jpggimenez [~jpggimene@200.107.81.191] has quit [Ping timeout: 246 seconds]
+15:44 -!- nessita [~nessita@host218.190-136-104.telecom.net.ar] has joined #pyar
+15:44 -!- godlike [~godlike@5.39.12.2] has joined #pyar
+15:49 < StucKman_> http://www.python.org/dev/peps/pep-0306/
+15:49 < lalita> StucKman_: [#6289] PEP 306 -- How to Change Python's Grammar
+15:49  * StucKman_ hace jueguitos con las cejas :)
+15:49 -!- gabriel__ [~gabriel@200.123.184.5] has joined #pyar
+15:49 -!- gabriel__ is now known as gbytz
+15:52 < rbistolfi> f(a, (b,3), c)
+15:52 -!- tuute [~tuute@grulic/adm/toote] has joined #pyar
+15:53 < StucKman_> rbistolfi: hmmm
+15:54 < StucKman_> pero a, b y c son nombres de parámetros, o variables cuyos valores tomar?
+15:56 < StucKman_> wowo, re cortita la grmática de python
+16:00 < rbistolfi> StucKman_: nombres, -a --b=3, -c
+16:01 -!- pancho_jay [~pancho_ja@181.164.141.181] has joined #pyar
+16:02 -!- carpediem [~Alberto@190.173.18.11] has joined #pyar
+16:02 -!- carpediem [~Alberto@190.173.18.11] has quit [Changing host]
+16:02 -!- carpediem [~Alberto@unaffiliated/carpediem] has joined #pyar
+16:02 -!- luciano [~luciano@dhcp-178041.eduroam.chalmers.se] has joined #pyar
+16:05 < rbistolfi> StucKman_: hace poco se hablo de un coso para hacer macros ala lisp en python
+16:06 -!- sorin_ [~sorin@201.250.59.22] has joined #pyar
+16:08 -!- rbistolf` [~user@190.48.125.1] has joined #pyar
+16:08 < StucKman_> no sé si alguna vez le garré la vuelta a las macro de lisp :-P
