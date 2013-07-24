@@ -9,7 +9,6 @@ import sys
 import sh
 import importlib
 import builtins
-import _io
 
 class Runner (sh.Command):
     # this class changes the behaviour of sh.Command
