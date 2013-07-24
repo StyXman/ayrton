@@ -1,12 +1,16 @@
-* use sh instead of Runner
 * finish expansions
 * __bool__, &&, ||, |
 * with chdir(...)
 * check what happens to lists and dicts as executable params.
 * redirection!
-* export ENVVAR=foo
+* export ENVVAR=foo (param _env)
 * document
-* renames? getcwv -> pwd, zip -> ziplist?
+* renames? getcwd -> pwd, zip -> ziplist?
 * enable tracing
 * referencing non-existant envvars (FOO) is replaced by a Runner.
 * revert commit 18e7bc5.
+* more unit tests.
+* what to do about relative/absolute command paths?
+* fix brace_expand().
+* tracing
+* error reporting
