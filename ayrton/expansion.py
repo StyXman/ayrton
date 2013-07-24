@@ -4,10 +4,11 @@
 # for licensing details see the file LICENSE.txt
 
 from glob import glob
-# from collections import defaultdict
+from functools import reduce
 
 def glob_expand (s):
     # shamelessly insprired from sh.py
+    # but we return a list with the string when there is no match
     ans= glob (s)
     if ans==[]:
         ans= [s]
