@@ -161,6 +161,9 @@
 			<item> Ellipsis </item>
 			<item> __debug__ </item>
 			<item> __file__ </item>
+			<item> stdin </item>
+			<item> stdout </item>
+			<item> stderr </item>
 		</list>
 		<list name="bindings">
 			<item> SIGNAL </item>
