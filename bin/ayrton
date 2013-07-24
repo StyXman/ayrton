@@ -2,65 +2,23 @@
 # -*- coding: utf-8 -*-
 
 # (c) 2013 Marcos Dione <mdione@grulic.org.ar>
-# for licensing details see the file LICENSE.txt
 
-import os
-import sys
-import sh
-import importlib
-import builtins
+# This file is part of ayrton.
+#
+# ayrton is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# ayrton is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with ayrton.  If not, see <http://www.gnu.org/licenses/>.
 
-class Runner (sh.Command):
-    # this class changes the behaviour of sh.Command
-    # so is more shell scripting freindly
-    def __init__ (self, *args, **kwargs):
-        super ().__init__ (*args, **kwargs)
+# cannot be simpler :)
+import ayrton
 
-def polute (d):
-    # these functions will be loaded from each module and put in the globals
-    builtins= {
-        'os': [ 'chdir', 'getcwd', 'uname', 'chmod', 'chown', 'link', 'listdir',
-                'mkdir', 'remove' ],
-        'time': [ 'sleep', ],
-        'sys': [ 'argv', 'exit' ],
-
-        'ayrton.file_test': [ '_a', '_b', '_c', '_d', '_e', '_f', '_g', '_h',
-                              '_k', '_p', '_r', '_s', '_u', '_w', '_x', '_L',
-                              '_N', '_S', '_nt', '_ot' ],
-        'ayrton.expansion': [ 'bash', ],
-        }
-
-    for module, functions in builtins.items ():
-        m= importlib.import_module (module)
-        for function in functions:
-            d[function]= getattr (m, function)
-
-    for std in ('stdin', 'stdout', 'stderr'):
-        d[std]= getattr (sys, std).buffer
-
-class Globals (dict):
-    def __init__ (self):
-        super ().__init__ ()
-        polute (self)
-
-    def __getitem__ (self, k):
-        try:
-            ans= getattr (builtins, k)
-        except AttributeError:
-            try:
-                ans= super ().__getitem__ (k)
-            except KeyError:
-                ans= Runner._create (k)
-
-        return ans
-
-if __name__=='__main__':
-    s= compile (open (sys.argv[1]).read (), sys.argv[1], 'exec')
-    g= Globals ()
-    # l= os.environ.copy ()
-
-    # remove ayrton from the arguments
-    sys.argv.pop (0)
-
-    # fire!
-    exec (s, g)
+ayrton.main ()
