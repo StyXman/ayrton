@@ -10,6 +10,7 @@ really do:
 * more unit tests.
 * tracing
 * with chdir(...)
+* becareful with buitins, might eclipse valid usages: bash() (exp) blocks /bin/bash
 
 if we {have time,are bored}:
 * what to do about relative/absolute command paths?
