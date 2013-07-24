@@ -16,18 +16,21 @@
 # along with ayrton.  If not, see <http://www.gnu.org/licenses/>.
 
 import unittest
+import sys
+import io
 
 from ayrton.expansion import bash
+import ayrton
 
 class Bash(unittest.TestCase):
     def test_simple_string (self):
         self.assertEqual (bash ('s'), ['s'])
 
     def test_glob (self):
-        self.assertEqual (sorted (bash ('*.py')), ['setup.py', 'tests.py'])
+        self.assertEqual (sorted (bash ('*.py')), [ 'setup.py' ])
 
     def test_glob_brace (self):
-        self.assertEqual (sorted (bash ('{a,*.py}')), ['a', 'setup.py', 'tests.py'])
+        self.assertEqual (sorted (bash ('{a,*.py}')), [ 'a', 'setup.py' ])
 
     def test_simple1_brace (self):
         self.assertEqual (bash ('{a,b}'), ['a', 'b'])
@@ -68,5 +71,26 @@ class HardExpansion(unittest.TestCase):
     # test cases deemed hard to comply and corner cases
     # (that is, they can be ignored for a while :)
     pass
+
+class CommandExecution (unittest.TestCase):
+    # for the moment I will just test my changes over sh.Command
+
+    def testStdOut (self):
+        class A(object):
+            # make someone happy
+            def flush (self):
+                pass
+
+        old_stdout= sys.stdout
+        a= A ()
+        a.buffer= io.BytesIO ()
+        sys.stdout= a
+
+        # do the test
+        ayrton.main ('echo ("foo")')
+        self.assertEqual (a.buffer.getvalue (), b'foo\n')
+
+        # restore sanity
+        sys.stdout= old_stdout
 
 unittest.main()
