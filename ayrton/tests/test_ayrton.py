@@ -92,5 +92,3 @@ class CommandExecution (unittest.TestCase):
 
         # restore sanity
         sys.stdout= old_stdout
-
-unittest.main()
