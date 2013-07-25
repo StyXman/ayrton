@@ -33,7 +33,7 @@ class CommandWrapper (sh.Command):
         if not '_out' in kwargs:
             kwargs['_out']= sys.stdout.buffer
 
-        super ().__call__ (*args, **kwargs)
+        return super ().__call__ (*args, **kwargs)
 
 def polute (d):
     # these functions will be loaded from each module and put in the globals
@@ -41,7 +41,7 @@ def polute (d):
         'os': [ 'chdir', 'getcwd', 'uname', 'chmod', 'chown', 'link', 'listdir',
                 'mkdir', 'remove' ],
         'time': [ 'sleep', ],
-        'sys': [ 'argv', 'exit' ],
+        'sys': [ 'exit' ],
 
         'ayrton.file_test': [ '_a', '_b', '_c', '_d', '_e', '_f', '_g', '_h',
                               '_k', '_p', '_r', '_s', '_u', '_w', '_x', '_L',
@@ -54,6 +54,10 @@ def polute (d):
         for function in functions:
             d[function]= getattr (m, function)
 
+    # particular handling of sys.argv
+    d['argv']= sys.argv[:].pop (0) # copy and remove first element, normally ayrton's or Python's path
+
+    # now the IO files
     for std in ('stdin', 'stdout', 'stderr'):
         d[std]= getattr (sys, std).buffer
 
@@ -83,9 +87,6 @@ def main (script=None):
     s= compile (script, _file, 'exec')
     g= Globals ()
     # l= os.environ.copy ()
-
-    # remove ayrton from the arguments
-    sys.argv.pop (0)
 
     # fire!
     exec (s, g)
