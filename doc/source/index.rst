@@ -45,4 +45,38 @@ programmer. Here is where `ayrton` comes in and tries to fill in that gap.
 
 `ayrton` is heavily based on the `sh` module, to the point that it even depends on
 it. The class responsible for executing commands is just a subclass of
-`sh.Command`. For that reason, if you already know sh's syntax, you can use it.
+`sh.Command`. For that reason, if you already know ``sh``'s syntax, you can use it.
+
+``ayrton`` for Pythonistas
+==========================
+
+As mentioned, `ayrton` is heavily based on the `sh` module, but it introduces
+some changes to make it look more like a shell language. This section lists all
+the places where it is different from that module and from Python vanilla:
+
+Executables as globals
+    The first thing to notice is that you don't need to 'import' the executables
+    from ``sh`` (``from sh import ls``) or use them as functions in that module
+    (``sh.ls()``).  Instead, you simply invoke the executable as it were a
+    global: ``ls()``. **This introduces an unexpected behavior**. This means
+    that typos in names will be treated as commands to be run. *This is intentional*.
+    This also means that you will get nasty backtraces when the command is not
+    found.
+
+*stdout* as default
+    In normal scripting languages, commands' output goes directly to the terminal;
+    in ``sh`` it goes to the return value of the function. By default, ``ayrton``
+    imitates shells scripting. If you want the output to go to the return of the
+    function, you have to pass the option ``_out=None``.
+
+``ayrton`` for Shell Scripters
+==============================
+
+I will not lie to you. This proto-language *will* feel somewhat alien to you.
+A lot of things will look like too verbose or explicit, paths now need to be
+closed in quotes (``"`` or ``'``), arguments are separated by commas or
+sometimes have to be given within a string. We will try to minimize them as much
+as possible, but as long as ``ayrton`` uses Python's parser, some will be
+impossible to fix. Having said that, we think that ``ayrton`` will be powerful
+enough that the benefits will overweight this.
+
