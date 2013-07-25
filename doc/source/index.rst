@@ -69,6 +69,15 @@ Executables as globals
     imitates shells scripting. If you want the output to go to the return of the
     function, you have to pass the option ``_out=None``.
 
+Commands do not raise Exceptions
+    When you run a command with ``sh`` and it either exited with a return code
+    different from 0 or it was stopped/finished by a signal, it would raise an
+    exception. You then can recover the exit code and the output from the
+    exception. In ``ayrton`` not only exceptions are not raised, you can ask the
+    exit code in the ``code`` attribute and the output in the ``stdout`` and
+    ``stderr`` attributes. You can also use commands as booleans in conditions
+    to ``if``, ``while``, etc: ``if ls(): then echo ("yes!")``.
+
 ``ayrton`` for Shell Scripters
 ==============================
 
