@@ -25,6 +25,21 @@ import builtins
 
 __version__= '0.1a'
 
+class RunningCommandWrapper (sh.RunningCommand):
+    def _handle_exit_code (self, code):
+        self.code= code
+        try:
+            super ()._handle_exit_code (code)
+        except (sh.ErrorReturnCode, sh.SignalException) as e:
+            pass
+
+    def __bool__ (self):
+        # in shells, a command is true if its return code was 0
+        return self.code==0
+
+# monkey patch sh
+sh.RunningCommand= RunningCommandWrapper
+
 class CommandWrapper (sh.Command):
     # this class changes the behaviour of sh.Command
     # so is more shell scripting freindly
