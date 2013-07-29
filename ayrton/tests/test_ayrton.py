@@ -26,11 +26,17 @@ class Bash(unittest.TestCase):
     def test_simple_string (self):
         self.assertEqual (bash ('s'), ['s'])
 
-    def test_glob (self):
+    def test_glob1 (self):
         self.assertEqual (sorted (bash ('*.py')), [ 'setup.py' ])
 
-    def test_glob_brace (self):
+    def test_glob2 (self):
+        self.assertEqual (sorted (bash (['*.py', '*.txt'])), [ 'LICENSE.txt', 'TODO.txt', 'setup.py', ])
+
+    def test_glob_brace1 (self):
         self.assertEqual (sorted (bash ('{a,*.py}')), [ 'a', 'setup.py' ])
+
+    def test_glob_brace2 (self):
+        self.assertEqual (sorted (bash ('ayrton/tests/data/{a,*.py}')), [ 'ayrton/tests/data/a', 'ayrton/tests/data/test.py' ])
 
     def test_simple1_brace (self):
         self.assertEqual (bash ('{a,b}'), ['a', 'b'])

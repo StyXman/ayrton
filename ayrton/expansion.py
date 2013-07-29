@@ -19,6 +19,7 @@
 
 from glob import glob
 from functools import reduce
+from itertools import chain
 
 def glob_expand (s):
     # shamelessly insprired from sh.py
@@ -127,10 +128,13 @@ def brace_expand (s):
             # NOTE: this IS wrong; we should keep iterating, not recusrsing here
             return [ prefix+y+postfix for y in reduce (lambda x, y: x+y, [ brace_expand (x) for x in expanded ]) ]
 
-    return glob_expand (s)
+    # this is so wrong, given that we do this kind of return up there...
+    return [s]
 
 def backslash_descape (s):
     return s.replace ('\\', '')
 
 def bash (s):
-    return [ backslash_descape (x) for x in brace_expand (s) ]
+    return [ backslash_descape (x)
+                for x in chain (*[ glob_expand (y)
+                    for y in brace_expand (s) ]) ]
