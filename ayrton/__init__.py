@@ -47,6 +47,8 @@ class CommandWrapper (sh.Command):
         # if _out or _err are not provided, connect them to the original ones
         if not '_out' in kwargs:
             kwargs['_out']= sys.stdout.buffer
+        if not '_err' in kwargs:
+            kwargs['_err']= sys.stderr.buffer
 
         return super ().__call__ (*args, **kwargs)
 
