@@ -23,9 +23,21 @@ from functools import reduce
 def glob_expand (s):
     # shamelessly insprired from sh.py
     # but we return a list with the string when there is no match
-    ans= glob (s)
-    if ans==[]:
-        ans= [s]
+    # and we also handle lists of strings; we expand them independently
+    if type (s)==str:
+        l= [s]
+    else:
+        # otherwise we assume it's some kind of iterable
+        l= s
+
+    ans= []
+    for s in l:
+        a= glob (s)
+        if a==[]:
+            a= [s]
+
+        # accumulate them
+        ans+= a
 
     return ans
 
