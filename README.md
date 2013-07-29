@@ -1,4 +1,4 @@
-ayrton - a shell like language with the power of python
+ayrton - a shell like language with the power of python.
 
 Thanks to:
 

@@ -63,7 +63,7 @@ Executables as globals
     This also means that you will get nasty backtraces when the command is not
     found.
 
-*stdout* as default
+*stdout* and *sterr* as default
     In normal scripting languages, commands' output goes directly to the terminal;
     in ``sh`` it goes to the return value of the function. By default, ``ayrton``
     imitates shells scripting. If you want the output to go to the return of the
@@ -89,3 +89,6 @@ as possible, but as long as ``ayrton`` uses Python's parser, some will be
 impossible to fix. Having said that, we think that ``ayrton`` will be powerful
 enough that the benefits will overweight this.
 
+* you don't call ``[``.
+* redirection is done with _out, _err, etc
+* 

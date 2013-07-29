@@ -8,6 +8,7 @@ really do:
 * more unit tests.
 * with chdir(...)
 * becareful with buitins, might eclipse valid usages: bash() (exp) blocks /bin/bash
+* envvars as local vars.
 
 if we {have time,are bored}:
 * what to do about relative/absolute command paths?
