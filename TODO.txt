@@ -1,14 +1,11 @@
 really do:
 * finish expansions
-* __bool__,
-* check what happens to lists and dicts as executable params.
 * export ENVVAR=foo (param _env)
 * document
 * renames? getcwd -> pwd, zip -> ziplist?
 * enable tracing
 * referencing non-existant envvars (FOO) is replaced by a Runner.
 * more unit tests.
-* tracing
 * with chdir(...)
 * becareful with buitins, might eclipse valid usages: bash() (exp) blocks /bin/bash
 
