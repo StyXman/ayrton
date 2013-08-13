@@ -78,15 +78,15 @@ class HardExpansion(unittest.TestCase):
     # (that is, they can be ignored for a while :)
     pass
 
+class A(object):
+    # make someone happy
+    def flush (self):
+        pass
+
 class CommandExecution (unittest.TestCase):
     # for the moment I will just test my changes over sh.Command
 
     def testStdOut (self):
-        class A(object):
-            # make someone happy
-            def flush (self):
-                pass
-
         old_stdout= sys.stdout
         a= A ()
         a.buffer= io.BytesIO ()
@@ -95,6 +95,20 @@ class CommandExecution (unittest.TestCase):
         # do the test
         ayrton.main ('echo ("foo")')
         self.assertEqual (a.buffer.getvalue (), b'foo\n')
+
+        # restore sanity
+        sys.stdout= old_stdout
+
+class ExportTest (unittest.TestCase):
+
+    def testEnviron (self):
+        old_stdout= sys.stdout
+        a= A ()
+        a.buffer= io.BytesIO ()
+        sys.stdout= a
+
+        ayrton.main ('export (TEST_ENV=42); run ("./ayrton/tests/data/test_environ.sh")')
+        self.assertEqual (a.buffer.getvalue (), b'42\n')
 
         # restore sanity
         sys.stdout= old_stdout

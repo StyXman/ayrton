@@ -40,6 +40,9 @@ class RunningCommandWrapper (sh.RunningCommand):
 # monkey patch sh
 sh.RunningCommand= RunningCommandWrapper
 
+# dict to hold the environ used for executed programs
+environ= os.environ.copy ()
+
 class CommandWrapper (sh.Command):
     # this class changes the behaviour of sh.Command
     # so is more shell scripting freindly
@@ -49,6 +52,9 @@ class CommandWrapper (sh.Command):
             kwargs['_out']= sys.stdout.buffer
         if not '_err' in kwargs:
             kwargs['_err']= sys.stderr.buffer
+
+        # mess with the environ
+        kwargs['_env']= environ
 
         return super ().__call__ (*args, **kwargs)
 
@@ -64,6 +70,7 @@ def polute (d):
                               '_k', '_p', '_r', '_s', '_u', '_w', '_x', '_L',
                               '_N', '_S', '_nt', '_ot' ],
         'ayrton.expansion': [ 'bash', ],
+        'ayrton.builtins': [ 'export', 'run', ],
         }
 
     for module, functions in builtins.items ():
