@@ -25,11 +25,11 @@ clone it (there are no releases yet), use the branch `develop`.
 
     print ('Hello, World!')
 
-Nothing fancy, right? Let's try otherwise:
+Nothing fancy, right? Let's try somethin slightly different:
 
     echo ('Hello, World!')
 
-Not interested yet? What about I tell you that that `echo` function just
+Not interested yet? What if I tell you that that `echo` function just
 executed `/bin/echo`?:
 
     mdione@diablo:~/src/projects/ayrton$ strace -e process -ff ayrton doc/examples/hw.ay
@@ -37,8 +37,8 @@ executed `/bin/echo`?:
     [...]
     [pid   404] execve("/bin/echo", ["/bin/echo", "Hello, World!"], [/* 40 vars */]) = 0
 
-With `sh` you could `from sh impor echo` and it will create a callable that will
-transparently run `/bin/echo` for you; `ayrton` takes a setp further and creates
+With `sh` you could `from sh import echo` and it will create a callable that will
+transparently run `/bin/echo` for you; `ayrton` takes a step further and creates
 the callable on the fly, so you don't have to predeclare it. Another difference
 is that under `sh`, `echo`'s output gets captured by default, which means that
 you don't see it unless you later print it. `ayrton` tries to be more shell-like,
@@ -58,7 +58,7 @@ want to capture the output so the nesting callable gets its input:
 
     root= grep (cat ('/etc/shadow', _out=Capture), 'root', _out=Capture)
 
-This seems more cumbersome than `sh`, but if you thin that in any shell language
+This seems more cumbersome than `sh`, but if you think that in any shell language
 you do something similar (either using `$()`, `|` or even redirection), it's not
 a high price to pay.
 
