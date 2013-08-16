@@ -43,15 +43,23 @@ sh.RunningCommand= RunningCommandWrapper
 # dict to hold the environ used for executed programs
 environ= os.environ.copy ()
 
+# special value to signal that the output should be captured
+# instead of going to stdout
+Capture= (42, )
+
 class CommandWrapper (sh.Command):
     # this class changes the behaviour of sh.Command
     # so is more shell scripting freindly
     def __call__ (self, *args, **kwargs):
         # if _out or _err are not provided, connect them to the original ones
-        if not '_out' in kwargs:
-            kwargs['_out']= sys.stdout.buffer
-        if not '_err' in kwargs:
-            kwargs['_err']= sys.stderr.buffer
+        for std, buf in [('_out', sys.stdout.buffer), ('_err', sys.stderr.buffer)]:
+            if not std in kwargs:
+                kwargs[std]= buf
+            # the following two messes sh's semantic for _std==None
+            elif kwargs[std] is None:
+                kwargs[std]= '/dev/null'
+            elif kwargs[std]==Capture:
+                kwargs[std]= None
 
         # mess with the environ
         kwargs['_env']= environ
@@ -70,7 +78,8 @@ def polute (d):
                               '_k', '_p', '_r', '_s', '_u', '_w', '_x', '_L',
                               '_N', '_S', '_nt', '_ot' ],
         'ayrton.expansion': [ 'bash', ],
-        'ayrton.builtins': [ 'export', 'run', ],
+        'ayrton.functions': [ 'export', 'run', ],
+        'ayrton': [ 'Capture' ]
         }
 
     for module, functions in builtins.items ():
