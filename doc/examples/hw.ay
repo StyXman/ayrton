@@ -1,3 +1,0 @@
-#! /usr/bin/env ayrton
-
-echo ('Hello, World!')
