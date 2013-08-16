@@ -274,3 +274,43 @@
 16:06 -!- sorin_ [~sorin@201.250.59.22] has joined #pyar
 16:08 -!- rbistolf` [~user@190.48.125.1] has joined #pyar
 16:08 < StucKman_> no sé si alguna vez le garré la vuelta a las macro de lisp :-P
+
+14:16 < StucKman> marianoguerra: una vez dijiste que habías hecho un módulo maaaasomenos de la onda de sh, pero donde también podías hacer cosas como:
+14:16 < StucKman> cat ("foo.txt") | grep ('bar')
+14:16 < StucKman> es cierto o deliro?
+14:25 < marianoguerra> StucKman: cierto si mal no recuerdo
+14:25 < marianoguerra> ese codigo pertenece a mama ibm, no tengo mas acceso a el
+14:26 < StucKman> marianoguerra: ya, la pregunta era mas bien teórica
+14:26 < StucKman> supongo que implementaste __ror__()
+14:26 < StucKman> la pregunta es si también habías implementado __bool__()
+14:27 < StucKman> tengo miedo que __bool__() me cague la implementación de __ror__()
+14:27 < StucKman> __bool__() lo estoy haciendo para que puedas hacer ... uh
+14:27 < StucKman> if grep ('bar', 'foo.txt'): ...
+14:27 < StucKman> lo cual es cheto
+14:28 < StucKman> pero veo que voy a tener que hacer bastante mas magias en __roro__()
+14:29 < marianoguerra> que retorna grep sin __bool__ un objeto respuesta?
+14:30 < marianoguerra> ror no tiene que ver con bool
+14:30 < marianoguerra> sino con numeros
+14:32 < StucKman> si, con __bool__() lo bueno es que (creo) eso ya me implementa gratuitamente || y &&
+
+14:33 < StucKman> puedo hacer muhca chanchada ahí :)
+14:33 < StucKman> cat (file) | (grep (foo) || grep (bar)) :)))
+
+14:35 < StucKman> y si, __ror__() no debería estar impactado por __bool__(), pero capá sí por __long__(), que está implementado por sh
+14:36 < StucKman> marianoguerra: responmdiendo tu pregunta original, lo que retorna es un objeto que depende de cómo lo mires, devuelve una cosa o la otra
+14:36 < StucKman> pero tiene el output, el return code y alguna otra cosa mas
+14:37 < StucKman> si lo mirás como bool, retorna si el return code es !=0, shell like
+14:37 < StucKman> (eso se lo agregué yo)
+14:37 < StucKman> si lo mirás como str o int o long, lo saca del output
+14:38 < marianoguerra> StucKman: si queres iterar? :)
+14:38 < StucKman> menosmal que mañana es feriado :)
+14:38 < StucKman> marianoguerra: tambien itera (sobre las líneas del output)
+14:38 < marianoguerra> estaria bueno poder iterar por stdout
+14:38 < StucKman> sh está bastante bien en ese sentido
+14:38 < marianoguerra> tomamos casi las mismas decisiones
+14:38 < marianoguerra> no se si es bueno o malo :P
+14:39 < StucKman> marianoguerra: yo mal que mal estoy extendiendo sh
+14:39 < StucKman> mucho del laburo ya está hecho
+14:40 < StucKman> yo mal que mal "sólo"estoy extendiendo sh*
+14:41 < StucKman> y si me voy de mambo, termino haciendo chanchadas como la de arriba y/o definiendo una sintaxis propia
+14:42 < StucKman> marianoguerra: also, output puede ser stdout y?o stderr, dependiendo de cómo dedirigiste
