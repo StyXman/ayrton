@@ -1,0 +1,6 @@
+#! /usr/bin/env ayrton -f
+
+with cd ('bin'):
+    print (pwd ())
+
+print (pwd ())
