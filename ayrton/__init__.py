@@ -127,14 +127,13 @@ class Globals (dict):
 
         return ans
 
-def main (script=None):
-    if script is None:
-        script= open (sys.argv[1]).read ()
-        _file= sys.argv[1]
+def main (file=None, script=None, **kwargs):
+    if script is None and file is not None:
+        script= open (file).read ()
     else:
-        _file= 'arg_to_main'
+        file= 'arg_to_main'
 
-    s= compile (script, _file, 'exec')
+    s= compile (script, file, 'exec')
     g= Globals ()
     # l= os.environ.copy ()
 
