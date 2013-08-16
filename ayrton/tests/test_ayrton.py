@@ -90,69 +90,51 @@ class A(object):
     def write (self, o):
         self.buffer.write (bytes (o, 'utf-8'))
 
+def setUpMockStdout (self):
+    self.old_stdout= sys.stdout
+    self.a= A (io.BytesIO ())
+    sys.stdout= self.a
+
+def tearDownMockStdout (self):
+    # restore sanity
+    sys.stdout= self.old_stdout
+
 class CommandExecution (unittest.TestCase):
     # for the moment I will just test my changes over sh.Command
+    setUp=    setUpMockStdout
+    tearDown= tearDownMockStdout
 
     def testStdOut (self):
-        old_stdout= sys.stdout
-        a= A (io.BytesIO ())
-        sys.stdout= a
-
         # do the test
         ayrton.main ('echo ("foo")')
-        self.assertEqual (a.buffer.getvalue (), b'foo\n')
-
-        # restore sanity
-        sys.stdout= old_stdout
+        self.assertEqual (self.a.buffer.getvalue (), b'foo\n')
 
     def testStdEqNone (self):
-        old_stdout= sys.stdout
-        a= A (io.BytesIO ())
-        sys.stdout= a
-
         # do the test
         ayrton.main ('echo ("foo", _out=None)')
         # the output is empty, as it went to /dev/null
-        self.assertEqual (a.buffer.getvalue (), b'')
-
-        # restore sanity
-        sys.stdout= old_stdout
+        self.assertEqual (self.a.buffer.getvalue (), b'')
 
     def testStdEqCapture (self):
-        old_stdout= sys.stdout
-        a= A (io.BytesIO ())
-        sys.stdout= a
-
         # do the test
         ayrton.main ('f= echo ("foo", _out=Capture); print ("echo: %s" % f)')
         # the output is empty, as it went to /dev/null
         # BUG: check why there's a second \n
         # ANS: because echo adds the first one and print adds the second one
-        self.assertEqual (a.buffer.getvalue (), b'echo: foo\n\n')
-
-        # restore sanity
-        sys.stdout= old_stdout
-
-class ExportTest (unittest.TestCase):
-    def testEnviron (self):
-        old_stdout= sys.stdout
-        a= A (io.BytesIO ())
-        sys.stdout= a
-
-        ayrton.main ('export (TEST_ENV=42); run ("./ayrton/tests/data/test_environ.sh")')
-        self.assertEqual (a.buffer.getvalue (), b'42\n')
-
-        # restore sanity
-        sys.stdout= old_stdout
+        self.assertEqual (self.a.buffer.getvalue (), b'echo: foo\n\n')
 
 class MiscTests (unittest.TestCase):
+    setUp=    setUpMockStdout
+    tearDown= tearDownMockStdout
+
+    def testEnviron (self):
+        ayrton.main ('export (TEST_ENV=42); run ("./ayrton/tests/data/test_environ.sh")')
+        self.assertEqual (self.a.buffer.getvalue (), b'42\n')
+
     def testRename (self):
-        old_stdout= sys.stdout
-        a= A (io.BytesIO ())
-        sys.stdout= a
-
         ayrton.main ('import os.path; print (os.path.split (pwd ())[-1])')
-        self.assertEqual (a.buffer.getvalue (), b'ayrton\n')
+        self.assertEqual (self.a.buffer.getvalue (), b'ayrton\n')
 
-        # restore sanity
-        sys.stdout= old_stdout
+    def testWithCd (self):
+        ayrton.main ('import os.path\nwith cd ("bin"):\n  print (os.path.split (pwd ())[-1])')
+        self.assertEqual (self.a.buffer.getvalue (), b'bin\n')
