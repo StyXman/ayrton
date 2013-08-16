@@ -69,7 +69,7 @@ class CommandWrapper (sh.Command):
 def polute (d):
     # these functions will be loaded from each module and put in the globals
     builtins= {
-        'os': [ 'chdir', 'getcwd', 'uname', 'chmod', 'chown', 'link', 'listdir',
+        'os': [ ('chdir', 'cd'), ('getcwd', 'pwd'), 'uname', 'chmod', 'chown', 'link', 'listdir',
                 'mkdir', 'remove' ],
         'time': [ 'sleep', ],
         'sys': [ 'exit' ],
@@ -85,7 +85,13 @@ def polute (d):
     for module, functions in builtins.items ():
         m= importlib.import_module (module)
         for function in functions:
-            d[function]= getattr (m, function)
+            if type (function)==tuple:
+                src, dst= function
+            else:
+                src= function
+                dst= function
+
+            d[dst]= getattr (m, src)
 
     # particular handling of sys.argv
     d['argv']= sys.argv[:].pop (0) # copy and remove first element, normally ayrton's or Python's path

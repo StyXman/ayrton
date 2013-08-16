@@ -126,14 +126,14 @@ class CommandExecution (unittest.TestCase):
         # do the test
         ayrton.main ('f= echo ("foo", _out=Capture); print ("echo: %s" % f)')
         # the output is empty, as it went to /dev/null
-        # BUG: check why tehre's asecond \n
+        # BUG: check why there's a second \n
+        # ANS: because echo adds the first one and print adds the second one
         self.assertEqual (a.buffer.getvalue (), b'echo: foo\n\n')
 
         # restore sanity
         sys.stdout= old_stdout
 
 class ExportTest (unittest.TestCase):
-
     def testEnviron (self):
         old_stdout= sys.stdout
         a= A (io.BytesIO ())
@@ -141,6 +141,18 @@ class ExportTest (unittest.TestCase):
 
         ayrton.main ('export (TEST_ENV=42); run ("./ayrton/tests/data/test_environ.sh")')
         self.assertEqual (a.buffer.getvalue (), b'42\n')
+
+        # restore sanity
+        sys.stdout= old_stdout
+
+class MiscTests (unittest.TestCase):
+    def testRename (self):
+        old_stdout= sys.stdout
+        a= A (io.BytesIO ())
+        sys.stdout= a
+
+        ayrton.main ('import os.path; print (os.path.split (pwd ())[-1])')
+        self.assertEqual (a.buffer.getvalue (), b'ayrton\n')
 
         # restore sanity
         sys.stdout= old_stdout
