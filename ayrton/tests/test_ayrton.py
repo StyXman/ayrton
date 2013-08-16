@@ -79,17 +79,23 @@ class HardExpansion(unittest.TestCase):
     pass
 
 class A(object):
+    def __init__ (self, buf):
+        self.buffer= buf
+
     # make someone happy
     def flush (self):
         pass
+
+    # make someone else happy
+    def write (self, o):
+        self.buffer.write (bytes (o, 'utf-8'))
 
 class CommandExecution (unittest.TestCase):
     # for the moment I will just test my changes over sh.Command
 
     def testStdOut (self):
         old_stdout= sys.stdout
-        a= A ()
-        a.buffer= io.BytesIO ()
+        a= A (io.BytesIO ())
         sys.stdout= a
 
         # do the test
@@ -99,12 +105,38 @@ class CommandExecution (unittest.TestCase):
         # restore sanity
         sys.stdout= old_stdout
 
+    def testStdEqNone (self):
+        old_stdout= sys.stdout
+        a= A (io.BytesIO ())
+        sys.stdout= a
+
+        # do the test
+        ayrton.main ('echo ("foo", _out=None)')
+        # the output is empty, as it went to /dev/null
+        self.assertEqual (a.buffer.getvalue (), b'')
+
+        # restore sanity
+        sys.stdout= old_stdout
+
+    def testStdEqCapture (self):
+        old_stdout= sys.stdout
+        a= A (io.BytesIO ())
+        sys.stdout= a
+
+        # do the test
+        ayrton.main ('f= echo ("foo", _out=Capture); print ("echo: %s" % f)')
+        # the output is empty, as it went to /dev/null
+        # BUG: check why tehre's asecond \n
+        self.assertEqual (a.buffer.getvalue (), b'echo: foo\n\n')
+
+        # restore sanity
+        sys.stdout= old_stdout
+
 class ExportTest (unittest.TestCase):
 
     def testEnviron (self):
         old_stdout= sys.stdout
-        a= A ()
-        a.buffer= io.BytesIO ()
+        a= A (io.BytesIO ())
         sys.stdout= a
 
         ayrton.main ('export (TEST_ENV=42); run ("./ayrton/tests/data/test_environ.sh")')
