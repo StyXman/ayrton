@@ -1,6 +1,12 @@
 really do:
+* _out,_err= None redirects to /dev/null; other to capture
+    * if we can implement |, then no function nesting
+        * | is implementable, implement __ror__() for RunningCommandWrapper
+            * it doesn't work, __ror__() is not called and in any case it's
+              already too late, cat and grep have benn already called when
+              __or__ is called (with two RunningCommandWrapper instances)
+            * becareful with if cat () | grep (); error codes must be carried too
 * finish expansions
-* export ENVVAR=foo (param _env)
 * document
 * renames? getcwd -> pwd, zip -> ziplist?
 * enable tracing
