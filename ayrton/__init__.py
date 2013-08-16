@@ -66,11 +66,22 @@ class CommandWrapper (sh.Command):
 
         return super ().__call__ (*args, **kwargs)
 
+class cd (object):
+    def __init__ (self, dir):
+        self.old_dir= os.getcwd ()
+        os.chdir (dir)
+
+    def __enter__ (self):
+        pass
+
+    def __exit__ (self, *args):
+        os.chdir (self.old_dir)
+
 def polute (d):
     # these functions will be loaded from each module and put in the globals
     builtins= {
-        'os': [ ('chdir', 'cd'), ('getcwd', 'pwd'), 'uname', 'chmod', 'chown', 'link', 'listdir',
-                'mkdir', 'remove' ],
+        'os': [ ('getcwd', 'pwd'), 'uname', 'chmod', 'chown',
+                'link', 'listdir', 'mkdir', 'remove' ],
         'time': [ 'sleep', ],
         'sys': [ 'exit' ],
 
@@ -79,7 +90,7 @@ def polute (d):
                               '_N', '_S', '_nt', '_ot' ],
         'ayrton.expansion': [ 'bash', ],
         'ayrton.functions': [ 'export', 'run', ],
-        'ayrton': [ 'Capture' ]
+        'ayrton': [ 'Capture', 'cd', ],
         }
 
     for module, functions in builtins.items ():
