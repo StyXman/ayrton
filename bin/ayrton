@@ -34,7 +34,7 @@ script_group.add_argument ('-c', '--script', help='source of the script to run.'
 # now I have to replace all the examples/scripts I developed to add the -f :(
 script_group.add_argument ('-f', '--file', help='file with the script to run.')
 parser.add_argument ('-V', '--version', action='version', version="%%(prog)s %s" % ayrton.__version__)
-parser.add_argument ('-x', '--trace', help='enable execution tracing.')
+# parser.add_argument ('-x', '--trace', help='enable execution tracing.')
 # parser.add_argument ('-p', '--capture', help="capture the comands' output à la sh.")
 parser.add_argument ('args', nargs='*', help='arguments to be passed to the script.')
 
