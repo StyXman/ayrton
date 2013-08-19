@@ -44,34 +44,17 @@ def glob_expand (s):
     return ans
 
 class Group (object):
-    def __init__ (self, index, left, right=None):
-        self.index= index
+    def __init__ (self, left, right=None):
         self.left= left
         self.right= right
 
     def add_right (self, right):
         self.right= right
 
-    def update (self, base, src, dst):
-        offset= -len (src)+len (dst)
-        # print (base, end='-> ')
-        if base<self.left:
-            # update left
-            # print (self.left, end='')
-            self.left+= offset
-            # print ("-> ", self.left, ", ", end='')
-
-        if base<self.left:
-            # update left
-            # print (self.right, end='')
-            self.right+= offset
-            # print ("-> ", self.right)
-
     def __repr__ (self):
-        return "Group (%d, %d, %r)" % (self.index, self.left, self.right)
+        return "Group (%d, %r)" % (self.left, self.right)
 
     def __iter__ (self):
-        yield self.index
         yield self.left
         yield self.right
 
@@ -96,7 +79,7 @@ class ToExpand (object):
             # if the char is {, try to find the first closing }
             # but if another { is found, use that as the matching one for the }
             if   c=='{' and self.text[i-1]!='\\':
-                data= Group (seq, i)
+                data= Group (i)
                 # print (data)
                 self.indexes.append (data)
                 # we make sure we point to the same list,
@@ -117,21 +100,13 @@ class ToExpand (object):
         # remove indexes for unmatched open brackes
         # unmatched closing brackets are ignored in the try/except up there
         self.indexes= [ i for i in self.indexes if i.right is not None ]
-
         # print (self.indexes)
 
-    def update_indexes (self, base, src, dst):
-        # print (src, dst)
-        for i in self.indexes:
-            i.update (base, src, dst)
-
     def expand_one (self):
-        # BUG: expanding from the inside to the outside is makeing dupes:
-        # AssertionError: Lists differ: ['abe', 'ace', 'abe', 'ade'] != ['abe', 'ace', 'ade']
-        "expand the more-to-the-left/inner bracket, return a list of ToExpand's"
+        "expand the more-to-the-left/outer bracket, return a list of ToExpand's"
         data= self.indexes.pop (0)
 
-        seq, left_cb, right_cb= data
+        left_cb, right_cb= data
         prefix= self.text[:left_cb]
         # includes the {}'s
         body= self.text[left_cb:right_cb+1]
@@ -153,7 +128,7 @@ class ToExpand (object):
             if c==',' and body[i-1]!='\\':
                 split_here= True
                 # check if this comma belongs to a inner group
-                for s, l, r in self.indexes:
+                for l, r in self.indexes:
                     # TODO: show that this cannot actually happen
                     if l>right_cb:
                         # stop searching, this pair is beyond us
@@ -172,7 +147,6 @@ class ToExpand (object):
                     comma_found= True
                     dst= body[last:i]
                     te= ToExpand (prefix+dst+postfix)
-                    # te.update_indexes (base, body, dst)
                     expanded.append (te)
                     # print ('split!', expanded)
                     last= i+1 # point to the next char, not the comma itself
@@ -182,7 +156,6 @@ class ToExpand (object):
             # do not count the closing bracket
             dst= body[last:-1]
             te= ToExpand (prefix+dst+postfix)
-            # te.update_indexes (base, body, dst)
             expanded.append (te)
             # print ('append', expanded)
         else:
