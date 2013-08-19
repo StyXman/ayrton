@@ -5,19 +5,15 @@ really do:
           already too late, cat and grep have benn already called when
           __or__ is called (with two RunningCommandWrapper instances)
         * becareful with if cat () | grep (); error codes must be carried too
-* finish expansions
 * document
 * enable tracing
 * referencing non-existant envvars (FOO) is replaced by a Runner.
-* more unit tests.
-* with chdir(...)
 * becareful with buitins, might eclipse valid usages: bash() (exp) blocks /bin/bash
 * envvars as local vars.
 
 if we {have time,are bored}:
 * what to do about relative/absolute command paths?
-* fix brace_expand().
 * better error reporting
 * revert commit 18e7bc5.
-* redirection!
-* &&, ||, |
+* |
+* redirections, if we ever implement |
