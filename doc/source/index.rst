@@ -89,6 +89,9 @@ as possible, but as long as ``ayrton`` uses Python's parser, some will be
 impossible to fix. Having said that, we think that ``ayrton`` will be powerful
 enough that the benefits will overweight this.
 
-* you don't call ``[``.
+* you don't call ``[``,.
 * redirection is done with _out, _err, etc
-* 
+* currently, absolute and relative paths do not work directly, you have to use run()
+* expansions are not done automatilcally; variables can be expanded with %,
+  brace, tilde and glob expansions can be done with bash(),
+  command substitution is yet to come.
