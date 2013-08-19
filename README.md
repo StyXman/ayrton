@@ -68,3 +68,17 @@ Another improvement over `sh` is that you can use commands as conditions:
         print ('user «mdione» is poresent on your system; that's a security vulnerability right there!')
 
 As a consequence, you can also use `and`, `or` and `not`.
+
+Do I have you attention? Let's go for your interest. Something also useful is a
+behavior similar to `pushd`/`popd`:
+
+    with cd ('bin'):
+        print (pwd ())
+    print (pwd ())
+
+If you were in `ayrton`'s source directory, you would get something in the lines
+of:
+
+    /home/mdione/src/projects/ayrton/bin
+    /home/mdione/src/projects/ayrton
+
