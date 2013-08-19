@@ -18,60 +18,64 @@
 import unittest
 import sys
 import io
+import os
 
 from ayrton.expansion import bash
 import ayrton
 
 class Bash(unittest.TestCase):
     def test_simple_string (self):
-        self.assertEqual (bash ('s'), ['s'])
+        self.assertEqual (bash ('s'), [ 's' ])
 
     def test_glob1 (self):
         self.assertEqual (sorted (bash ('*.py')), [ 'setup.py' ])
 
     def test_glob2 (self):
-        self.assertEqual (sorted (bash (['*.py', '*.txt'])), [ 'LICENSE.txt', 'TODO.txt', 'setup.py', ])
+        self.assertEqual (sorted (bash ([ '*.py', '*.txt' ])), [ 'LICENSE.txt', 'TODO.txt', 'setup.py', ])
 
     def test_glob_brace1 (self):
-        self.assertEqual (sorted (bash ('{a,*.py}')), [ 'a', 'setup.py' ])
+        self.assertEqual (sorted (bash ('s{a,*.py}')), [ 'sa', 'setup.py' ])
 
     def test_glob_brace2 (self):
         self.assertEqual (sorted (bash ('ayrton/tests/data/{a,*.py}')), [ 'ayrton/tests/data/a', 'ayrton/tests/data/test.py' ])
 
     def test_simple1_brace (self):
-        self.assertEqual (bash ('{a,b}'), ['a', 'b'])
+        self.assertEqual (bash ('{acde,b}'), [ 'acde', 'b' ])
 
     def test_simple2_brace (self):
-        self.assertEqual (bash ('a{b,c}d'), ['abd', 'acd'])
+        self.assertEqual (bash ('a{b,ce}d'), [ 'abd', 'aced' ])
 
     def test_simple3_brace (self):
-        self.assertEqual (bash ('{a}'), ['{a}'])
+        self.assertEqual (bash ('{a}'), [ '{a}' ])
 
     def test_simple4_brace (self):
-        self.assertEqual (bash ('a}'), ['a}'])
+        self.assertEqual (bash ('a}'), [ 'a}' ])
 
     def test_simple5_brace (self):
-        self.assertEqual (bash ('a{b,{c,d}e'), ['a{b,ce', 'a{b,de'])
+        self.assertEqual (bash ('a{bfgh,{ci,djkl}e'), [ 'a{bfgh,cie', 'a{bfgh,djkle' ])
 
     def test_simple6_brace (self):
-        self.assertEqual (bash ('{a,{b,c}d}'), ['a', 'bd', 'cd'])
+        self.assertEqual (bash ('{a,{b,c}d}'), [ 'a', 'bd', 'cd' ])
 
     def test_simple7_brace (self):
-        self.assertEqual (bash ('foo{,bar}'), ['foo', 'foobar' ])
+        self.assertEqual (bash ('foo{,bar}'), [ 'foo', 'foobar' ])
 
     def test_nested1_brace (self):
         # note how this is equivalent to a{b,c,d}e!
-        self.assertEqual (bash ('a{b,{c,d}}e'), ['abe', 'ace', 'ade'])
+        self.assertEqual (bash ('a{b,{c,d}}e'), [ 'abe', 'ace', 'ade' ])
 
     def test_nested2_brace (self):
-        self.assertEqual (bash ('{c{a,b}d,e{f,g}h}'), ['cad', 'cbd', 'efh', 'egh'])
+        self.assertEqual (bash ('{c{a,b}d,e{f,g}h}'), [ 'cad', 'cbd', 'efh', 'egh' ])
 
     def test_escaped_brace (self):
-        self.assertEqual (bash ('\{a,b}'), ['{a,b}'])
+        self.assertEqual (bash ('\{a,b}'), [ '{a,b}' ])
 
     def test_real_example1 (self):
         # tiles/{legend*,Elevation.dgml,preview.png,Makefile}
         pass
+
+    def test_tilde (self):
+        self.assertEqual (bash ('~'), [ os.environ['HOME'] ])
 
 class HardExpansion(unittest.TestCase):
     # test cases deemed hard to comply and corner cases
