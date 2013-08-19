@@ -127,7 +127,7 @@ class Globals (dict):
 
         return ans
 
-def main (file=None, script=None, **kwargs):
+def main (script=None, file=None, **kwargs):
     if script is None and file is not None:
         script= open (file).read ()
     else:
