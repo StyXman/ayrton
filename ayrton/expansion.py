@@ -43,7 +43,7 @@ def glob_expand (s):
 
     return ans
 
-class Indexes (object):
+class Group (object):
     def __init__ (self, index, left, right=None):
         self.index= index
         self.left= left
@@ -52,15 +52,23 @@ class Indexes (object):
     def add_right (self, right):
         self.right= right
 
-    def update (self, src, dst):
-        "update right based on src's and dst's lenghts"
-        old= self.right
-        new= self.right-len (src)+len (dst)
-        self.right= new
-        print ("%d -> %d" % (old, new))
+    def update (self, base, src, dst):
+        offset= -len (src)+len (dst)
+        # print (base, end='-> ')
+        if base<self.left:
+            # update left
+            # print (self.left, end='')
+            self.left+= offset
+            # print ("-> ", self.left, ", ", end='')
+
+        if base<self.left:
+            # update left
+            # print (self.right, end='')
+            self.right+= offset
+            # print ("-> ", self.right)
 
     def __repr__ (self):
-        return "Indexes (%d, %d, %r)" % (self.index, self.left, self.right)
+        return "Group (%d, %d, %r)" % (self.index, self.left, self.right)
 
     def __iter__ (self):
         yield self.index
@@ -73,10 +81,10 @@ class ToExpand (object):
         if indexes is None:
             self.find_indexes ()
         else:
-            # I have to deep copy the Indexes
+            # I have to deep copy the Group
             self.indexes= []
             for i in indexes:
-                self.indexes.append (Indexes (*list (i)))
+                self.indexes.append (Group (*list (i)))
 
     def find_indexes (self):
         self.indexes= []
@@ -88,7 +96,7 @@ class ToExpand (object):
             # if the char is {, try to find the first closing }
             # but if another { is found, use that as the matching one for the }
             if   c=='{' and self.text[i-1]!='\\':
-                data= Indexes (seq, i)
+                data= Group (seq, i)
                 # print (data)
                 self.indexes.append (data)
                 # we make sure we point to the same list,
@@ -112,28 +120,29 @@ class ToExpand (object):
 
         # print (self.indexes)
 
-    def update_indexes (self, src, dst):
-        print (src, dst)
+    def update_indexes (self, base, src, dst):
+        # print (src, dst)
         for i in self.indexes:
-            i.update (src, dst)
+            i.update (base, src, dst)
 
     def expand_one (self):
         # BUG: expanding from the inside to the outside is makeing dupes:
         # AssertionError: Lists differ: ['abe', 'ace', 'abe', 'ade'] != ['abe', 'ace', 'ade']
         "expand the more-to-the-left/inner bracket, return a list of ToExpand's"
-        data= self.indexes.pop ()
+        data= self.indexes.pop (0)
 
         seq, left_cb, right_cb= data
         prefix= self.text[:left_cb]
-        postfix= self.text[right_cb+1:]
         # includes the {}'s
         body= self.text[left_cb:right_cb+1]
-        print ("%r %r %r" % (prefix, body, postfix))
+        postfix= self.text[right_cb+1:]
+        # print ("pre:%r b:%r post:%r" % (prefix, body, postfix))
 
         # will hold the expansion of the body
         expanded= []
         # do not count the opening bracket
         last= 1
+        split_here= False
         comma_found= False
         # index for the position in the original string of the beginning of
         # the current body starts
@@ -142,22 +151,40 @@ class ToExpand (object):
 
         for i, c in enumerate (body):
             if c==',' and body[i-1]!='\\':
-                comma_found= True
-                dst= body[last:i]
-                te= ToExpand (prefix+dst+postfix, self.indexes)
-                te.update_indexes (body, dst)
-                expanded.append (te)
-                print ('split!', expanded)
-                last= i+1 # point to the next char, not the comma itself
+                split_here= True
+                # check if this comma belongs to a inner group
+                for s, l, r in self.indexes:
+                    # TODO: show that this cannot actually happen
+                    if l>right_cb:
+                        # stop searching, this pair is beyond us
+                        break
+
+                    orig_i= base+i
+                    # print (s, l, orig_i, r)
+
+                    if l<orig_i and orig_i<r:
+                        # print 'not splitting, comma @%d(%d) between {%d,%d}' % (orig_i, i, l, r)
+                        split_here= False
+                        # stop searching too
+                        break
+
+                if split_here:
+                    comma_found= True
+                    dst= body[last:i]
+                    te= ToExpand (prefix+dst+postfix)
+                    # te.update_indexes (base, body, dst)
+                    expanded.append (te)
+                    # print ('split!', expanded)
+                    last= i+1 # point to the next char, not the comma itself
 
         # only add the last element if a comma was found
         if comma_found:
             # do not count the closing bracket
             dst= body[last:-1]
-            te= ToExpand (prefix+dst+postfix, self.indexes)
-            te.update_indexes (body, dst)
+            te= ToExpand (prefix+dst+postfix)
+            # te.update_indexes (base, body, dst)
             expanded.append (te)
-            print ('append', expanded)
+            # print ('append', expanded)
         else:
             # otherwise, just leave untouched
             # (except for the index we already removed at the beginning of this method)
@@ -186,21 +213,18 @@ def brace_expand (s):
         todo= [ ToExpand (s) ]
 
         while (len (todo)>0):
-            print (todo)
-            # // TODO: check this is the right order (left to right)
-            te= todo.pop ()
+            # print (todo)
+            te= todo.pop (0)
 
             if not te.fully_expanded ():
                 new_ones= te.expand_one ()
-                for new in reversed (new_ones):
+                for index, new in enumerate (new_ones):
                     if new.fully_expanded ():
-                        # also add from left to right, to keep original order
-                        ans.insert (0, new.text)
+                        ans.append (new.text)
                     else:
-                        # also add from left to right, to keep original order
-                        todo.insert (0, new)
+                        todo.insert (index, new)
             else:
-                ans.insert (0, te.text)
+                ans.append (te.text)
 
     return ans
 
