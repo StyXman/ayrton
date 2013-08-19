@@ -82,3 +82,19 @@ of:
     /home/mdione/src/projects/ayrton/bin
     /home/mdione/src/projects/ayrton
 
+We also have expansion à la `bash`, but only the ones that are meaningful, having
+in mind that `Python3` already provides the same and even more powerful
+functionality:
+
+    touch ('a', 'b.ay')
+    files= bash ('{a,b*}')
+
+`bash()` applies brace, tilde and glob expansions:
+
+    >>> from ayrton.expansion import bash
+    >>> import os
+    >>> os.chdir (bash ('~/src/pro*/osm/mapn*')[0])
+    >>> os.getcwd ()
+    '/home/mdione/src/projects/osm/mapnik-stylesheets'
+    >>> bash ("Elevation/{legend*,Elevation.dgml,preview.png,Makefile}")
+    ['Elevation/legend.html', 'Elevation/legend', 'Elevation/Elevation.dgml', 'Elevation/preview.png', 'Elevation/Makefile']
