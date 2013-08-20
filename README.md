@@ -25,7 +25,7 @@ clone it (there are no releases yet), use the branch `develop`.
 
     print ('Hello, World!')
 
-Nothing fancy, right? Let's try somethin slightly different:
+Nothing fancy, right? Let's try something slightly different:
 
     echo ('Hello, World!')
 
@@ -65,7 +65,7 @@ a high price to pay.
 Another improvement over `sh` is that you can use commands as conditions:
 
     if grep (cat ('/etc/shadow', _out=Capture), 'mdione', _out=None):
-        print ('user «mdione» is poresent on your system; that's a security vulnerability right there!')
+        print ('user «mdione» is present on your system; that's a security vulnerability right there!')
 
 As a consequence, you can also use `and`, `or` and `not`.
 
@@ -98,3 +98,7 @@ functionality:
     '/home/mdione/src/projects/osm/mapnik-stylesheets'
     >>> bash ("Elevation/{legend*,Elevation.dgml,preview.png,Makefile}")
     ['Elevation/legend.html', 'Elevation/legend', 'Elevation/Elevation.dgml', 'Elevation/preview.png', 'Elevation/Makefile']
+
+# Things to come
+
+See TODO.rst
