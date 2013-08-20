@@ -18,9 +18,11 @@
 # along with ayrton.  If not, see <http://www.gnu.org/licenses/>.
 
 import ayrton
+import os
 
 def export (**kwargs):
     for k, v in kwargs.items ():
+        os.environ[k]= str (v)
         ayrton.environ[k]= str (v)
 
 def run (path, *args, **kwargs):
