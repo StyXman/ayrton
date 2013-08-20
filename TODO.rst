@@ -1,4 +1,5 @@
-really do:
+# Really do:
+
 * if we can implement |, then no function nesting
     * | is implementable, implement __ror__() for RunningCommandWrapper
         * it doesn't work, __ror__() is not called and in any case it's
@@ -12,7 +13,7 @@ really do:
 * becareful with buitins, might eclipse valid usages: bash() (exp) blocks /bin/bash
 * envvars as local vars.
 
-if we {have time,are bored}:
+# If we {have time,are bored}:
 * what to do about relative/absolute command paths?
 * better error reporting
 * revert commit 18e7bc5.
