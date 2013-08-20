@@ -82,14 +82,7 @@ of:
     /home/mdione/src/projects/ayrton/bin
     /home/mdione/src/projects/ayrton
 
-We also have expansion à la `bash`, but only the ones that are meaningful, having
-in mind that `Python3` already provides the same and even more powerful
-functionality:
-
-    touch ('a', 'b.ay')
-    files= bash ('{a,b*}')
-
-`bash()` applies brace, tilde and glob expansions:
+`bash()` applies brace, tilde and glob (pathname) expansions:
 
     >>> from ayrton.expansion import bash
     >>> import os
@@ -98,6 +91,25 @@ functionality:
     '/home/mdione/src/projects/osm/mapnik-stylesheets'
     >>> bash ("Elevation/{legend*,Elevation.dgml,preview.png,Makefile}")
     ['Elevation/legend.html', 'Elevation/legend', 'Elevation/Elevation.dgml', 'Elevation/preview.png', 'Elevation/Makefile']
+
+Notice that `bash()` always returns a list.
+
+Parameter expansion can be achieved with the `str` operator `%` or the `format()`
+method. Arithmetic expansion can be achieved with normal arithmetic operators.
+Process substitution is planned but not yet implemented.
+
+There is no need for a `test`/`[`/`[[` equivalent, but there are for the
+operators. As `-`cannot be part of the name of a function, we replaced it with `_`.
+So, `-f` became `_f()` and so on. Some of the operators are not implemented yet.
+Of course, string and integer operators are better implemented in Python's `str`,
+`int` and, why not, `float` types.
+
+One main difference with shell languages is that in those, you only have
+environment variables, which after being exported, can be seen by any subprocess.
+In `ayrton` there are two worlds: Python variables and environment variables.
+The latter can be accessed via the `environ` dictionary. The `export()` function
+gives the same behavior as `bash`'s `export` command, with the caveat that values
+will be automatically converted to `str`.
 
 # Things to come
 
