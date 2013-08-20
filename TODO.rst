@@ -5,6 +5,7 @@ really do:
           already too late, cat and grep have benn already called when
           __or__ is called (with two RunningCommandWrapper instances)
         * becareful with if cat () | grep (); error codes must be carried too
+* process substitution
 * document
 * enable tracing
 * referencing non-existant envvars (FOO) is replaced by a Runner.
