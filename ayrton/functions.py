@@ -22,8 +22,9 @@ import os
 
 def export (**kwargs):
     for k, v in kwargs.items ():
-        os.environ[k]= str (v)
-        ayrton.environ[k]= str (v)
+        # NOTE: this is quasi ugly
+        ayrton.runner.globals[k]= str (v)
+        ayrton.runner.environ[k]= str (v)
 
 def run (path, *args, **kwargs):
     c= ayrton.CommandWrapper._create (path)
