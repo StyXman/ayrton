@@ -104,10 +104,13 @@ So, `-f` became `_f()` and so on. Some of the operators are not implemented yet.
 Of course, string and integer operators are better implemented in Python's `str`,
 `int` and, why not, `float` types.
 
-One main difference with shell languages is that in those, you only have
+One main difference between Python and shell languages is that in the latter, you only have
 environment variables, which after being exported, can be seen by any subprocess.
-In `ayrton` there are two worlds: Python variables and environment variables.
-The latter can be accessed via the `environ` dictionary. The `export()` function
+In Python there are two worlds: Python variables and environment variables.
+`ayrton` again reaches to shell languages, mixing the environment into the globals,
+so envvars can be reached from any place, just like in shell scripts. Notice that
+new variables in `ayrton` (f.i., `foo=42`) are Pytohn variables; therefore they
+can hold any Python object, but won't be exported. The `export()` function
 gives the same behavior as `bash`'s `export` command, with the caveat that values
 will be automatically converted to `str`.
 
