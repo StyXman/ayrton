@@ -27,7 +27,6 @@ __version__= '0.1'
 
 class RunningCommandWrapper (sh.RunningCommand):
     def _handle_exit_code (self, code):
-        self.code= code
         try:
             super ()._handle_exit_code (code)
         except (sh.ErrorReturnCode, sh.SignalException) as e:
@@ -35,13 +34,12 @@ class RunningCommandWrapper (sh.RunningCommand):
 
     def __bool__ (self):
         # in shells, a command is true if its return code was 0
-        return self.code==0
+        return self.exit_code ()==0
 
 # monkey patch sh
 sh.RunningCommand= RunningCommandWrapper
 
-# dict to hold the environ used for executed programs
-environ= os.environ.copy ()
+runner= None
 
 # special value to signal that the output should be captured
 # instead of going to stdout
@@ -62,7 +60,8 @@ class CommandWrapper (sh.Command):
                 kwargs[std]= None
 
         # mess with the environ
-        kwargs['_env']= environ
+        global runner
+        kwargs['_env']= runner.environ
 
         return super ().__call__ (*args, **kwargs)
 
@@ -76,6 +75,40 @@ class cd (object):
 
     def __exit__ (self, *args):
         os.chdir (self.old_dir)
+
+class Globals (dict):
+    def __init__ (self):
+        super ().__init__ ()
+        # TODO: this is ugly
+        polute (self)
+
+    def __getitem__ (self, k):
+        try:
+            ans= getattr (builtins, k)
+        except AttributeError:
+            try:
+                ans= super ().__getitem__ (k)
+            except KeyError:
+
+                ans= CommandWrapper._create (k)
+
+        return ans
+
+class Ayrton (object):
+    def __init__ (self, script=None, file=None, **kwargs):
+        if script is None and file is not None:
+            script= open (file).read ()
+        else:
+            file= 'arg_to_main'
+
+        self.source= compile (script, file, 'exec')
+        self.globals= Globals ()
+
+        # dict to hold the environ used for executed programs
+        self.environ= os.environ.copy ()
+
+    def run (self):
+        exec (self.source, self.globals)
 
 def polute (d):
     # these functions will be loaded from each module and put in the globals
@@ -116,31 +149,7 @@ def polute (d):
     for std in ('stdin', 'stdout', 'stderr'):
         d[std]= getattr (sys, std).buffer
 
-class Globals (dict):
-    def __init__ (self):
-        super ().__init__ ()
-        polute (self)
-
-    def __getitem__ (self, k):
-        try:
-            ans= getattr (builtins, k)
-        except AttributeError:
-            try:
-                ans= super ().__getitem__ (k)
-            except KeyError:
-                ans= CommandWrapper._create (k)
-
-        return ans
-
 def main (script=None, file=None, **kwargs):
-    if script is None and file is not None:
-        script= open (file).read ()
-    else:
-        file= 'arg_to_main'
-
-    s= compile (script, file, 'exec')
-    g= Globals ()
-    # l= os.environ.copy ()
-
-    # fire!
-    exec (s, g)
+    global runner
+    runner= Ayrton (script, file, **kwargs)
+    runner.run ()
