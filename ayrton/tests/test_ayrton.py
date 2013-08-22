@@ -31,7 +31,7 @@ class Bash(unittest.TestCase):
         self.assertEqual (sorted (bash ('*.py')), [ 'setup.py' ])
 
     def test_glob2 (self):
-        self.assertEqual (sorted (bash ([ '*.py', '*.txt' ])), [ 'LICENSE.txt', 'TODO.txt', 'setup.py', ])
+        self.assertEqual (sorted (bash ([ '*.py', '*.txt' ])), [ 'LICENSE.txt', 'setup.py', ])
 
     def test_glob_brace1 (self):
         self.assertEqual (sorted (bash ('s{a,*.py}')), [ 'sa', 'setup.py' ])
@@ -78,7 +78,7 @@ class Bash(unittest.TestCase):
         self.assertEqual (bash ('~'), [ os.environ['HOME'] ])
 
 class HardExpansion(unittest.TestCase):
-    # test cases deemed hard to comply and corner cases
+    # test cases deemed too hard to comply and corner cases
     # (that is, they can be ignored for a while :)
     pass
 
@@ -127,6 +127,9 @@ class CommandExecution (unittest.TestCase):
         # ANS: because echo adds the first one and print adds the second one
         self.assertEqual (self.a.buffer.getvalue (), b'echo: foo\n\n')
 
+    def testExitCode (self):
+        ayrton.main ('')
+
 class MiscTests (unittest.TestCase):
     setUp=    setUpMockStdout
     tearDown= tearDownMockStdout
@@ -134,6 +137,15 @@ class MiscTests (unittest.TestCase):
     def testEnviron (self):
         ayrton.main ('export (TEST_ENV=42); run ("./ayrton/tests/data/test_environ.sh")')
         self.assertEqual (self.a.buffer.getvalue (), b'42\n')
+
+    def testEnvVarAsGlobalVar (self):
+        os.environ['testEnvVarAsLocalVar'] = '42' # envvars are strings only
+        ayrton.main ('print (testEnvVarAsLocalVar)')
+        self.assertEqual (self.a.buffer.getvalue(), b'42\n')
+
+    def testExportSetsGlobalVar (self):
+        ayrton.main ('export (foo=42); print (foo)')
+        self.assertEqual (self.a.buffer.getvalue(), b'42\n')
 
     def testRename (self):
         ayrton.main ('import os.path; print (os.path.split (pwd ())[-1])')
