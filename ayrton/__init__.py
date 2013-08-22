@@ -23,7 +23,7 @@ import sh
 import importlib
 import builtins
 
-__version__= '0.1a'
+__version__= '0.1'
 
 class RunningCommandWrapper (sh.RunningCommand):
     def _handle_exit_code (self, code):
@@ -79,6 +79,7 @@ class cd (object):
 
 def polute (d):
     # these functions will be loaded from each module and put in the globals
+    # tuples (src, dst) renames function src to dst
     builtins= {
         'os': [ ('getcwd', 'pwd'), 'uname', 'chmod', 'chown',
                 'link', 'listdir', 'mkdir', 'remove' ],
@@ -103,6 +104,10 @@ def polute (d):
                 dst= function
 
             d[dst]= getattr (m, src)
+
+    # now envvars
+    for k, v in os.environ.items ():
+        d[k]= v
 
     # particular handling of sys.argv
     d['argv']= sys.argv[:].pop (0) # copy and remove first element, normally ayrton's or Python's path
