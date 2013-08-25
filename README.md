@@ -39,7 +39,7 @@ executed `/bin/echo`?:
 
 With `sh` you could `from sh import echo` and it will create a callable that will
 transparently run `/bin/echo` for you; `ayrton` takes a step further and creates
-the callable on the fly, so you don't have to predeclare it. Another difference
+the callable on the fly, so you don't have to pre-declare it. Another difference
 is that under `sh`, `echo`'s output gets captured by default, which means that
 you don't see it unless you later print it. `ayrton` tries to be more shell-like,
 sending the output where it should. If you want to capture the output, just tell
@@ -109,7 +109,7 @@ environment variables, which after being exported, can be seen by any subprocess
 In Python there are two worlds: Python variables and environment variables.
 `ayrton` again reaches to shell languages, mixing the environment into the globals,
 so envvars can be reached from any place, just like in shell scripts. Notice that
-new variables in `ayrton` (f.i., `foo=42`) are Pytohn variables; therefore they
+new variables in `ayrton` (f.i., `foo=42`) are Python variables; therefore they
 can hold any Python object, but won't be exported. The `export()` function
 gives the same behavior as `bash`'s `export` command, with the caveat that values
 will be automatically converted to `str`.
@@ -118,7 +118,7 @@ will be automatically converted to `str`.
 
 Q: Why bother? Isn't `bash` great?
 
-A: Yes and no. `bash` is very powerful, bith from the CLI and as a language. But
+A: Yes and no. `bash` is very powerful, both from the CLI and as a language. But
 it's clumsy, mainly due to two reasons: parsing lines into commands and their
 arguments, and the methods for preventing overzealous word splitting, which leads
 to several pitfalls, some of them listed [here](http://mywiki.wooledge.org/BashPitfalls));
@@ -129,11 +129,18 @@ different kind of monster, closer to the Thing in «The Thing»).
 
 Q: Why not contribute all this to `sh`?
 
-A: `sh` has a very specific objetive, which is to make easy to capture the
+A: `sh` has a very specific objective, which is to make easy to capture the
 output of commands into a Python script, and even pipe output to other commands
 in a functional/pythonic way. `ayrton` aims to make python+sh behave more like
 `bash` so it's easier for sysadmins to learn and use. Anything that still holds
 `sh`'s objetive will be sent as a patch over time.
+
+Q: `ayrton` is too verbose! I don't want to put extra `()`'s or `'`'s everywhere.
+
+A: Shell languages have evolved from shell interpreters. Command execution are
+their main objective, and its syntax is designed around it. That leads to
+shortcuts that later are more difficult to read. I find Python syntax very
+readable.
 
 # Things to come
 
