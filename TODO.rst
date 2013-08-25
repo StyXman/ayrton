@@ -14,7 +14,8 @@
 * referencing non-existant envvars (FOO) is replaced by a Runner.
 * becareful with buitins, might eclipse valid usages: bash() (exp) blocks /bin/bash
     * add option _exec=Ture for actually executing the binary.
-* check `bash`'s manpage and see what's missing.
+* check ``bash``'s manpage and see what's missing.
+* subprocess + redirection (...) > foo.txt
 
 # If we {have time,are bored}:
 
