@@ -16,6 +16,8 @@
     * add option _exec=Ture for actually executing the binary.
 * check ``bash``'s manpage and see what's missing.
 * subprocess + redirection (...) > foo.txt
+* shift
+* a setting for making references to unkown envvars as in bash.
 
 # If we {have time,are bored}:
 
