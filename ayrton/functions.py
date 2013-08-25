@@ -26,6 +26,13 @@ def export (**kwargs):
         ayrton.runner.globals[k]= str (v)
         ayrton.runner.environ[k]= str (v)
 
+def unset (*args):
+    for k in args:
+        if k in ayrton.runner.environ.keys ():
+            # found, remove it
+            del ayrton.runner.globals[k]
+            del ayrton.runner.environ[k]
+
 def run (path, *args, **kwargs):
     c= ayrton.CommandWrapper._create (path)
     return c (*args, **kwargs)

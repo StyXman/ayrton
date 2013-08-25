@@ -138,6 +138,16 @@ class MiscTests (unittest.TestCase):
         ayrton.main ('export (TEST_ENV=42); run ("./ayrton/tests/data/test_environ.sh")')
         self.assertEqual (self.a.buffer.getvalue (), b'42\n')
 
+    def testUnset (self):
+        ayrton.main ('''export (TEST_ENV=42)
+print (TEST_ENV)
+unset ("TEST_ENV")
+try:
+    TEST_ENV
+except CommandNotFound:
+    print ("yes")''')
+        self.assertEqual (self.a.buffer.getvalue (), b'42\nyes\n')
+
     def testEnvVarAsGlobalVar (self):
         os.environ['testEnvVarAsLocalVar'] = '42' # envvars are strings only
         ayrton.main ('print (testEnvVarAsLocalVar)')

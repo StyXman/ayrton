@@ -49,7 +49,8 @@ class CommandWrapper (sh.Command):
     # this class changes the behaviour of sh.Command
     # so is more shell scripting freindly
     def __call__ (self, *args, **kwargs):
-        if kwargs['_out']==Capture and kwargs.get ('_tty_out', None) is None:
+        if ('_out' in kwargs.keys () and kwargs['_out']==Capture and
+                not '_tty_out' in kwargs.keys ()):
             # for capturing, the default is to not simulate a tty
             kwargs['_tty_out']= False
 
@@ -127,8 +128,9 @@ def polute (d):
                               '_k', '_p', '_r', '_s', '_u', '_w', '_x', '_L',
                               '_N', '_S', '_nt', '_ot' ],
         'ayrton.expansion': [ 'bash', ],
-        'ayrton.functions': [ 'export', 'run', ],
+        'ayrton.functions': [ 'export', 'run', 'unset', ],
         'ayrton': [ 'Capture', 'cd', ],
+        'sh': [ 'CommandNotFound', ],
         }
 
     for module, functions in builtins.items ():
