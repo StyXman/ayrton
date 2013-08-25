@@ -114,6 +114,27 @@ can hold any Python object, but won't be exported. The `export()` function
 gives the same behavior as `bash`'s `export` command, with the caveat that values
 will be automatically converted to `str`.
 
+# FAQ
+
+Q: Why bother? Isn't `bash` great?
+
+A: Yes and no. `bash` is very powerful, bith from the CLI and as a language. But
+it's clumsy, mainly due to two reasons: parsing lines into commands and their
+arguments, and the methods for preventing overzealous word splitting, which leads
+to several pitfalls, some of them listed [here](http://mywiki.wooledge.org/BashPitfalls));
+and poor data manipulation syntax. Most scripts start small, but once they reach
+a certain size/complexity, either they become monsters (resembling a Frankenstein
+built using a Kafkian method) or they are rewritten in Perl (which makes them a
+different kind of monster, closer to the Thing in «The Thing»).
+
+Q: Why not contribute all this to `sh`?
+
+A: `sh` has a very specific objetive, which is to make easy to capture the
+output of commands into a Python script, and even pipe output to other commands
+in a functional/pythonic way. `ayrton` aims to make python+sh behave more like
+`bash` so it's easier for sysadmins to learn and use. Anything that still holds
+`sh`'s objetive will be sent as a patch over time.
+
 # Things to come
 
 See TODO.rst
