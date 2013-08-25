@@ -38,6 +38,23 @@ parser.add_argument ('-V', '--version', action='version', version="%%(prog)s %s"
 # parser.add_argument ('-p', '--capture', help="capture the comands' output à la sh.")
 parser.add_argument ('args', nargs='*', help='arguments to be passed to the script.')
 
-opts= parser.parse_args ()
+found= -1
+ayrton_args= []
+args= sys.argv[:]
+for i, a in enumerate (args):
+    if a in ('-c', '--script', '-f', '--file'):
+        found= i+1
+
+    if found==-1 or i<found:
+        ayrton_args.append (a)
+        sys.argv.pop (0)
+    elif i==found:
+        # this is the parameter which actually has to go to both
+        ayrton_args.append (sys.argv[0])
+
+# anything before found is arguments for ayrton itself
+# anything else goes to the script
+
+opts= parser.parse_args (ayrton_args)
 
 ayrton.main (**vars (opts))

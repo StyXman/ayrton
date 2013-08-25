@@ -49,6 +49,10 @@ class CommandWrapper (sh.Command):
     # this class changes the behaviour of sh.Command
     # so is more shell scripting freindly
     def __call__ (self, *args, **kwargs):
+        if kwargs['_out']==Capture and kwargs.get ('_tty_out', None) is None:
+            # for capturing, the default is to not simulate a tty
+            kwargs['_tty_out']= False
+
         # if _out or _err are not provided, connect them to the original ones
         for std, buf in [('_out', sys.stdout.buffer), ('_err', sys.stderr.buffer)]:
             if not std in kwargs:
@@ -114,10 +118,10 @@ def polute (d):
     # these functions will be loaded from each module and put in the globals
     # tuples (src, dst) renames function src to dst
     builtins= {
-        'os': [ ('getcwd', 'pwd'), 'uname', 'chmod', 'chown',
-                'link', 'listdir', 'mkdir', 'remove' ],
+        'os': [ ('getcwd', 'pwd'), 'uname', 'listdir', ],
+        'os.path': [ 'abspath', 'basename', 'commonprefix', 'dirname',  ],
         'time': [ 'sleep', ],
-        'sys': [ 'exit' ],
+        'sys': [ 'argv', 'exit' ],
 
         'ayrton.file_test': [ '_a', '_b', '_c', '_d', '_e', '_f', '_g', '_h',
                               '_k', '_p', '_r', '_s', '_u', '_w', '_x', '_L',
@@ -141,9 +145,6 @@ def polute (d):
     # now envvars
     for k, v in os.environ.items ():
         d[k]= v
-
-    # particular handling of sys.argv
-    d['argv']= sys.argv[:].pop (0) # copy and remove first element, normally ayrton's or Python's path
 
     # now the IO files
     for std in ('stdin', 'stdout', 'stderr'):
