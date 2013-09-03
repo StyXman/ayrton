@@ -23,8 +23,9 @@ import sh
 import importlib
 import builtins
 import ast
-from ast import Pass, Module, Bytes
+from ast import Pass, Module, Bytes, Name, Store, Load, Assign
 import pickle
+from random import randint
 
 __version__= '0.1'
 
@@ -103,27 +104,58 @@ class Globals (dict):
 
         return ans
 
+def random_var ():
+    v= ''
+    for i in range (4):
+        v+= chr (randint (97, 122))+chr (randint (48, 57))
+
+    return v
+
 class CrazyASTTransformer (ast.NodeTransformer):
 
     def visit_With (self, node):
         call= node.items[0].context_expr
+        # TODO: more checks
         if call.func.id=='ssh':
             # capture the body and put it as the first argument to ssh()
-            # but already pickled; otherwise we need to create an AST for the
-            # call of all the constructors in the body we capture... it's complicated
+            # but within a module, and already pickled;
+            # otherwise we need to create an AST for the call of all the
+            # constructors in the body we capture... it's complicated
             m= Module (body=node.body)
             data= pickle.dumps (m)
-            s= Bytes (s=bytes ("'%s'" % data, 'ascii'))
+            s= Bytes (s=data)
             s.lineno= node.lineno
             s.col_offset= node.col_offset
             call.args.insert (0, s)
-            # make the body a NOOP
-            p= Pass ()
-            # ast.copy_location (p, node.body[0])
-            p.lineno= node.lineno+1
-            p.col_offset= node.col_offset+4
-            node.body= [p]
-            # ast.fix_missing_locations (node)
+
+            # take the «as foo», make it «foo= None; with ssh() as <random>: foo= random»
+            # so we can use foo locally
+            local_var= node.items[0].optional_vars.id
+            remote_var= random_var ()
+
+            # « ... as <random>»
+            node.items[0].optional_vars.id= remote_var
+
+            # TODO: prepend «foo= None»
+
+            # add «foo= <random> to the body
+            last_lineno= node.body[-1].lineno
+            col_offset= node.body[0].col_offset
+
+            target= Name(id=local_var, ctx=Store())
+            target.lineno= last_lineno+1
+            target.col_offset= col_offset
+
+            value= Name(id=remote_var, ctx=Load())
+            value.lineno= last_lineno+1
+            # this is a little AR :)
+            value.col_offset= col_offset+len (local_var)+ len ('= ')
+
+            ass= Assign (targets=[target], value=value)
+            ass.lineno= last_lineno+1
+            ass.col_offset= col_offset
+
+            node.body= [ ass ]
 
         return node
 
