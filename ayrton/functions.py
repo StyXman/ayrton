@@ -23,7 +23,6 @@ import paramiko
 import ast
 import pickle
 from ayrton.expansion import bash
-import traceback
 
 def export (**kwargs):
     for k, v in kwargs.items ():
@@ -42,51 +41,29 @@ def run (path, *args, **kwargs):
     c= ayrton.CommandWrapper._create (path)
     return c (*args, **kwargs)
 
-class BodyNotFoundError (Exception):
-    def __init__ (self, file, lineno, code):
-        self.file= file
-        self.lineno= lineno
-        self.code= code
-
 class ssh (object):
     # TODO: inherit CommandWrapper?
     # TODO: see foo.txt
     "Uses the same arguments as paramiko.SSHClient.connect ()"
-    def __init__ (self, *args, **kwargs):
+    def __init__ (self, code, *args, **kwargs):
+        self.code= code
         self.args= args
         self.kwargs= kwargs
 
     def __enter__ (self):
-        file, line= traceback.extract_stack (limit=2)[0][:2]
-        code= ast.parse (open (file).read ())
+        self.client= paramiko.SSHClient ()
+        self.client.load_host_keys (bash ('~/.ssh/known_hosts')[0])
+        self.client.connect (*self.args, **self.kwargs)
 
-        found= None
-        for node in ast.walk (code):
-            if type (node)==ast.With:
-                if node.items[0].context_expr.func.id=='ssh':
-                    if node.lineno==line:
-                        found= ast.Module(body=node.body)
-                        break
-
-        if found is not None:
-            data= pickle.dumps (found)
-            print (ast.dump (found))
-
-            self.client= paramiko.SSHClient ()
-            self.client.load_host_keys (bash ('~/.ssh/known_hosts')[0])
-            self.client.connect (*self.args, **self.kwargs)
-
-            command= '''python3 -c "import pickle
+        command= '''python3 -c "import pickle
 from ast import Module, Assign, Name, Store, Call, Load, Expr
 import sys
 c= pickle.loads (sys.stdin.buffer.read (%d))
 code= compile (c, 'remote', 'exec')
-exec (code)"''' % len (data)
-            (i, o, e)= self.client.exec_command (command)
-            i.write (data)
-            return (i, o, e)
-        else:
-            raise BodyNotFoundError (file, line, code)
+exec (code)"''' % len (self.code)
+        (i, o, e)= self.client.exec_command (command)
+        i.write (self.code)
+        return (i, o, e)
 
     def __exit__ (self, *args):
         pass

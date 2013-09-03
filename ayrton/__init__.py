@@ -22,6 +22,9 @@ import sys
 import sh
 import importlib
 import builtins
+import ast
+from ast import Pass, Module, Bytes
+import pickle
 
 __version__= '0.1'
 
@@ -39,6 +42,7 @@ class RunningCommandWrapper (sh.RunningCommand):
 # monkey patch sh
 sh.RunningCommand= RunningCommandWrapper
 
+# singleton
 runner= None
 
 # special value to signal that the output should be captured
@@ -99,6 +103,30 @@ class Globals (dict):
 
         return ans
 
+class CrazyASTTransformer (ast.NodeTransformer):
+
+    def visit_With (self, node):
+        call= node.items[0].context_expr
+        if call.func.id=='ssh':
+            # capture the body and put it as the first argument to ssh()
+            # but already pickled; otherwise we need to create an AST for the
+            # call of all the constructors in the body we capture... it's complicated
+            m= Module (body=node.body)
+            data= pickle.dumps (m)
+            s= Bytes (s=bytes ("'%s'" % data, 'ascii'))
+            s.lineno= node.lineno
+            s.col_offset= node.col_offset
+            call.args.insert (0, s)
+            # make the body a NOOP
+            p= Pass ()
+            # ast.copy_location (p, node.body[0])
+            p.lineno= node.lineno+1
+            p.col_offset= node.col_offset+4
+            node.body= [p]
+            # ast.fix_missing_locations (node)
+
+        return node
+
 class Ayrton (object):
     def __init__ (self, script=None, file=None, **kwargs):
         if script is None and file is not None:
@@ -106,7 +134,11 @@ class Ayrton (object):
         else:
             file= 'arg_to_main'
 
-        self.source= compile (script, file, 'exec')
+        code= ast.parse (script)
+        code= CrazyASTTransformer().visit (code)
+
+        self.source= compile (code, file, 'exec')
+
         self.globals= Globals ()
 
         # dict to hold the environ used for executed programs
