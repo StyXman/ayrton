@@ -23,9 +23,8 @@ import sh
 import importlib
 import builtins
 import ast
-from ast import Pass, Module, Bytes, Name, Store, Load, Assign
+from ast import Pass, Module, Bytes
 import pickle
-from random import randint
 
 __version__= '0.1'
 
@@ -104,13 +103,6 @@ class Globals (dict):
 
         return ans
 
-def random_var ():
-    v= ''
-    for i in range (4):
-        v+= chr (randint (97, 122))+chr (randint (48, 57))
-
-    return v
-
 class CrazyASTTransformer (ast.NodeTransformer):
 
     def visit_With (self, node):
@@ -128,34 +120,11 @@ class CrazyASTTransformer (ast.NodeTransformer):
             s.col_offset= node.col_offset
             call.args.insert (0, s)
 
-            # take the «as foo», make it «foo= None; with ssh() as <random>: foo= random»
-            # so we can use foo locally
-            local_var= node.items[0].optional_vars.id
-            remote_var= random_var ()
+            p= Pass ()
+            p.lineno= node.lineno+1
+            p.col_offset= node.col_offset+4
 
-            # « ... as <random>»
-            node.items[0].optional_vars.id= remote_var
-
-            # TODO: prepend «foo= None»
-
-            # add «foo= <random> to the body
-            last_lineno= node.body[-1].lineno
-            col_offset= node.body[0].col_offset
-
-            target= Name(id=local_var, ctx=Store())
-            target.lineno= last_lineno+1
-            target.col_offset= col_offset
-
-            value= Name(id=remote_var, ctx=Load())
-            value.lineno= last_lineno+1
-            # this is a little AR :)
-            value.col_offset= col_offset+len (local_var)+ len ('= ')
-
-            ass= Assign (targets=[target], value=value)
-            ass.lineno= last_lineno+1
-            ass.col_offset= col_offset
-
-            node.body= [ ass ]
+            node.body= [ p ]
 
         return node
 
