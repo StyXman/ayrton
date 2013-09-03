@@ -12,10 +12,8 @@
 16:19 < StucKman> sobre todo si derepente a un comando en particular lo podés luego implementar como una función que en vez del output en texto te devuelve una estructura mas piola de
                   usar
 16:19 < StucKman> hmmm
-16:22 -!- exos_ [~quassel@56-11-245-190.fibertel.com.ar] has joined #pyar
 16:23 < rbistolfi> complicado de generalizar eso
 16:24 < StucKman> rbistolfi: uhm?
-16:25 -!- exos [~quassel@56-11-245-190.fibertel.com.ar] has quit [Ping timeout: 248 seconds]
 16:26 < rbistolfi> digo, para un comando en particular ya se puede hacer no?
 16:27 < facundobatista> rbistolfi, StucKman, what about...
 16:27 < facundobatista> sh = Sh()
@@ -32,7 +30,6 @@
 16:30 < StucKman> hmmm
 16:31 < facundobatista> StucKman, el tema ahí es lo que dice rbistolfi, un perno para generalizar
 16:31 < facundobatista> necesitás código para wc, otro para ls, otro para grep, otro para find, otro para...
-16:31 -!- zoid_ [~awainer@186.153.145.242] has joined #pyar
 16:31 < rbistolfi> claro, si es para wc nomas, lo haces con popen
 16:31 < StucKman> el único tema es que derepente todo lo que sea ejecución de comandos pasa a ser un ciudadano de segunda
 16:32 < StucKman> facundobatista: of course you do :)
@@ -82,7 +79,6 @@
 14:55 < StucKman_> pero eso te lleva a
 14:56 < StucKman_> sh.cp(od(v=True, r=True, ...))
 14:56 < StucKman_> o s/os/_/ o algo por el estilo
-14:56 -!- nessita [~nessita@host218.190-136-104.telecom.net.ar] has quit [Quit: leaving]
 14:57 < StucKman_> y aún así tengo el tema de dónde van los parámetros sin nombre
 14:57 < StucKman_> en eso me caga feo python :(
 14:57 < StucKman_> toi >< así de ponerme a hacear esa parte
@@ -92,7 +88,6 @@
 14:59 < rbistolfi> StucKman_: si acepta *args y *kwargs y haces un helper para manejarlos ?
 14:59 < rbistolfi> a mi se me aparecio generando html, en casos como <input type="radio" checked ...
 14:59 < StucKman_> rbistolfi: ok, pero qué hacés con los posicionales?
-14:59 -!- leroy [~leroy@189.26.236.27.static.gvt.net.br] has quit [Read error: No route to host]
 14:59 < facundobatista> StucKman_, en el momento en que entrás en "miren que lindo que hice pero no le anda a nadie porque tienen que recompilar python", perdiste
 14:59 < StucKman_> c\omo le decís dónde van?
 14:59 < StucKman_> facundobatista: yes, I know
@@ -112,8 +107,6 @@
 15:04 < facundobatista> rbistolfi, no entiendo, decís que a find le importa el orden de los parámetros?
 15:04 < StucKman_> facundobatista: of course
 15:04 < facundobatista> StucKman_, ejemplo?
-15:04 -!- jenri [~emaldonad@190.12.102.162] has joined #pyar
-15:05 -!- jenri [~emaldonad@190.12.102.162] has left #pyar []
 15:05 < StucKman_> facundobatista: find <dir> <options>
 15:05 < rbistolfi> facundobatista: find te exige que le pases el parametro obligatorio antes que las opciones
 15:05 < StucKman_> y como options son filtros, sí importan el orden
@@ -249,30 +242,15 @@
 15:32  * StucKman_ vuelve a laburar
 15:32 < rbistolfi> lo peor es que el 10% es una suposicion, anda saber cual es el numero real
 15:32 < rbistolfi> capaz es altisimo
-15:33 -!- kobain [~kobian@unaffiliated/kobain] has joined #pyar
-15:39 -!- mrjohns [~neal@unaffiliated/mrjohns] has joined #pyar
-15:41 -!- jpggimenez [~jpggimene@200.107.81.191] has quit [Ping timeout: 246 seconds]
-15:44 -!- nessita [~nessita@host218.190-136-104.telecom.net.ar] has joined #pyar
-15:44 -!- godlike [~godlike@5.39.12.2] has joined #pyar
 15:49 < StucKman_> http://www.python.org/dev/peps/pep-0306/
 15:49 < lalita> StucKman_: [#6289] PEP 306 -- How to Change Python's Grammar
 15:49  * StucKman_ hace jueguitos con las cejas :)
-15:49 -!- gabriel__ [~gabriel@200.123.184.5] has joined #pyar
-15:49 -!- gabriel__ is now known as gbytz
 15:52 < rbistolfi> f(a, (b,3), c)
-15:52 -!- tuute [~tuute@grulic/adm/toote] has joined #pyar
 15:53 < StucKman_> rbistolfi: hmmm
 15:54 < StucKman_> pero a, b y c son nombres de parámetros, o variables cuyos valores tomar?
 15:56 < StucKman_> wowo, re cortita la grmática de python
 16:00 < rbistolfi> StucKman_: nombres, -a --b=3, -c
-16:01 -!- pancho_jay [~pancho_ja@181.164.141.181] has joined #pyar
-16:02 -!- carpediem [~Alberto@190.173.18.11] has joined #pyar
-16:02 -!- carpediem [~Alberto@190.173.18.11] has quit [Changing host]
-16:02 -!- carpediem [~Alberto@unaffiliated/carpediem] has joined #pyar
-16:02 -!- luciano [~luciano@dhcp-178041.eduroam.chalmers.se] has joined #pyar
 16:05 < rbistolfi> StucKman_: hace poco se hablo de un coso para hacer macros ala lisp en python
-16:06 -!- sorin_ [~sorin@201.250.59.22] has joined #pyar
-16:08 -!- rbistolf` [~user@190.48.125.1] has joined #pyar
 16:08 < StucKman_> no sé si alguna vez le garré la vuelta a las macro de lisp :-P
 
 14:16 < StucKman> marianoguerra: una vez dijiste que habías hecho un módulo maaaasomenos de la onda de sh, pero donde también podías hacer cosas como:
@@ -314,3 +292,70 @@
 14:40 < StucKman> yo mal que mal "sólo"estoy extendiendo sh*
 14:41 < StucKman> y si me voy de mambo, termino haciendo chanchadas como la de arriba y/o definiendo una sintaxis propia
 14:42 < StucKman> marianoguerra: also, output puede ser stdout y?o stderr, dependiendo de cómo dedirigiste
+
+10:57 < marianoguerra> StucKman: porque globals y no locals o en el stack frame?
+10:58 < StucKman> marianoguerra: porque es mas fácil de implementar y porque es el behaviour que quiero
+10:58 < StucKman> (que ls() sea una función accesible desde cualquier lado)
+10:58 < marianoguerra> y para que queres setear globales?
+10:58 < marianoguerra> ah, no queres que hagan from ayrton import *?
+10:59 < StucKman> marianoguerra: exacto
+10:59 < marianoguerra> StucKman: cual es la necesidad?
+10:59 < StucKman> marianoguerra: simpler for the user
+10:59 < marianoguerra> incluso podes hacer algo como un shebang "#/usr/bin/env ayrton" que le agregue el import arriba y lo corra
+10:59 < marianoguerra> #!
+11:01 < StucKman> marianoguerra: qué diferencia hace entre hacer el import mágicamente y hacerlo por el lado de los globals?
+11:02 < StucKman> (además de que es más complejo de hacer)
+11:11 < StucKman> ah, el AST / parser tb me puede servir para implementar |
+11:12 < StucKman> StyXman: vos anotá todo esto, no?
+11:23 < marianoguerra> StucKman: porque llenar globals con giladas por atras con exec es una chanchada, agregar un import es mucho mas limpio
+11:23 < StucKman> marianoguerra: I know
+11:24 < marianoguerra> ademas te da la ventaja que la gente con suficiente energia para agregar una linea a su script puede usarlo sin que le llenes los globals de giladas
+11:24 < StucKman> desde el punto de vista de python es horrible
+11:24 < StucKman> desde el punto de vista de bash, es mas normal
+11:28 < StucKman> de hecho, estoy en el punto de decidir qué funciones importar de la stdlib de python al global
+11:28 < StucKman> no son muchas
+11:28 < StucKman> argv, exit, uname, algunas de os.path...
+11:29 < StucKman> https://github.com/StyXman/ayrton/blob/develop/ayrton/__init__.py#L118
+11:29 < lalita> StucKman: [#6549] ayrton/ayrton/__init__.py at develop · StyXman/ayrton · GitHub
+
+14:15 < StucKman> cómo voy a atener que romper el ast para implementar with ssh () :)
+14:15 < StucKman> hay un detalle bellísimo
+14:15 < StucKman> si hago
+14:16 < StucKman> with ssh ():
+14:16 < StucKman>   print ('foo!')
+14:16 < StucKman> puedo conseguir bien el print, encodearlo, mandarlo por ssh y ejecutarlo remotamente
+14:16 < StucKman> pero
+14:16 < StucKman> también se ejecuta localmente :)
+15:06 < marianoguerra> StucKman: import hooks
+15:07 < marianoguerra> cuando lo importas buscas todos los with que usan functiones de tu lib y convertis el cuerpo del with a un noop o a lo de mandar el codigo
+15:07 < StucKman> no, esa parte ya la tengo
+15:08 < Darni> todos esos hacks que he visto con with son por no tener block statements como first order values
+15:08 < StucKman> de hecho, ahora que lo mencionás, la parte de búsqueda del with adecuado la voy a tener que sacar a una función
+15:08 < StucKman> Darni: +1
+15:09 < Darni> StucKman: y si en vez de un with usas un cuerpo de funcion y un decorador?
+15:09 < Darni> @ssh
+15:09 < StucKman> es tan bello poder hacer negradas de este estilo :)
+15:09 < Darni> def remote(): ... blah ...
+15:09 < StucKman> Darni: si, eso estaba pensando mas temprano
+15:10 < Darni> y que el decorador serialize la funcion, llame remotamente
+15:10 < StucKman> no sería un decorador, pero sería algo por el estilo
+15:10 < Darni> es mas, hasta puede devolver un return code
+15:10 < Darni> no, lo que yo digo es un decorador
+15:10 < Darni> solo que no lo usas como decorador
+15:10 < StucKman> pero dado que quiero proveer un lenguaje lo más sysadmin friendly posible, prefiero mantenerme alejado de cosas avanzadas de pythonn
+15:11 < StucKman> (aunque se podría alegar que with es suficientemente avanzado)
+15:11 < Darni> bueno, pero al fnal es una construct magica, tanto como tu with
+15:11 < StucKman> clárh
+15:11 < StucKman> además, todavía no está clara la API de ese with
+15:11 < Darni> en cualquiera de los dos casos, ademas estas usando el feature distinto a lo que estuvo planeado
+15:12 < StucKman> marianoguerra: no veo cómo los hooks serían muy distintos de jugar con ast
+15:12 < StucKman> al fin y al cabo, ya estoy compilando y ejecutando el código yo
+15:13 < StucKman> https://github.com/StyXman/ayrton/blob/develop/ayrton/__init__.py#L102
+15:13 < lalita> [#6549] https://github.com/StyXman/ayrton/blob/develop/ayrton/__init__.py : ayrton/ayrton/__init__.py at develop · StyXman/ayrton · GitHub [by StucKman, 2013-08-26,
+                09:31:28]
+15:14 < StucKman> Darni: el tema de forzar al usuario a hacer una función es la que no me agrada tanto
+15:27 < StucKman> marianoguerra: lo que voy a hacer es reemplazar el cuerpo por algo que almacene los streams
+15:27 < StucKman> with ssh (streams, ...): ...
+15:27 < StucKman> se convierte en
+15:28 < StucKman> with ssh (...) as foo: streams= foo
+15:28 < StucKman> pero tengo que ver eso porque hay varias cosas que romo a nivel consistncia
