@@ -74,17 +74,6 @@ class CommandWrapper (sh.Command):
 
         return super ().__call__ (*args, **kwargs)
 
-class cd (object):
-    def __init__ (self, dir):
-        self.old_dir= os.getcwd ()
-        os.chdir (dir)
-
-    def __enter__ (self):
-        pass
-
-    def __exit__ (self, *args):
-        os.chdir (self.old_dir)
-
 class Globals (dict):
     def __init__ (self):
         super ().__init__ ()
