@@ -104,6 +104,14 @@ class Globals (dict):
         return ans
 
 class CrazyASTTransformer (ast.NodeTransformer):
+    def __init__ (self, globals):
+        super ().__init__ ()
+        self.names= set ([ x for x in globals.keys ()
+                             if x not in os.environ and
+                                x not in ('stdin', 'stdout', 'stderr') ])
+        print (self.names)
+        self.execs= set ()
+        self.inCall= False
 
     def visit_With (self, node):
         call= node.items[0].context_expr
@@ -128,6 +136,39 @@ class CrazyASTTransformer (ast.NodeTransformer):
 
         return node
 
+    def visit_Import (self, node):
+        # Import(names=[alias(name='foo', asname=None)])
+        for alias in node.names:
+            if alias.asname is None:
+                name= alias.name
+            else:
+                name= alias.asname
+
+        print ('got Name(%s)' % name)
+        self.names.add (name)
+        return node
+
+    # same thing
+    visit_ImportFrom= visit_Import
+
+    def visit_Name (self, node):
+        name= node.id
+        print ('got Name(%s)' % name)
+        if not self.inCall:
+            self.names.add (name)
+
+        return node
+
+# In [2]: ast.dump (ast.parse ('cd (foo) | bar (baz)'))
+#Out[2]: "Module(body=[Expr(value=BinOp(
+    #left=Call(
+        #func=Name(id='cd', ctx=Load()),
+        #args=[Name(id='foo', ctx=Load())], keywords=[], starargs=None, kwargs=None),
+    #op=BitOr(),
+    #right=Call(
+        #func=Name(id='bar', ctx=Load()),
+        #args=[Name(id='baz', ctx=Load())], keywords=[], starargs=None, kwargs=None)))])"
+
 class Ayrton (object):
     def __init__ (self, script=None, file=None, **kwargs):
         if script is None and file is not None:
@@ -135,18 +176,19 @@ class Ayrton (object):
         else:
             file= 'arg_to_main'
 
+        self.globals= Globals ()
+
         code= ast.parse (script)
-        code= CrazyASTTransformer().visit (code)
+        code= CrazyASTTransformer(self.globals).visit (code)
 
         self.source= compile (code, file, 'exec')
-
-        self.globals= Globals ()
 
         # dict to hold the environ used for executed programs
         self.environ= os.environ.copy ()
 
     def run (self):
-        exec (self.source, self.globals)
+        # exec (self.source, self.globals)
+        pass
 
 def polute (d):
     # these functions will be loaded from each module and put in the globals
