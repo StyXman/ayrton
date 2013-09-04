@@ -20,9 +20,18 @@
 import ayrton
 import os
 import paramiko
-import ast
-import pickle
 from ayrton.expansion import bash
+
+class cd (object):
+    def __init__ (self, dir):
+        self.old_dir= os.getcwd ()
+        os.chdir (dir)
+
+    def __enter__ (self):
+        pass
+
+    def __exit__ (self, *args):
+        os.chdir (self.old_dir)
 
 def export (**kwargs):
     for k, v in kwargs.items ():
