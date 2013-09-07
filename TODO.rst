@@ -11,6 +11,7 @@
     * https://github.com/amoffat/sh/issues/66
 * document
 * enable tracing
+  * see pdb's source
 * referencing non-existant envvars (FOO) is replaced by a Runner.
 * becareful with buitins, might eclipse valid usages: bash() (exp) blocks /bin/bash
     * add option _exec=Ture for actually executing the binary.
@@ -18,6 +19,7 @@
 * subprocess + redirection (...) > foo.txt
 * shift
 * a setting for making references to unkown envvars as in bash.
+* trap?
 
 # If we {have time,are bored}:
 
