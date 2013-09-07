@@ -21,6 +21,9 @@ import ayrton
 import os
 import paramiko
 from ayrton.expansion import bash
+import pickle
+
+# NOTE: all this code is excuted in the script's environment
 
 class cd (object):
     def __init__ (self, dir):
@@ -35,16 +38,8 @@ class cd (object):
 
 def export (**kwargs):
     for k, v in kwargs.items ():
-        # NOTE: this is quasi ugly
-        ayrton.runner.globals[k]= str (v)
-        ayrton.runner.environ[k]= str (v)
-
-def unset (*args):
-    for k in args:
-        if k in ayrton.runner.environ.keys ():
-            # found, remove it
-            del ayrton.runner.globals[k]
-            del ayrton.runner.environ[k]
+        ayrton.runner.environ.globals[k]= str (v)
+        ayrton.runner.environ.os_environ[k]= str (v)
 
 def run (path, *args, **kwargs):
     c= ayrton.CommandWrapper._create (path)
@@ -63,16 +58,27 @@ class ssh (object):
         self.client= paramiko.SSHClient ()
         self.client.load_host_keys (bash ('~/.ssh/known_hosts')[0])
         self.client.connect (*self.args, **self.kwargs)
+        # get the locals from the runtime
+        local_env= pickle.dumps (ayrton.runner.environ.locals)
 
         command= '''python3 -c "import pickle
 from ast import Module, Assign, Name, Store, Call, Load, Expr
 import sys
 c= pickle.loads (sys.stdin.buffer.read (%d))
 code= compile (c, 'remote', 'exec')
-exec (code)"''' % len (self.code)
+l= pickle.loads (sys.stdin.buffer.read (%d))
+exec (code, {}, l)"''' % (len (self.code), len (local_env))
         (i, o, e)= self.client.exec_command (command)
         i.write (self.code)
+        i.write (local_env)
         return (i, o, e)
 
     def __exit__ (self, *args):
         pass
+
+def unset (*args):
+    for k in args:
+        if k in ayrton.runner.environ.globals.keys ():
+            # found, remove it
+            del ayrton.runner.environ.globals[k]
+            del ayrton.runner.environ.os_environ[k]
