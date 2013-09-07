@@ -1,22 +1,40 @@
 ayrton - a shell like language with the power of python.
 
-Thanks to:
-
-`rbilstolfi`, `marianoguerra`, `facundobatista`, `ralsina`, `nessita` for unit
-testing support, `Darni` for pointing me to
-[nvie's workflow for `git`](http://nvie.com/posts/a-successful-git-branching-model/),
-Andrew Moffat for [`sh`](http://amoffat.github.io/sh/) and Richard Jones for
-this talk (thanks again, `ralsina`), even when I ended up doing something
-different:
-
-[Don't do this](http://www.youtube.com/watch?feature=player_embedded&v=H2yfXnUb1S4)
-
 This code is released under the [GPLv3](http://www.gnu.org/licenses/gpl-3.0.html).
 If you're unsure on how this apply to your interpreted programs, check
 [this entry in their FAQ](https://www.gnu.org/licenses/gpl-faq.html#IfInterpreterIsGPL).
 
 Currently `ayrton` is under heavy development, so if you're following it and
 clone it (there are no releases yet), use the branch `develop`.
+
+# Instalation
+
+`ayrton` depends on three pieces of code. Python is the most obvious; it has been
+developed in its version 3.3. Next is [`sh`](http://amoffat.github.io/sh/), version
+1.08. The last item is more complicated. It uses
+[`paramiko`](https://github.com/paramiko/paramiko), but as this project tries to
+be compatible with lower versions of Python2, there's no official port for Python3.
+We used an [unofficial port](http://github.com/nischu7/paramiko) that works pretty
+well so far. As Python3 has not completely caught yet, most probably even less
+in stable server environments, we plan to support at least Python2.7.
+
+So, in short:
+
+    # apt-get install python3
+
+    # git clone https://github.com/amoffat/sh.git
+    # cd sh
+    # python3 setup.py install
+    # cd ..
+
+    # git clone https://github.com/nischu7/paramiko.git
+    # cd paramiko
+    # python3 setup.py install
+    # cd ..
+
+    # git clone https://github.com/StyXman/ayrton.git
+    # cd ayrton
+    # python3 setup.py install
 
 # First steps
 
@@ -114,6 +132,37 @@ can hold any Python object, but won't be exported. The `export()` function
 gives the same behavior as `bash`'s `export` command, with the caveat that values
 will be automatically converted to `str`.
 
+The cherry on top of the cake, or more like the melon of top of the cupcake, is
+(semi) transparent remote execution. This is achieved with the following construct:
+
+    a= 42
+    with ssh ('localhost') as streams:
+        foo= input ()
+        print (foo)
+        # we can also access variables already in the scope
+        # even when we're actually running in another machine
+        print (a)
+
+    # streams returns 3 streams: stdin, stdout
+    (i, o, e)= streams
+    # notice that we must include the \n at the end so input
+    # and that you must transmit bytes only, no strings
+    i.write (b'bar\n')
+    print (o.readlines ())
+
+
+The body of the `with ssh(): ...` statement is actually executed in a remote
+machine after connecting via `ssh`. The `ssh()` context manager accepts the
+same parameters as `paramiko`'s
+[`SSHClient.connect()`](http://docs.paramiko.org/paramiko.SSHClient-class.html#connect)
+method.
+
+The implementation of this construct limits a bit what can be done in its body.
+The code is converted into a AST subtree and the local environment is pickled.
+If the latter fails the construct fails and your script will finish. We're
+checking its limitations to see where we can draw the line of what will be
+possible or not.
+
 # FAQ
 
 Q: Why bother? Isn't `bash` great?
@@ -141,6 +190,17 @@ A: Shell languages have evolved from shell interpreters. Command execution are
 their main objective, and its syntax is designed around it. That leads to
 shortcuts that later are more difficult to read. I find Python syntax very
 readable.
+
+# Thanks to:
+
+`rbilstolfi`, `marianoguerra`, `facundobatista`, `ralsina`, `nessita` for unit
+testing support, `Darni` for pointing me to
+[nvie's workflow for `git`](http://nvie.com/posts/a-successful-git-branching-model/),
+Andrew Moffat for [`sh`](http://amoffat.github.io/sh/) and Richard Jones for
+this talk (thanks again, `ralsina`), even when I ended up doing something
+different:
+
+[Don't do this](http://www.youtube.com/watch?feature=player_embedded&v=H2yfXnUb1S4)
 
 # Things to come
 
