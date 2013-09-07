@@ -24,7 +24,7 @@ import importlib
 import builtins
 import ast
 from ast import Pass, Module, Bytes, copy_location, Call, Name, Load
-from ast import fix_missing_locations
+from ast import fix_missing_locations, Import, alias
 import pickle
 
 __version__= '0.1'
@@ -71,27 +71,41 @@ class CommandWrapper (sh.Command):
 
         # mess with the environ
         global runner
-        kwargs['_env']= runner.environ
+        kwargs['_env']= runner.environ.os_environ
 
         return super ().__call__ (*args, **kwargs)
 
-class Globals (dict):
+class Environment (object):
     def __init__ (self):
         super ().__init__ ()
-        # TODO: this is ugly
-        polute (self)
+        self.locals= {}
+        self.globals= {}
+        self.python_builtins= builtins.__dict__.copy ()
+        self.ayrton_builtins= {}
+        polute (self.ayrton_builtins)
+        self.os_environ= os.environ.copy ()
 
     def __getitem__ (self, k):
-        try:
-            ans= getattr (builtins, k)
-        except AttributeError:
+        strikes= 0
+        for d in (self.locals, self.globals, self.os_environ,
+                self.python_builtins, self.ayrton_builtins):
             try:
-                ans= super ().__getitem__ (k)
+                ans= d[k]
             except KeyError:
+                strikes+= 1
 
-                ans= CommandWrapper._create (k)
+        if strikes==5:
+            # the name was not found in any of the dicts
+            # create a command for it
+            ans= CommandWrapper._create (k)
 
         return ans
+
+    def __setitem__ (self, k, v):
+        self.locals[k]= v
+
+    def __iter__ (self):
+        return self.locals.__iter__ ()
 
 class CrazyASTTransformer (ast.NodeTransformer):
 
@@ -104,20 +118,12 @@ class CrazyASTTransformer (ast.NodeTransformer):
             # otherwise we need to create an AST for the call of all the
             # constructors in the body we capture... it's complicated
             m= Module (body=node.body)
+
             data= pickle.dumps (m)
             s= Bytes (s=data)
             s.lineno= node.lineno
             s.col_offset= node.col_offset
             call.args.insert (0, s)
-
-            # add a call to locals() as the second argument to ssh()
-            # this way when we call ssh(), we capture the current environment
-            # and we cans send it and use it as part of the remote environment
-            l= Call(func=Name(id='locals', ctx=Load()), args=[], keywords=[],
-                    starargs=None, kwargs=None)
-            copy_location (l, node)
-            fix_missing_locations (l)
-            call.args.insert (1, l)
 
             p= Pass ()
             p.lineno= node.lineno+1
@@ -136,17 +142,11 @@ class Ayrton (object):
 
         code= ast.parse (script)
         code= CrazyASTTransformer().visit (code)
-
         self.source= compile (code, file, 'exec')
-
-        self.globals= Globals ()
-        self.locals= {}
-
-        # dict to hold the environ used for executed programs
-        self.environ= os.environ.copy ()
+        self.environ= Environment ()
 
     def run (self):
-        exec (self.source, self.globals, self.locals)
+        exec (self.source, self.environ.globals, self.environ)
 
 def polute (d):
     # these functions will be loaded from each module and put in the globals
@@ -176,10 +176,6 @@ def polute (d):
                 dst= function
 
             d[dst]= getattr (m, src)
-
-    # now envvars
-    for k, v in os.environ.items ():
-        d[k]= v
 
     # now the IO files
     for std in ('stdin', 'stdout', 'stderr'):
