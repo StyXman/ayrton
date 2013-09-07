@@ -21,6 +21,9 @@ import ayrton
 import os
 import paramiko
 from ayrton.expansion import bash
+import pickle
+
+# NOTE: all this code is excuted in the script's environment
 
 class cd (object):
     def __init__ (self, dir):
@@ -54,8 +57,9 @@ class ssh (object):
     # TODO: inherit CommandWrapper?
     # TODO: see foo.txt
     "Uses the same arguments as paramiko.SSHClient.connect ()"
-    def __init__ (self, code, *args, **kwargs):
+    def __init__ (self, code, local_env, *args, **kwargs):
         self.code= code
+        self.local_env= pickle.dumps (local_env)
         self.args= args
         self.kwargs= kwargs
 
@@ -69,9 +73,11 @@ from ast import Module, Assign, Name, Store, Call, Load, Expr
 import sys
 c= pickle.loads (sys.stdin.buffer.read (%d))
 code= compile (c, 'remote', 'exec')
-exec (code)"''' % len (self.code)
+l= pickle.loads (sys.stdin.buffer.read (%d))
+exec (code, {}, l)"''' % (len (self.code), len (self.local_env))
         (i, o, e)= self.client.exec_command (command)
         i.write (self.code)
+        i.write (self.local_env)
         return (i, o, e)
 
     def __exit__ (self, *args):

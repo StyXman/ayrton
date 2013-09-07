@@ -23,7 +23,8 @@ import sh
 import importlib
 import builtins
 import ast
-from ast import Pass, Module, Bytes
+from ast import Pass, Module, Bytes, copy_location, Call, Name, Load
+from ast import fix_missing_locations
 import pickle
 
 __version__= '0.1'
@@ -109,6 +110,15 @@ class CrazyASTTransformer (ast.NodeTransformer):
             s.col_offset= node.col_offset
             call.args.insert (0, s)
 
+            # add a call to locals() as the second argument to ssh()
+            # this way when we call ssh(), we capture the current environment
+            # and we cans send it and use it as part of the remote environment
+            l= Call(func=Name(id='locals', ctx=Load()), args=[], keywords=[],
+                    starargs=None, kwargs=None)
+            copy_location (l, node)
+            fix_missing_locations (l)
+            call.args.insert (1, l)
+
             p= Pass ()
             p.lineno= node.lineno+1
             p.col_offset= node.col_offset+4
@@ -130,12 +140,13 @@ class Ayrton (object):
         self.source= compile (code, file, 'exec')
 
         self.globals= Globals ()
+        self.locals= {}
 
         # dict to hold the environ used for executed programs
         self.environ= os.environ.copy ()
 
     def run (self):
-        exec (self.source, self.globals)
+        exec (self.source, self.globals, self.locals)
 
 def polute (d):
     # these functions will be loaded from each module and put in the globals
