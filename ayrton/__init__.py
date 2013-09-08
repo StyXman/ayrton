@@ -143,7 +143,7 @@ class CrazyASTTransformer (ast.NodeTransformer):
         return node
 
 class Ayrton (object):
-    def __init__ (self, script=None, file=None, code=None, globals=None,
+    def __init__ (self, script=None, file=None, tree=None, globals=None,
                   locals=None, **kwargs):
         if script is None and file is not None:
             script= open (file).read ()
@@ -151,10 +151,10 @@ class Ayrton (object):
             file= 'arg_to_main'
 
         if script is not None:
-            code= ast.parse (script)
-            code= CrazyASTTransformer().visit (code)
+            tree= ast.parse (script)
+            tree= CrazyASTTransformer().visit (tree)
 
-        self.source= compile (code, file, 'exec')
+        self.source= compile (tree, file, 'exec')
         self.environ= Environment (globals, locals)
 
     def run (self):
@@ -194,6 +194,7 @@ def polute (d):
         d[std]= getattr (sys, std).buffer
 
 def run (code, globals, locals):
+    global runner
     runner= Ayrton (code=code, globals=globals, locals=locals)
     runner.run ()
 
