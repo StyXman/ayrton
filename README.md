@@ -174,6 +174,8 @@ If the latter fails the construct fails and your script will finish. We're
 checking its limitations to see where we can draw the line of what will be
 possible or not.
 
+Here you'll find [the docs](http://www.grulic.org.ar/~mdione/projects/ayrton/).
+
 # FAQ
 
 Q: Why bother? Isn't `bash` great?
