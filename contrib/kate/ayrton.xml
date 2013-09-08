@@ -88,7 +88,7 @@
 			<item> exec </item>
 			<item> execfile </item>
 			<item> exit </item>
-			<item> file </item>
+			<item> export </item>
 			<item> filter </item>
 			<item> float </item>
 			<item> format </item>
@@ -135,6 +135,7 @@
 			<item> round </item>
 			<item> set </item>
 			<item> setattr </item>
+			<item> ssh </item>
 			<item> sleep </item>
 			<item> slice </item>
 			<item> sorted </item>
@@ -147,6 +148,7 @@
 			<item> uname </item>
 			<item> unichr </item>
 			<item> unicode </item>
+			<item> unset </item>
 			<item> vars </item>
 			<item> xrange </item>
 			<item> zip </item>
@@ -164,11 +166,8 @@
 			<item> stdin </item>
 			<item> stdout </item>
 			<item> stderr </item>
-		</list>
-		<list name="bindings">
-			<item> SIGNAL </item>
-			<item> SLOT </item>
-			<item> connect </item>
+			<item> Capture </item>
+			<item> path </item>
 		</list>
 		<list name="overloaders">
 			<item>__new__</item>
@@ -266,6 +265,7 @@
 			<item>AssertionError</item>
 			<item>AttributeError</item>
 			<item>BaseException</item>
+			<item>CommandNotFound</item>
 			<item>DeprecationWarning</item>
 			<item>EnvironmentError</item>
 			<item>EOFError</item>

@@ -1,0 +1,4 @@
+#! /usr/bin/env ayrton -f
+
+a= echo ("foo", _out=Capture)
+print ("echo: %s" % a)

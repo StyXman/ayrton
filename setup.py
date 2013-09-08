@@ -16,4 +16,16 @@ setup (
     url= 'https://github.com/StyXman/ayrton',
     packages= [ 'ayrton' ],
     scripts= [ 'bin/ayrton' ],
+    license= 'GPLv3',
+    classifiers= [
+        'Development Status :: 3 - Alpha',
+        'Environment :: Console',
+        'Intended Audience :: Developers',
+        'Intended Audience :: System Administrators',
+        'License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)',
+        'Operating System :: POSIX',
+        'Programming Language :: Python :: 3',
+        'Topic :: System',
+        'Topic :: System :: Systems Administration',
+        ],
     )

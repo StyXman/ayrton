@@ -1,0 +1,361 @@
+16:14 < rbistolfi> StyXman_: viste sh.py (creo que se llamaba asi)
+16:15 < rbistolfi> yep, http://amoffat.github.io/sh/
+16:15 < lalita> rbistolfi: [#6208] sh 1.08 — sh v1.08 documentation
+16:15 < ralsina_> StucKman: iterpipes esta piola para "shellscriptear en python"
+16:16 < StucKman> rbistolfi: sh se quiere hacer el banana, no me gusta
+16:17 < rbistolfi> yeah
+16:17 < StucKman> bah
+16:17 < rbistolfi> es como muy magico
+16:17 < StucKman> debería pegarle otra mirada
+16:18 < StucKman> porque ls () | wc ('-l') no me suena muy feo
+16:18 < StucKman> si se pueden hacer cosas así, hay que pensárselo
+16:19 < StucKman> sobre todo si derepente a un comando en particular lo podés luego implementar como una función que en vez del output en texto te devuelve una estructura mas piola de
+                  usar
+16:19 < StucKman> hmmm
+16:23 < rbistolfi> complicado de generalizar eso
+16:24 < StucKman> rbistolfi: uhm?
+16:26 < rbistolfi> digo, para un comando en particular ya se puede hacer no?
+16:27 < facundobatista> rbistolfi, StucKman, what about...
+16:27 < facundobatista> sh = Sh()
+16:28 < facundobatista> a = sh("ls") | sh("grep foo") | sh("wc -l")
+16:28 < StucKman> rbistolfi: sigo sin entenderte
+16:28 < facundobatista> ?
+16:28 < StucKman> facundobatista: fuchi :-P
+16:28 < facundobatista> StucKman, qué parte?
+16:28 < StucKman> bah, puede ser
+
+16:29 < StucKman> pero me interesa el hecho de que derepente a wc() la puedas implementar como una función que devuelve una terna en vez de un string con tres enteros
+16:30 < StucKman> es decir, (1, 2, 3) en vez de "1 2 3"
+16:30 < StucKman> con sh() se podría...
+16:30 < StucKman> hmmm
+16:31 < facundobatista> StucKman, el tema ahí es lo que dice rbistolfi, un perno para generalizar
+16:31 < facundobatista> necesitás código para wc, otro para ls, otro para grep, otro para find, otro para...
+16:31 < rbistolfi> claro, si es para wc nomas, lo haces con popen
+16:31 < StucKman> el único tema es que derepente todo lo que sea ejecución de comandos pasa a ser un ciudadano de segunda
+16:32 < StucKman> facundobatista: of course you do :)
+16:32 < StucKman> pero la mayoría no necesitan
+16:32 < StucKman> grep no necesita, ls capaz sea overkill, etc
+16:32 < StucKman> find tampoco
+16:32 < StucKman> pero wc es un caso simple, ifconfig ya me parece mas interesante
+16:33 < StucKman> y no, no son generalizables, cada uno es su propio quilombo
+16:34 < StucKman> por ejemplo, ls  a secas, mejor andá por el lado de os.readdir()
+16:34 < StucKman> ls -l, ok, pero es readdir+stat
+16:34 < StucKman> y así
+16:34 < Zzzoom> StucKman: por gente como vos existe emacs
+16:34 < facundobatista> es que si vas a hacer un código para find, que acepte los parámetros
+16:34 < StucKman> Zzzoom: hehehehe
+16:34 < facundobatista> como métodos
+16:34 < facundobatista> "no escala"
+16:35 < StucKman> facundobatista: como métodos?
+16:35 < StucKman> find() es "una función"
+16:35 < StucKman> habrá que ver
+16:35 < facundobatista> StucKman, -exec, etc
+16:35 < facundobatista> anyway
+16:35 < facundobatista> me fui
+16:35 < facundobatista> ci parliamo dopo
+16:36 < rbistolfi> o/
+16:36 < StucKman> facundobatista: find (". -name foo.cpp") o find ([".", -"-name", foo]), donde foo= "foo.cpp" :)
+16:37 < facundobatista> StucKman, Find(".").name("foo.cpp").exec("blah")
+16:37  * facundobatista no está
+16:37 < facundobatista> (chau)
+16:37 < rbistolfi> nada puede ser peor que subprocess asi que dale para adelante :P
+
+14:52 < StucKman_> rbistolfi: vos has usado sh, no? te resulta muy molesto hacer cosas como
+14:52 < StucKman_> sh.cp ("-rv foo/{a,b,cd} bar/")
+14:53 < StucKman_> a mí el tema de dar todo el comando en un solo string me da cosita
+14:53 < StucKman_> y estba viendo quese puede hacer
+14:53 < StucKman_> sh.cp (v=True, r=True...)
+14:53 < StucKman_> pero el problema está, justamente, en ...
+14:54 < StucKman_> y no encuentro una forma de escribir eso que quede lindo :(
+14:54 < StucKman_> taba pensando en __1 para el último param, __2 para el penúltimo, etc
+14:54 < rbistolfi> el otro dia pensaba ese mismo problema
+14:54 < StucKman_> heeh
+14:54 < StucKman_> y no sólo eso
+14:55 < StucKman_> tá también el tema de que los parámetros que pasás con a=foo, b=bar, después salen ordenados
+14:55 < StucKman_> errr, *des*ordenados
+14:55 < rbistolfi> llegue a la conclusion de que r=True tiene sentido porque efectivamente r es un bool en el "lenguaje objeto"
+14:55 < StucKman_> así questaba pensando an hacer uso de OrderedDict
+14:55 < rbistolfi> claro
+14:55 < StucKman_> pero eso te lleva a
+14:56 < StucKman_> sh.cp(od(v=True, r=True, ...))
+14:56 < StucKman_> o s/os/_/ o algo por el estilo
+14:57 < StucKman_> y aún así tengo el tema de dónde van los parámetros sin nombre
+14:57 < StucKman_> en eso me caga feo python :(
+14:57 < StucKman_> toi >< así de ponerme a hacear esa parte
+14:57 < StucKman_> (as in, toquetear el intérprete de python)
+14:57 < StucKman_> lo cual sé que es un áujero negro
+14:57 < rbistolfi> pasa que despues mantener los parches ...
+14:59 < rbistolfi> StucKman_: si acepta *args y *kwargs y haces un helper para manejarlos ?
+14:59 < rbistolfi> a mi se me aparecio generando html, en casos como <input type="radio" checked ...
+14:59 < StucKman_> rbistolfi: ok, pero qué hacés con los posicionales?
+14:59 < facundobatista> StucKman_, en el momento en que entrás en "miren que lindo que hice pero no le anda a nadie porque tienen que recompilar python", perdiste
+14:59 < StucKman_> c\omo le decís dónde van?
+14:59 < StucKman_> facundobatista: yes, I know
+14:59 < rbistolfi> html.input("checked"), html.input(checked=True ... etc
+15:00 < StucKman_> rbistolfi: me gusta más el checked=True
+15:00 < facundobatista> StucKman_, me parece que tu problema son algunos programas que no saben usar argumentos... para el resto, no importa si están desordenados
+15:01 < StucKman_> facundobatista: cuando decís algunos decís el 90%, no?
+15:01 < facundobatista> StucKman_, si estás en un Solaris 1995, sí; en un debian moderno creería que no
+15:01 < perrito666> cual seria la diferencia entre un solaris 1995 y un debian moderno, un año?
+15:01 < StucKman_> facundobatista: eso porque estás pensando sólo en comandos de los core utils o algo por el estilo
+15:02 < StucKman_> pensate tb un ejecutable hecho in house
+15:02 < rbistolfi> perrito666: :D
+15:03 < rbistolfi> StucKman_: como dice facundobatista, hay programas que son molestosos, como find y muchos que hasta le podes pasar opciones al final
+15:03 < StucKman_> exacto
+15:03 < StucKman_> es cierto que find masomenos lo reemplazás por un buen os.walk
+15:04 < StucKman_> pero lo bueno de find es que ya tiene programados unos cuantos filtros que co os.walk los harías a mano
+15:04 < facundobatista> rbistolfi, no entiendo, decís que a find le importa el orden de los parámetros?
+15:04 < StucKman_> facundobatista: of course
+15:04 < facundobatista> StucKman_, ejemplo?
+15:05 < StucKman_> facundobatista: find <dir> <options>
+15:05 < rbistolfi> facundobatista: find te exige que le pases el parametro obligatorio antes que las opciones
+15:05 < StucKman_> y como options son filtros, sí importan el orden
+15:05 < rbistolfi> debe ser el unico que funciona asi
+15:05 < rbistolfi> que tal un objeto ShellArgs() al que le pasas *args y *kwargs, y que se pueda customizar como armas el comando
+15:05 < StucKman_> seh, tratá de hacerle eso a git o bzr
+15:05 < rbistolfi> cuando tenes que especializar, especializas
+15:06 < facundobatista> StucKman_, rbistolfi: qué pedorro!
+15:06 < facundobatista> se acabó la mentira GNU!
+15:06 < rbistolfi> el tema es como le decis, se ve complejo
+15:06 < rbistolfi> jaja
+15:06 < StucKman_> facundobatista: find es muy específico
+15:06 < facundobatista> StucKman_, es que para find esos no son parámetros
+15:06 < facundobatista> son parte de una "expresión"
+15:06 < facundobatista> también tiene parámetros
+15:06 < rbistolfi> necesitarias un dsl para especificar el orden o algo asi
+15:06 < facundobatista> -H, -L, etc
+15:06 < StucKman_> porque aún si el directorio a escanear fuera en el último lugar, los filtro s y qué hacer en caso de match son posicionales
+15:07 < StucKman_> por ejemplo
+15:07 < facundobatista> y esos deberían (no lo probé) poder ir en cualquier lado
+15:08 < rbistolfi> facundobatista: ya, pero el problema no es tanto find, sino que los comandos pueden poner restricciones mas o menos arbitrarias
+15:09 < rbistolfi> asi que necesitas un mecanismo para declarar la una especificacion que legisle como armar el comando
+15:09 < rbistolfi> s/la//
+15:09 < StucKman_>      find dirname -delete -name quux  If the user hoped to delete only files named quux they will get an unpleasant surprise; this command will attempt to delete
+                   everything at or below the starting point dirname. This is because find evaluates the items on the command line as an expression.
+15:09 < facundobatista> rbistolfi, o no tratar de encajar un cuadrado en un círculo
+15:10 < StucKman_> facundobatista: para las opciones pavas si, pero cuando va una acción , la acción va al último de la expresión
+15:10 < rbistolfi> y, hay una chance de que sea inviable el asunto, pero tampoco vas a dejar de probar :)
+15:11 < marianoguerra> StucKman_: y una chance del patro builder para ese caso de arg ordenados? y si lo usas como callable que pase los args como se le cante?
+15:11 < facundobatista> rbistolfi, sin embargo, uno de los problemas que nos interesaba solucionar era lo del pipe
+15:11 < facundobatista> rbistolfi, si yo pudiera hacer
+15:11 < StucKman_> marianoguerra: tell me more
+15:11 < facundobatista> a = sh("ls -l") | sh("grep foo")
+15:11 < marianoguerra> sh.cp.flags("c", "f").arg("foo").arg("bar")
+15:11 < facundobatista> estaría contento
+15:11 < marianoguerra> ahi que vaya guardandolos en una lista
+15:12 < StucKman_> marianoguerra: a lo qstring, I dsse
+15:12 < StucKman_> pero se vuelve über verbose
+15:12 < facundobatista> StucKman_, un ORM contra el shell! :p
+15:12 < StucKman_> alguien que viene del shell programming te tira esa sintaxis por la cabeza :-P
+15:12 < marianoguerra> sh.cp.flag("a").arg("foo").flag("b").arg(asd="lala") seria cp -a foo -b --asd lala
+15:12 < StucKman_> facundobatista: ésa es la parte fácil :-P
+15:13 < facundobatista> marianoguerra, prefiero escribir sh("cp -a foo -b --asd lala")
+15:13 < marianoguerra> podes hacer que sea un solo metodo y que vaya acumulando, si los metes adentro mas de uno van en el prden que se te cante, de a uno se acumulan en orden
+15:13 < StucKman_> facundobatista: yo también :(
+15:13 < facundobatista> marianoguerra, pero no es lo mismo
+15:13 < marianoguerra> facundobatista: que no es lo mismo?
+15:14 < marianoguerra> StucKman_: estoy proponiendo, no digo que sea lindo
+15:14 < StucKman_> marianoguerra: .arg() es demasiado verbose
+15:14 < StucKman_> marianoguerra: heeh :)
+15:14 < facundobatista> marianoguerra, StucKman_, rbistolfi, el problema es que a nivel de shell, es distinto pasar "-f" y "3" como dos cosas separadas, que "-f 3"
+15:14 < marianoguerra> StucKman_: operator overloading the da arcadas? :P
+15:14 < StucKman_> facundobatista: no, para el shell, -f y 3 son lo mismo
+15:14 < facundobatista> si uno hace sh("cp -a foo -b --asd lala"), ¿cómo cortás eso en tokens?
+15:14 < marianoguerra> sh.cp > "a" > ("b", "asd")
+15:14 < StucKman_> marianoguerra: dije verbose
+15:15 < rbistolfi> tambien podes hacer -ab == -a -b
+15:15 < rbistolfi> en muchos casos
+15:15 < marianoguerra> sh.cp > [("a", "foo"), "b", ("asd", "lala")]
+15:15 < marianoguerra> a python le faltan atoms/symbils
+15:15 < marianoguerra> symbols*
+15:15 < rbistolfi> el estlo X pasa opciones largas con un solo guion
+15:15 < rbistolfi> -config
+15:16 < StucKman_> rbistolfi: ugh, cierto
+15:16 < StucKman_> find hace lo mismo, ahora que lo pienso
+15:16 < rbistolfi> yep
+15:16 < StucKman_> hmmm
+15:16 < marianoguerra> StucKman_: y si haces como tu idea original pero que si pasas tuplas respete el orden?
+15:17 < rbistolfi> ejecutas command -h antes, y parseas la salida :P
+15:17 < StucKman_> marianoguerra: pero entonces perdés la sintaxis f=foo, bar=baz -> -f foo --bar baz
+15:17 < StucKman_> rbistolfi: juaz
+15:17 < rbistolfi> la api tiene que quedar linda o es un perno para usar
+15:17 < StucKman_> rbistolfi: exacto
+15:18 < StucKman_> supongo que por ahora no tratar de cagar tan alto
+15:18 < StucKman_> me voy a dedicar a otra parte del problema
+15:18 < rbistolfi> manejar el 90% que si anda, y despues
+15:19 < rbistolfi> despues vemos :)
+15:19 < StucKman_> y al mismo tiempo ver porqué la arbitrariedad de f (a, c, b=3) y no f (a, b=3, c)
+15:19 < StucKman_> con un poco de suerte sólo es algo que *eventuaaaalmente* pueda entrar en python :)
+15:20 < StucKman_> (o sea, da acá a 5 años)
+15:20 < marianoguerra> si python tuviese atoms seria algo como sh.cp(:r, :v, "foo/{a,b,cd}", "bar/") :)
+15:20 < StucKman_> ;-P
+15:20 < facundobatista> StucKman_, en la definición o en la llamada?
+15:20 < StucKman_> facundobatista: definición?
+15:20 < StucKman_> de f?
+15:20 < StucKman_> facundobatista: en la llamada
+15:21 < StucKman_> por lo pronto está esto: http://www.python.org/dev/peps/pep-3102/
+15:21 < lalita> StucKman_: [#6286] PEP 3102 -- Keyword-Only Arguments
+15:21 < facundobatista> StucKman_, o sea, querés poder hacer f(5, b=3, 7)
+15:21 < facundobatista> StucKman_, cómo definiste f?
+15:21 < StucKman_> facundobatista: buena pregunta :)
+15:23 < marianoguerra> StucKman_: o podes hacer [globals()[l] = Option(l) for l in string.ascii_letters]
+15:24 < rbistolfi> che si armamos un test case para esto?
+15:24 < marianoguerra> et voila sh.cp(a, b, C, "lala", o("long-option", "option value"))
+15:24 < marianoguerra> eso si, no uses variables de un caracter :P
+15:24 < marianoguerra> i principalmente ;)
+15:24 < StucKman_> marianoguerra: yo ya estoy haciendo negradas en los globals :)
+15:25 < StucKman_> errr, chanchadas
+15:25 < marianoguerra> o podrias definirlas como _a, etc
+15:25 < marianoguerra> como te ves reescribiendo el ast :P
+15:25 < StucKman_> marianoguerra: te olvidás de los dígitos :)
+15:25 < StucKman_> marianoguerra: hmmm!
+15:25 < StucKman_> :-P
+15:25 < rbistolfi> killall -9
+15:25 < StucKman_> rbistolfi: clárh
+15:25 < marianoguerra> StucKman_: sh.killall(o(9))
+15:26 < marianoguerra> StucKman_: sh.killall(_(9))
+15:26 < StucKman_> marianoguerra: mestrania, o(9)=o(1) :-P
+15:26 < marianoguerra> StucKman_: :D
+15:26  * StucKman_ se tira a un pozo
+15:26 < marianoguerra> StucKman_: sh.killall(_9)
+15:26 < StucKman_> marianoguerra: https://github.com/StyXman/ayrton/blob/master/bin/ayrton
+15:27 < lalita> StucKman_: [#6287] ayrton/bin/ayrton at master · StyXman/ayrton · GitHub
+15:27 < StucKman_> esto anda: https://github.com/StyXman/ayrton/blob/master/doc/examples/hello_world.ay
+15:27 < lalita> StucKman_: [#6288] ayrton/doc/examples/hello_world.ay at master · StyXman/ayrton · GitHub
+15:27 < rbistolfi> killall() - 9 # defini __sub__
+15:27 < rbistolfi> :P
+15:27 < StucKman_> rbistolfi: juaz
+15:28 < StucKman_> el problema es que seguro que el parser no se banca f(a, b=3, c)
+15:28 < StucKman_> sino, se lo mandaría y haría malabares con el AST por detrás
+15:28 < rbistolfi> pero capaz que la sugerencia de marianoguerra es aceptable si los corner cases son pocos
+15:28 < StucKman_> al fin y al cabo ya estoy compilando y ejecutando el programa yo
+15:28 < rbistolfi> osea, pedi que solo para los corner cases se haga
+15:29 < rbistolfi> f(o("a"), o(b=3), o("c")
+15:29 < rbistolfi> )
+15:29 < StucKman_> pero mejor me dedico a tener algo más usable por otro lado
+15:29 < rbistolfi> y eso se traduce a -a --b=3 -c
+15:29 < StucKman_> rbistolfi: still too verbose, creo
+15:30 < rbistolfi> ya
+15:30 < rbistolfi> eso seria para el 10% que no cae en el caso generico
+15:31 < StucKman_> ok
+15:31 < StucKman_> StyXman: escuchaste bein todo? :-P
+15:32  * StucKman_ vuelve a laburar
+15:32 < rbistolfi> lo peor es que el 10% es una suposicion, anda saber cual es el numero real
+15:32 < rbistolfi> capaz es altisimo
+15:49 < StucKman_> http://www.python.org/dev/peps/pep-0306/
+15:49 < lalita> StucKman_: [#6289] PEP 306 -- How to Change Python's Grammar
+15:49  * StucKman_ hace jueguitos con las cejas :)
+15:52 < rbistolfi> f(a, (b,3), c)
+15:53 < StucKman_> rbistolfi: hmmm
+15:54 < StucKman_> pero a, b y c son nombres de parámetros, o variables cuyos valores tomar?
+15:56 < StucKman_> wowo, re cortita la grmática de python
+16:00 < rbistolfi> StucKman_: nombres, -a --b=3, -c
+16:05 < rbistolfi> StucKman_: hace poco se hablo de un coso para hacer macros ala lisp en python
+16:08 < StucKman_> no sé si alguna vez le garré la vuelta a las macro de lisp :-P
+
+14:16 < StucKman> marianoguerra: una vez dijiste que habías hecho un módulo maaaasomenos de la onda de sh, pero donde también podías hacer cosas como:
+14:16 < StucKman> cat ("foo.txt") | grep ('bar')
+14:16 < StucKman> es cierto o deliro?
+14:25 < marianoguerra> StucKman: cierto si mal no recuerdo
+14:25 < marianoguerra> ese codigo pertenece a mama ibm, no tengo mas acceso a el
+14:26 < StucKman> marianoguerra: ya, la pregunta era mas bien teórica
+14:26 < StucKman> supongo que implementaste __ror__()
+14:26 < StucKman> la pregunta es si también habías implementado __bool__()
+14:27 < StucKman> tengo miedo que __bool__() me cague la implementación de __ror__()
+14:27 < StucKman> __bool__() lo estoy haciendo para que puedas hacer ... uh
+14:27 < StucKman> if grep ('bar', 'foo.txt'): ...
+14:27 < StucKman> lo cual es cheto
+14:28 < StucKman> pero veo que voy a tener que hacer bastante mas magias en __roro__()
+14:29 < marianoguerra> que retorna grep sin __bool__ un objeto respuesta?
+14:30 < marianoguerra> ror no tiene que ver con bool
+14:30 < marianoguerra> sino con numeros
+14:32 < StucKman> si, con __bool__() lo bueno es que (creo) eso ya me implementa gratuitamente || y &&
+
+14:33 < StucKman> puedo hacer muhca chanchada ahí :)
+14:33 < StucKman> cat (file) | (grep (foo) || grep (bar)) :)))
+
+14:35 < StucKman> y si, __ror__() no debería estar impactado por __bool__(), pero capá sí por __long__(), que está implementado por sh
+14:36 < StucKman> marianoguerra: responmdiendo tu pregunta original, lo que retorna es un objeto que depende de cómo lo mires, devuelve una cosa o la otra
+14:36 < StucKman> pero tiene el output, el return code y alguna otra cosa mas
+14:37 < StucKman> si lo mirás como bool, retorna si el return code es !=0, shell like
+14:37 < StucKman> (eso se lo agregué yo)
+14:37 < StucKman> si lo mirás como str o int o long, lo saca del output
+14:38 < marianoguerra> StucKman: si queres iterar? :)
+14:38 < StucKman> menosmal que mañana es feriado :)
+14:38 < StucKman> marianoguerra: tambien itera (sobre las líneas del output)
+14:38 < marianoguerra> estaria bueno poder iterar por stdout
+14:38 < StucKman> sh está bastante bien en ese sentido
+14:38 < marianoguerra> tomamos casi las mismas decisiones
+14:38 < marianoguerra> no se si es bueno o malo :P
+14:39 < StucKman> marianoguerra: yo mal que mal estoy extendiendo sh
+14:39 < StucKman> mucho del laburo ya está hecho
+14:40 < StucKman> yo mal que mal "sólo"estoy extendiendo sh*
+14:41 < StucKman> y si me voy de mambo, termino haciendo chanchadas como la de arriba y/o definiendo una sintaxis propia
+14:42 < StucKman> marianoguerra: also, output puede ser stdout y?o stderr, dependiendo de cómo dedirigiste
+
+10:57 < marianoguerra> StucKman: porque globals y no locals o en el stack frame?
+10:58 < StucKman> marianoguerra: porque es mas fácil de implementar y porque es el behaviour que quiero
+10:58 < StucKman> (que ls() sea una función accesible desde cualquier lado)
+10:58 < marianoguerra> y para que queres setear globales?
+10:58 < marianoguerra> ah, no queres que hagan from ayrton import *?
+10:59 < StucKman> marianoguerra: exacto
+10:59 < marianoguerra> StucKman: cual es la necesidad?
+10:59 < StucKman> marianoguerra: simpler for the user
+10:59 < marianoguerra> incluso podes hacer algo como un shebang "#/usr/bin/env ayrton" que le agregue el import arriba y lo corra
+10:59 < marianoguerra> #!
+11:01 < StucKman> marianoguerra: qué diferencia hace entre hacer el import mágicamente y hacerlo por el lado de los globals?
+11:02 < StucKman> (además de que es más complejo de hacer)
+11:11 < StucKman> ah, el AST / parser tb me puede servir para implementar |
+11:12 < StucKman> StyXman: vos anotá todo esto, no?
+11:23 < marianoguerra> StucKman: porque llenar globals con giladas por atras con exec es una chanchada, agregar un import es mucho mas limpio
+11:23 < StucKman> marianoguerra: I know
+11:24 < marianoguerra> ademas te da la ventaja que la gente con suficiente energia para agregar una linea a su script puede usarlo sin que le llenes los globals de giladas
+11:24 < StucKman> desde el punto de vista de python es horrible
+11:24 < StucKman> desde el punto de vista de bash, es mas normal
+11:28 < StucKman> de hecho, estoy en el punto de decidir qué funciones importar de la stdlib de python al global
+11:28 < StucKman> no son muchas
+11:28 < StucKman> argv, exit, uname, algunas de os.path...
+11:29 < StucKman> https://github.com/StyXman/ayrton/blob/develop/ayrton/__init__.py#L118
+11:29 < lalita> StucKman: [#6549] ayrton/ayrton/__init__.py at develop · StyXman/ayrton · GitHub
+
+14:15 < StucKman> cómo voy a atener que romper el ast para implementar with ssh () :)
+14:15 < StucKman> hay un detalle bellísimo
+14:15 < StucKman> si hago
+14:16 < StucKman> with ssh ():
+14:16 < StucKman>   print ('foo!')
+14:16 < StucKman> puedo conseguir bien el print, encodearlo, mandarlo por ssh y ejecutarlo remotamente
+14:16 < StucKman> pero
+14:16 < StucKman> también se ejecuta localmente :)
+15:06 < marianoguerra> StucKman: import hooks
+15:07 < marianoguerra> cuando lo importas buscas todos los with que usan functiones de tu lib y convertis el cuerpo del with a un noop o a lo de mandar el codigo
+15:07 < StucKman> no, esa parte ya la tengo
+15:08 < Darni> todos esos hacks que he visto con with son por no tener block statements como first order values
+15:08 < StucKman> de hecho, ahora que lo mencionás, la parte de búsqueda del with adecuado la voy a tener que sacar a una función
+15:08 < StucKman> Darni: +1
+15:09 < Darni> StucKman: y si en vez de un with usas un cuerpo de funcion y un decorador?
+15:09 < Darni> @ssh
+15:09 < StucKman> es tan bello poder hacer negradas de este estilo :)
+15:09 < Darni> def remote(): ... blah ...
+15:09 < StucKman> Darni: si, eso estaba pensando mas temprano
+15:10 < Darni> y que el decorador serialize la funcion, llame remotamente
+15:10 < StucKman> no sería un decorador, pero sería algo por el estilo
+15:10 < Darni> es mas, hasta puede devolver un return code
+15:10 < Darni> no, lo que yo digo es un decorador
+15:10 < Darni> solo que no lo usas como decorador
+15:10 < StucKman> pero dado que quiero proveer un lenguaje lo más sysadmin friendly posible, prefiero mantenerme alejado de cosas avanzadas de pythonn
+15:11 < StucKman> (aunque se podría alegar que with es suficientemente avanzado)
+15:11 < Darni> bueno, pero al fnal es una construct magica, tanto como tu with
+15:11 < StucKman> clárh
+15:11 < StucKman> además, todavía no está clara la API de ese with
+15:11 < Darni> en cualquiera de los dos casos, ademas estas usando el feature distinto a lo que estuvo planeado
+15:12 < StucKman> marianoguerra: no veo cómo los hooks serían muy distintos de jugar con ast
+15:12 < StucKman> al fin y al cabo, ya estoy compilando y ejecutando el código yo
+15:13 < StucKman> https://github.com/StyXman/ayrton/blob/develop/ayrton/__init__.py#L102
+15:13 < lalita> [#6549] https://github.com/StyXman/ayrton/blob/develop/ayrton/__init__.py : ayrton/ayrton/__init__.py at develop · StyXman/ayrton · GitHub [by StucKman, 2013-08-26,
+                09:31:28]
+15:14 < StucKman> Darni: el tema de forzar al usuario a hacer una función es la que no me agrada tanto
+15:27 < StucKman> marianoguerra: lo que voy a hacer es reemplazar el cuerpo por algo que almacene los streams
+15:27 < StucKman> with ssh (streams, ...): ...
+15:27 < StucKman> se convierte en
+15:28 < StucKman> with ssh (...) as foo: streams= foo
+15:28 < StucKman> pero tengo que ver eso porque hay varias cosas que romo a nivel consistncia
