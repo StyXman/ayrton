@@ -198,5 +198,6 @@ def run (code, globals, locals):
     runner.run ()
 
 def main (script=None, file=None, **kwargs):
+    global runner
     runner= Ayrton (script=script, file=file, **kwargs)
     runner.run ()
