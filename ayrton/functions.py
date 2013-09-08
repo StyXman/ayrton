@@ -59,15 +59,18 @@ class ssh (object):
         self.client.load_host_keys (bash ('~/.ssh/known_hosts')[0])
         self.client.connect (*self.args, **self.kwargs)
         # get the locals from the runtime
-        local_env= pickle.dumps (ayrton.runner.environ.locals)
+        global_env= pickle.dumps (ayrton.runner.environ.globals)
+        local_env=  pickle.dumps (ayrton.runner.environ.locals)
 
         command= '''python3 -c "import pickle
 from ast import Module, Assign, Name, Store, Call, Load, Expr
 import sys
+import ayrton
 c= pickle.loads (sys.stdin.buffer.read (%d))
 code= compile (c, 'remote', 'exec')
+g= pickle.loads (sys.stdin.buffer.read (%d))
 l= pickle.loads (sys.stdin.buffer.read (%d))
-exec (code, {}, l)"''' % (len (self.code), len (local_env))
+ayrton.run (code, g, l)"''' % (len (self.code), len (global_env), len (local_env))
         (i, o, e)= self.client.exec_command (command)
         i.write (self.code)
         i.write (local_env)
