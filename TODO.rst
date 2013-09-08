@@ -25,8 +25,6 @@
 
 * what to do about relative/absolute command paths?
 * better error reporting
-* revert commit 18e7bc5.
 * |
 * redirections, if we ever implement |
-* with ssh (...): ...
 * executable path caching à la bash.
