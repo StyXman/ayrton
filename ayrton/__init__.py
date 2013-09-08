@@ -193,9 +193,9 @@ def polute (d):
     for std in ('stdin', 'stdout', 'stderr'):
         d[std]= getattr (sys, std).buffer
 
-def run (code, globals, locals):
+def run (tree, globals, locals):
     global runner
-    runner= Ayrton (code=code, globals=globals, locals=locals)
+    runner= Ayrton (tree=tree, globals=globals, locals=locals)
     runner.run ()
 
 def main (script=None, file=None, **kwargs):
