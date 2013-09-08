@@ -15,7 +15,7 @@ clone it (there are no releases yet), use the branch `develop`.
 # Instalation
 
 `ayrton` depends on three pieces of code. Python is the most obvious; it has been
-developed in its version 3.3. Next is [`sh`](http://amoffat.github.io/sh/), version
+developed in its version 3.3. Python 3.2 is not enough, sorry. Next is [`sh`](http://amoffat.github.io/sh/), version
 1.08. The last item is more complicated. It uses
 [`paramiko`](https://github.com/paramiko/paramiko), but as this project tries to
 be compatible with lower versions of Python2, there's no official port for Python3.
@@ -32,6 +32,7 @@ So, in short:
     # python3 setup.py install
     # cd ..
 
+    # apt-get install python3-crypto
     # git clone https://github.com/nischu7/paramiko.git
     # cd paramiko
     # python3 setup.py install
