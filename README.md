@@ -1,5 +1,10 @@
 ayrton - a shell like language with the power of python.
 
+ayrton is an extension of the Python language that tries to make it look more
+like a shell programming language. It takes ideas already present in `sh`, adds
+a few functions for better emulating envvars, and provides a mechanism for (semi)
+transparent remote execution via `ssh`.
+
 This code is released under the [GPLv3](http://www.gnu.org/licenses/gpl-3.0.html).
 If you're unsure on how this apply to your interpreted programs, check
 [this entry in their FAQ](https://www.gnu.org/licenses/gpl-faq.html#IfInterpreterIsGPL).
@@ -34,7 +39,13 @@ So, in short:
 
     # git clone https://github.com/StyXman/ayrton.git
     # cd ayrton
+    # make tests
     # python3 setup.py install
+    or edit Makefile and
+    # make install
+
+    To generate the docs:
+    # make docs
 
 # First steps
 
@@ -143,9 +154,9 @@ The cherry on top of the cake, or more like the melon of top of the cupcake, is
         # even when we're actually running in another machine
         print (a)
 
-    # streams returns 3 streams: stdin, stdout
+    # streams returns 3 streams: stdin, stdout, stderr
     (i, o, e)= streams
-    # notice that we must include the \n at the end so input
+    # notice that we must include the \n at the end so input() finishes
     # and that you must transmit bytes only, no strings
     i.write (b'bar\n')
     print (o.readlines ())
@@ -171,7 +182,8 @@ A: Yes and no. `bash` is very powerful, both from the CLI and as a language. But
 it's clumsy, mainly due to two reasons: parsing lines into commands and their
 arguments, and the methods for preventing overzealous word splitting, which leads
 to several pitfalls, some of them listed [here](http://mywiki.wooledge.org/BashPitfalls));
-and poor data manipulation syntax. Most scripts start small, but once they reach
+and poor data manipulation syntax.  It also lacks of good remote
+execution support. Most scripts start small, but once they reach
 a certain size/complexity, either they become monsters (resembling a Frankenstein
 built using a Kafkian method) or they are rewritten in Perl (which makes them a
 different kind of monster, closer to the Thing in «The Thing»).
@@ -182,14 +194,15 @@ A: `sh` has a very specific objective, which is to make easy to capture the
 output of commands into a Python script, and even pipe output to other commands
 in a functional/pythonic way. `ayrton` aims to make python+sh behave more like
 `bash` so it's easier for sysadmins to learn and use. Anything that still holds
-`sh`'s objetive will be sent as a patch over time.
+`sh`'s objective will be sent as a patch over time, but for the moment being,
+we're still playing with the shape of `ayrton`.
 
 Q: `ayrton` is too verbose! I don't want to put extra `()`'s or `'`'s everywhere.
 
 A: Shell languages have evolved from shell interpreters. Command execution are
 their main objective, and its syntax is designed around it. That leads to
-shortcuts that later are more difficult to read. I find Python syntax very
-readable.
+shortcuts that later are more difficult to read and creates problems when
+handling filenames that have special characters.
 
 # Thanks to:
 
