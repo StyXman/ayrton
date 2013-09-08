@@ -76,10 +76,19 @@ class CommandWrapper (sh.Command):
         return super ().__call__ (*args, **kwargs)
 
 class Environment (object):
-    def __init__ (self):
+    def __init__ (self, globals=None, locals=None):
         super ().__init__ ()
-        self.locals= {}
-        self.globals= {}
+
+        if globals is None:
+            self.globals= {}
+        else:
+            self.globals= globals
+
+        if locals is None:
+            self.locals= {}
+        else:
+            self.locals= locals
+
         self.python_builtins= builtins.__dict__.copy ()
         self.ayrton_builtins= {}
         polute (self.ayrton_builtins)
@@ -134,16 +143,19 @@ class CrazyASTTransformer (ast.NodeTransformer):
         return node
 
 class Ayrton (object):
-    def __init__ (self, script=None, file=None, **kwargs):
+    def __init__ (self, script=None, file=None, code=None, globals=None,
+                  locals=None, **kwargs):
         if script is None and file is not None:
             script= open (file).read ()
         else:
             file= 'arg_to_main'
 
-        code= ast.parse (script)
-        code= CrazyASTTransformer().visit (code)
+        if script is not None:
+            code= ast.parse (script)
+            code= CrazyASTTransformer().visit (code)
+
         self.source= compile (code, file, 'exec')
-        self.environ= Environment ()
+        self.environ= Environment (globals, locals)
 
     def run (self):
         exec (self.source, self.environ.globals, self.environ)
@@ -181,7 +193,10 @@ def polute (d):
     for std in ('stdin', 'stdout', 'stderr'):
         d[std]= getattr (sys, std).buffer
 
+def run (code, globals, locals):
+    runner= Ayrton (code=code, globals=globals, locals=locals)
+    runner.run ()
+
 def main (script=None, file=None, **kwargs):
-    global runner
-    runner= Ayrton (script, file, **kwargs)
+    runner= Ayrton (script=script, file=file, **kwargs)
     runner.run ()
