@@ -22,6 +22,7 @@ import os
 import paramiko
 from ayrton.expansion import bash
 import pickle
+import types
 
 # NOTE: all this code is excuted in the script's environment
 
@@ -59,8 +60,17 @@ class ssh (object):
         self.client.load_host_keys (bash ('~/.ssh/known_hosts')[0])
         self.client.connect (*self.args, **self.kwargs)
         # get the locals from the runtime
+        #
         global_env= pickle.dumps ({})
-        local_env=  pickle.dumps (ayrton.runner.environ.locals)
+        # for solving the import problem:
+        # _pickle.PicklingError: Can't pickle <class 'module'>: attribute lookup builtins.module failed
+        # there are two solutions. either we setup a complex system that intercepts
+        # the imports and hold them in another ayrton.Environment attribute
+        # or we just weed them out here. so far this is the simpler option
+        # but forces the user to reimport what's going to be used in the remote
+        l= dict ([ (k, v) for (k, v) in ayrton.runner.environ.locals.items ()
+                   if type (v)!=types.ModuleType ])
+        local_env= pickle.dumps (l)
 
         command= '''python3 -c "import pickle
 # names needed for unpickling
