@@ -53,6 +53,10 @@ class ssh (object):
     def __init__ (self, code, *args, **kwargs):
         self.code= code
         self.args= args
+        if '_python_only' in kwargs:
+            self.python_only= kwargs['_python_only']
+            del kwargs['_python_only']
+
         self.kwargs= kwargs
 
     def __enter__ (self):
@@ -72,7 +76,18 @@ class ssh (object):
                    if type (v)!=types.ModuleType ])
         local_env= pickle.dumps (l)
 
-        command= '''python3 -c "import pickle
+        if self.python_only:
+            command= '''python3 -c "import pickle
+# names needed for unpickling
+from ast import Module, Assign, Name, Store, Call, Load, Expr
+import sys
+ast= pickle.loads (sys.stdin.buffer.read (%d))
+code= compile (ast, 'remote', 'exec')
+g= pickle.loads (sys.stdin.buffer.read (%d))
+l= pickle.loads (sys.stdin.buffer.read (%d))
+exec (code, g, l)"''' % (len (self.code), len (global_env), len (local_env))
+        else:
+            command= '''python3 -c "import pickle
 # names needed for unpickling
 from ast import Module, Assign, Name, Store, Call, Load, Expr
 import sys
