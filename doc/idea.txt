@@ -359,3 +359,19 @@
 15:27 < StucKman> se convierte en
 15:28 < StucKman> with ssh (...) as foo: streams= foo
 15:28 < StucKman> pero tengo que ver eso porque hay varias cosas que romo a nivel consistncia
+
+13:34 < cramm> StyXman: https://github.com/tomerfiliba/plumbum
+13:51 < StyXman> cramm: y si, en algún momento tengo ganas de hacer piping
+13:52 < StyXman> pero por ahora en la forma en que anda sh me alcanza
+13:52 < StyXman> m4rgin4l: me faltan ejemplos :)
+13:52 < m4rgin4l> uno facil
+13:52 < m4rgin4l> el bloque de ssh, pero con multiples conexiones
+13:52 < m4rgin4l> o multiples whatever
+13:55 < StyXman> cramm: y redirección
+13:55 < StyXman> m4rgin4l: I don follow
+13:55 < m4rgin4l> cuando el bloque ese lo queres ejecutar en multiples ssh a la vez
+13:56 < StyXman> m4rgin4l: lindo quilombo, pero en cuanto peque el ssh() a como funcionan el resto de los comandos, vas a poder hacer & y manejarlos con sus propios streams
+13:56 < m4rgin4l> k
+13:57 < StyXman> cramm: plumbum es exactamente lo que quiero, pero la sintaxis no
+13:57 < StyXman> mi idea es seguir jugando con el AST y llegar a eso
+13:58 < StyXman> tengo un branch con eso, pero se complica un poco
