@@ -1,6 +1,6 @@
-ayrton - a shell like language with the power of python.
+`ayrton` - a shell like language with the power of python.
 
-ayrton is an extension of the Python language that tries to make it look more
+`ayrton` is an extension of the Python language that tries to make it look more
 like a shell programming language. It takes ideas already present in `sh`, adds
 a few functions for better emulating envvars, and provides a mechanism for (semi)
 transparent remote execution via `ssh`.
