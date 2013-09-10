@@ -76,6 +76,9 @@ Functions
     to run it under `ayrton`. This allows remotely executing code without needing
     `ayrton` installed in the remote.
 
+    For the moment imports are weeded out from the remote environment, so you
+    will need to reimport them.
+
 .. py:function:: unset (*args)
 
     For each variable name in *\*args*, unset the variable and remove it from
