@@ -16,3 +16,6 @@ upload: tests upload-docs
 
 upload-docs: docs
 	rsync --archive --verbose --compress --rsh ssh doc/build/html/ www.grulic.org.ar:www/projects/ayrton/
+
+push: tests
+	git push github
