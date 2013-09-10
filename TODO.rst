@@ -1,9 +1,13 @@
+Even when most of these are in the github issues, I leave it here so I can
+attack it offline (when I code best).
+
 Really do:
 ----------
 
-* argv en remote.
 * source
 * shift
+* better error reporting, including remotes
+* better sh() interface (streams? yuk!)
 * we're weeding out imports, we could gather a list and reimport them in the
   remote
 
@@ -45,6 +49,6 @@ If we {have time,are bored}:
 
 * what to do about relative/absolute command paths?
 * better error reporting
-* |
+* | (pipe)
 * redirections, if we ever implement |
 * executable path caching à la bash.
