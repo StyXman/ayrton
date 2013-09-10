@@ -100,6 +100,9 @@ class Environment (object):
                   self.python_builtins, self.ayrton_builtins):
             try:
                 ans= d[k]
+                # found, don't search anymore (just in case you could find it
+                # somewhere else)
+                break
             except KeyError:
                 strikes+= 1
 
