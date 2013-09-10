@@ -97,7 +97,7 @@ class Environment (object):
     def __getitem__ (self, k):
         strikes= 0
         for d in (self.locals, self.globals, self.os_environ,
-                self.python_builtins, self.ayrton_builtins):
+                  self.python_builtins, self.ayrton_builtins):
             try:
                 ans= d[k]
             except KeyError:
@@ -115,6 +115,9 @@ class Environment (object):
 
     def __iter__ (self):
         return self.locals.__iter__ ()
+
+    def __str__ (self):
+        return str ([ self.globals, self.locals, self.os_environ ])
 
 class CrazyASTTransformer (ast.NodeTransformer):
 
