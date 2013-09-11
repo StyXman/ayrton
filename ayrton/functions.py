@@ -22,6 +22,7 @@ import os
 import paramiko
 from ayrton.expansion import bash
 import pickle
+import types
 
 # NOTE: all this code is excuted in the script's environment
 
@@ -49,9 +50,15 @@ class ssh (object):
     # TODO: inherit CommandWrapper?
     # TODO: see foo.txt
     "Uses the same arguments as paramiko.SSHClient.connect ()"
-    def __init__ (self, code, *args, **kwargs):
-        self.code= code
+    def __init__ (self, ast, *args, **kwargs):
+        # actually, it's not a proper ast, it's the pickle of such thing
+        self.ast= ast
         self.args= args
+        self.python_only= False
+        if '_python_only' in kwargs:
+            self.python_only= kwargs['_python_only']
+            del kwargs['_python_only']
+
         self.kwargs= kwargs
 
     def __enter__ (self):
@@ -59,17 +66,44 @@ class ssh (object):
         self.client.load_host_keys (bash ('~/.ssh/known_hosts')[0])
         self.client.connect (*self.args, **self.kwargs)
         # get the locals from the runtime
-        local_env= pickle.dumps (ayrton.runner.environ.locals)
+        # we can't really export the globals: it's full of unpicklable things
+        # so send an empty environment
+        global_env= pickle.dumps ({})
+        # for solving the import problem:
+        # _pickle.PicklingError: Can't pickle <class 'module'>: attribute lookup builtins.module failed
+        # there are two solutions. either we setup a complex system that intercepts
+        # the imports and hold them in another ayrton.Environment attribute
+        # or we just weed them out here. so far this is the simpler option
+        # but forces the user to reimport what's going to be used in the remote
+        l= dict ([ (k, v) for (k, v) in ayrton.runner.environ.locals.items ()
+                   if type (v)!=types.ModuleType ])
+        # special treatment for argv
+        l['argv']= ayrton.runner.environ.ayrton_builtins['argv']
+        local_env= pickle.dumps (l)
 
-        command= '''python3 -c "import pickle
+        if self.python_only:
+            command= '''python3 -c "import pickle
+# names needed for unpickling
 from ast import Module, Assign, Name, Store, Call, Load, Expr
 import sys
-c= pickle.loads (sys.stdin.buffer.read (%d))
-code= compile (c, 'remote', 'exec')
+ast= pickle.loads (sys.stdin.buffer.read (%d))
+code= compile (ast, 'remote', 'exec')
+g= pickle.loads (sys.stdin.buffer.read (%d))
 l= pickle.loads (sys.stdin.buffer.read (%d))
-exec (code, {}, l)"''' % (len (self.code), len (local_env))
+exec (code, g, l)"''' % (len (self.ast), len (global_env), len (local_env))
+        else:
+            command= '''python3 -c "import pickle
+# names needed for unpickling
+from ast import Module, Assign, Name, Store, Call, Load, Expr
+import sys
+import ayrton
+ast= pickle.loads (sys.stdin.buffer.read (%d))
+g= pickle.loads (sys.stdin.buffer.read (%d))
+l= pickle.loads (sys.stdin.buffer.read (%d))
+ayrton.run (ast, g, l)"''' % (len (self.ast), len (global_env), len (local_env))
         (i, o, e)= self.client.exec_command (command)
-        i.write (self.code)
+        i.write (self.ast)
+        i.write (global_env)
         i.write (local_env)
         return (i, o, e)
 

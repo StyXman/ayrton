@@ -53,7 +53,7 @@ Functions
     Executes an arbitrary binary that is not in :py:data:`path`. *rel_or_abs_path*
     must be a relative or absolute path.
 
-.. py:function:: ssh (...)
+.. py:function:: ssh (..., [_python_only=False])
 
     This function is better used as a context manager::
 
@@ -71,6 +71,13 @@ Functions
     about them, see ``paramiko``'s
     `ChannelFile <https://github.com/nischu7/paramiko/blob/master/paramiko/channel.py#L1233>`_
     (there doesn't seem to be an official doc for this class).
+
+    *_python_only* declares that the body is pure Python code, so we don't try
+    to run it under `ayrton`. This allows remotely executing code without needing
+    `ayrton` installed in the remote.
+
+    For the moment imports are weeded out from the remote environment, so you
+    will need to reimport them.
 
 .. py:function:: unset (*args)
 

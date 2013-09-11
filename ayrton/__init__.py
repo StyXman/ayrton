@@ -27,7 +27,7 @@ from ast import Pass, Module, Bytes, copy_location, Call, Name, Load
 from ast import fix_missing_locations, Import, alias
 import pickle
 
-__version__= '0.1'
+__version__= '0.1.1'
 
 class RunningCommandWrapper (sh.RunningCommand):
     def _handle_exit_code (self, code):
@@ -76,10 +76,19 @@ class CommandWrapper (sh.Command):
         return super ().__call__ (*args, **kwargs)
 
 class Environment (object):
-    def __init__ (self):
+    def __init__ (self, globals=None, locals=None):
         super ().__init__ ()
-        self.locals= {}
-        self.globals= {}
+
+        if globals is None:
+            self.globals= {}
+        else:
+            self.globals= globals
+
+        if locals is None:
+            self.locals= {}
+        else:
+            self.locals= locals
+
         self.python_builtins= builtins.__dict__.copy ()
         self.ayrton_builtins= {}
         polute (self.ayrton_builtins)
@@ -88,9 +97,12 @@ class Environment (object):
     def __getitem__ (self, k):
         strikes= 0
         for d in (self.locals, self.globals, self.os_environ,
-                self.python_builtins, self.ayrton_builtins):
+                  self.python_builtins, self.ayrton_builtins):
             try:
                 ans= d[k]
+                # found, don't search anymore (just in case you could find it
+                # somewhere else)
+                break
             except KeyError:
                 strikes+= 1
 
@@ -106,6 +118,9 @@ class Environment (object):
 
     def __iter__ (self):
         return self.locals.__iter__ ()
+
+    def __str__ (self):
+        return str ([ self.globals, self.locals, self.os_environ ])
 
 class CrazyASTTransformer (ast.NodeTransformer):
 
@@ -134,16 +149,19 @@ class CrazyASTTransformer (ast.NodeTransformer):
         return node
 
 class Ayrton (object):
-    def __init__ (self, script=None, file=None, **kwargs):
+    def __init__ (self, script=None, file=None, tree=None, globals=None,
+                  locals=None, **kwargs):
         if script is None and file is not None:
             script= open (file).read ()
         else:
             file= 'arg_to_main'
 
-        code= ast.parse (script)
-        code= CrazyASTTransformer().visit (code)
-        self.source= compile (code, file, 'exec')
-        self.environ= Environment ()
+        if script is not None:
+            tree= ast.parse (script)
+            tree= CrazyASTTransformer().visit (tree)
+
+        self.source= compile (tree, file, 'exec')
+        self.environ= Environment (globals, locals)
 
     def run (self):
         exec (self.source, self.environ.globals, self.environ)
@@ -181,7 +199,12 @@ def polute (d):
     for std in ('stdin', 'stdout', 'stderr'):
         d[std]= getattr (sys, std).buffer
 
+def run (tree, globals, locals):
+    global runner
+    runner= Ayrton (tree=tree, globals=globals, locals=locals)
+    runner.run ()
+
 def main (script=None, file=None, **kwargs):
     global runner
-    runner= Ayrton (script, file, **kwargs)
+    runner= Ayrton (script=script, file=file, **kwargs)
     runner.run ()

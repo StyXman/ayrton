@@ -1,6 +1,6 @@
-ayrton - a shell like language with the power of python.
+`ayrton` - a shell like language with the power of python.
 
-ayrton is an extension of the Python language that tries to make it look more
+`ayrton` is an extension of the Python language that tries to make it look more
 like a shell programming language. It takes ideas already present in `sh`, adds
 a few functions for better emulating envvars, and provides a mechanism for (semi)
 transparent remote execution via `ssh`.
@@ -15,7 +15,7 @@ clone it (there are no releases yet), use the branch `develop`.
 # Instalation
 
 `ayrton` depends on three pieces of code. Python is the most obvious; it has been
-developed in its version 3.3. Next is [`sh`](http://amoffat.github.io/sh/), version
+developed in its version 3.3. Python 3.2 is not enough, sorry. Next is [`sh`](http://amoffat.github.io/sh/), version
 1.08. The last item is more complicated. It uses
 [`paramiko`](https://github.com/paramiko/paramiko), but as this project tries to
 be compatible with lower versions of Python2, there's no official port for Python3.
@@ -32,6 +32,7 @@ So, in short:
     # python3 setup.py install
     # cd ..
 
+    # apt-get install python3-crypto
     # git clone https://github.com/nischu7/paramiko.git
     # cd paramiko
     # python3 setup.py install
@@ -173,6 +174,8 @@ The code is converted into a AST subtree and the local environment is pickled.
 If the latter fails the construct fails and your script will finish. We're
 checking its limitations to see where we can draw the line of what will be
 possible or not.
+
+Here you'll find [the docs](http://www.grulic.org.ar/~mdione/projects/ayrton/).
 
 # FAQ
 

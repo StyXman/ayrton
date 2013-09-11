@@ -1,0 +1,24 @@
+# this example is a simple script to control an audacious instance
+# running in another machine
+
+# you run it as:
+# ayrton -f arc.ay <what> <where>
+
+# for the moment it assumes you have password/passphrase-less ssh access into
+# <where>, the remote machine
+
+# <what> can be Play, Stop, Next, etc
+
+where= argv[2]
+
+with ssh (where, allow_agent=False) as foo:
+    # notice how we can reference to the local's argv
+    what= argv[1]
+    # we assume Audacious is running on display :0
+    export (DISPLAY=':0')
+    # use qdbus to send the command
+    qdbus ('org.mpris.MediaPlayer2.audacious', '/org/mpris/MediaPlayer2',
+           'org.mpris.MediaPlayer2.Player.%s' % what)
+
+# print (foo[1].readlines ())
+# print (foo[2].readlines ())
