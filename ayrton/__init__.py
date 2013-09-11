@@ -38,7 +38,7 @@ class RunningCommandWrapper (sh.RunningCommand):
 
     def __bool__ (self):
         # in shells, a command is true if its return code was 0
-        return self.exit_code ()==0
+        return self.exit_code==0
 
 # monkey patch sh
 sh.RunningCommand= RunningCommandWrapper
