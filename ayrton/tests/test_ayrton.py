@@ -127,8 +127,13 @@ class CommandExecution (unittest.TestCase):
         # ANS: because echo adds the first one and print adds the second one
         self.assertEqual (self.a.buffer.getvalue (), b'echo: foo\n\n')
 
-    def testExitCode (self):
-        ayrton.main ('')
+    def testExitCodeOK (self):
+        ayrton.main ('if true (): print ("yes!")')
+        self.assertEqual (self.a.buffer.getvalue (), b'yes!\n')
+
+    def testExitCodeNOK (self):
+        ayrton.main ('if not false (): print ("yes!")')
+        self.assertEqual (self.a.buffer.getvalue (), b'yes!\n')
 
 class MiscTests (unittest.TestCase):
     setUp=    setUpMockStdout

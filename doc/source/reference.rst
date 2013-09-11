@@ -40,7 +40,7 @@ Functions
 
     Changes the current working directory for the script process. If used as a
     context manager, it restores the original path when the context finishes,
-    efectively working more or less like *pushd*/*popd* or ``( cd path; ... ).
+    efectively working more or less like `pushd`/`popd` or `( cd path; ... )`.
 
 .. py:function:: export (key=value, ...)
 
