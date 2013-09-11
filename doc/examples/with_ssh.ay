@@ -2,7 +2,6 @@
 
 import random
 
-supercalifragilisticexpialidocious= 'Supercalifragilisticexpialidocious'
 a= 42
 
 with ssh ('localhost', allow_agent=False) as s:
