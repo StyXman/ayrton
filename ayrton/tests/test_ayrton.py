@@ -164,3 +164,11 @@ except CommandNotFound:
     def testWithCd (self):
         ayrton.main ('import os.path\nwith cd ("bin"):\n  print (os.path.split (pwd ())[-1])')
         self.assertEqual (self.a.buffer.getvalue (), b'bin\n')
+
+    def testShift (self):
+        ayrton.main ('a= shift (); print (a)', argv=['test_script.ay', '42'])
+        self.assertEqual (self.a.buffer.getvalue (), b'42\n')
+
+    def testShifts (self):
+        ayrton.main ('a= shift (2); print (a)', argv=['test_script.ay', '42', '27'])
+        self.assertEqual (self.a.buffer.getvalue (), b"['42', '27']\n")

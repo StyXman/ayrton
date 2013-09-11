@@ -76,7 +76,7 @@ class CommandWrapper (sh.Command):
         return super ().__call__ (*args, **kwargs)
 
 class Environment (object):
-    def __init__ (self, globals=None, locals=None):
+    def __init__ (self, globals=None, locals=None, **kwargs):
         super ().__init__ ()
 
         if globals is None:
@@ -93,6 +93,14 @@ class Environment (object):
         self.ayrton_builtins= {}
         polute (self.ayrton_builtins)
         self.os_environ= os.environ.copy ()
+
+        # now polute the locals with kwargs
+        for k, v in kwargs.items ():
+            # BUG: this sucks
+            if k=='argv':
+                self.ayrton_builtins['argv']= v
+            else:
+                self.locals[k]= v
 
     def __getitem__ (self, k):
         strikes= 0
@@ -161,7 +169,7 @@ class Ayrton (object):
             tree= CrazyASTTransformer().visit (tree)
 
         self.source= compile (tree, file, 'exec')
-        self.environ= Environment (globals, locals)
+        self.environ= Environment (globals, locals, **kwargs)
 
     def run (self):
         exec (self.source, self.environ.globals, self.environ)
@@ -179,7 +187,7 @@ def polute (d):
                               '_k', '_p', '_r', '_s', '_u', '_w', '_x', '_L',
                               '_N', '_S', '_nt', '_ot' ],
         'ayrton.expansion': [ 'bash', ],
-        'ayrton.functions': [ 'cd', 'export', 'run', 'ssh', 'unset', ],
+        'ayrton.functions': [ 'cd', 'export', 'run', 'shift', 'ssh', 'unset', ],
         'ayrton': [ 'Capture', ],
         'sh': [ 'CommandNotFound', ],
         }

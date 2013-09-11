@@ -46,6 +46,17 @@ def run (path, *args, **kwargs):
     c= ayrton.CommandWrapper._create (path)
     return c (*args, **kwargs)
 
+def shift (n=1):
+    # we start at 1 becasuse 0 is the script's path
+    # this closely follows bash's behavior
+    if n==1:
+        ans= ayrton.runner.environ.ayrton_builtins['argv'].pop (1)
+    elif n>1:
+        ans= [ ayrton.runner.environ.ayrton_builtins['argv'].pop (1)
+               for i in range (n) ]
+
+    return ans
+
 class ssh (object):
     # TODO: inherit CommandWrapper?
     # TODO: see foo.txt
