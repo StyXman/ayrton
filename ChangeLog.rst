@@ -1,8 +1,8 @@
-ayrton (0.1.2) UNRELEASED; urgency=low
+ayrton (0.1.2) unstable; urgency=low
 
   * RunninCommand.exit_code is a property, not a function. Closes #13.
 
- -- Marcos Dione <mdione@grulic.org.ar>  Wed, 11 Sep 2013 09:10:02 +0200
+ -- Marcos Dione <mdione@grulic.org.ar>  Wed, 11 Sep 2013 19:38:12 +0200
 
 ayrton (0.1.1) unstable; urgency=low
 
