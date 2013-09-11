@@ -27,7 +27,7 @@ from ast import Pass, Module, Bytes, copy_location, Call, Name, Load
 from ast import fix_missing_locations, Import, alias
 import pickle
 
-__version__= '0.1'
+__version__= '0.1.1'
 
 class RunningCommandWrapper (sh.RunningCommand):
     def _handle_exit_code (self, code):
