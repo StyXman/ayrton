@@ -198,7 +198,7 @@ def polute (d):
                               '_k', '_p', '_r', '_s', '_u', '_w', '_x', '_L',
                               '_N', '_S', '_nt', '_ot' ],
         'ayrton.expansion': [ 'bash', ],
-        'ayrton.functions': [ 'cd', 'export', 'option', 'run', 'shift', 'ssh',
+        'ayrton.functions': [ 'cd', 'export', 'option', 'remote', 'run', 'shift',
                               'unset', ],
         'ayrton': [ 'Capture', ],
         'sh': [ 'CommandNotFound', ],
