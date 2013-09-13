@@ -94,6 +94,12 @@ Functions
     Executes an arbitrary binary that is not in :py:data:`path`. *rel_or_abs_path*
     must be a relative or absolute path.
 
+.. py:function:: shift (n=1)
+
+    Pops the first *n* elemnets from :py:data:`argv` and return them. If *n* is
+    1, the value returned is just the first element; if it's bigger than 1, it
+    returns a list with those *n* elements.
+
 .. py:function:: unset (*args)
 
     For each variable name in *\*args*, unset the variable and remove it from
