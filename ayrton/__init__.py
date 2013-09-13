@@ -50,10 +50,16 @@ runner= None
 # instead of going to stdout
 Capture= (42, )
 
+class CommandFailed (Exception):
+    def __init__ (self, code):
+        self.code= code
+
 class CommandWrapper (sh.Command):
     # this class changes the behaviour of sh.Command
     # so is more shell scripting freindly
     def __call__ (self, *args, **kwargs):
+        global runner
+
         if ('_out' in kwargs.keys () and kwargs['_out']==Capture and
                 not '_tty_out' in kwargs.keys ()):
             # for capturing, the default is to not simulate a tty
@@ -70,10 +76,14 @@ class CommandWrapper (sh.Command):
                 kwargs[std]= None
 
         # mess with the environ
-        global runner
         kwargs['_env']= runner.environ.os_environ
 
-        return super ().__call__ (*args, **kwargs)
+        ans= super ().__call__ (*args, **kwargs)
+
+        if runner.options.get ('errexit', False) and not bool (ans):
+            raise CommandFailed (ans.exit_code)
+
+        return ans
 
 class Environment (object):
     def __init__ (self, globals=None, locals=None, **kwargs):
@@ -168,6 +178,7 @@ class Ayrton (object):
             tree= ast.parse (script)
             tree= CrazyASTTransformer().visit (tree)
 
+        self.options= {}
         self.source= compile (tree, file, 'exec')
         self.environ= Environment (globals, locals, **kwargs)
 
@@ -187,7 +198,8 @@ def polute (d):
                               '_k', '_p', '_r', '_s', '_u', '_w', '_x', '_L',
                               '_N', '_S', '_nt', '_ot' ],
         'ayrton.expansion': [ 'bash', ],
-        'ayrton.functions': [ 'cd', 'export', 'run', 'shift', 'ssh', 'unset', ],
+        'ayrton.functions': [ 'cd', 'export', 'option', 'run', 'shift', 'ssh',
+                              'unset', ],
         'ayrton': [ 'Capture', ],
         'sh': [ 'CommandNotFound', ],
         }

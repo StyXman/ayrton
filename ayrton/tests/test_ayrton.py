@@ -135,6 +135,13 @@ class CommandExecution (unittest.TestCase):
         ayrton.main ('if not false (): print ("yes!")')
         self.assertEqual (self.a.buffer.getvalue (), b'yes!\n')
 
+    def testOptionErrexit (self):
+        self.assertRaises (ayrton.CommandFailed,
+                           ayrton.main, '''option ('errexit')
+false ()
+''')
+
+
 class MiscTests (unittest.TestCase):
     setUp=    setUpMockStdout
     tearDown= tearDownMockStdout

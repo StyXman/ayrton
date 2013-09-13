@@ -46,6 +46,25 @@ def run (path, *args, **kwargs):
     c= ayrton.CommandWrapper._create (path)
     return c (*args, **kwargs)
 
+option_map= dict (
+    e= 'errexit',
+    )
+
+def option (option, value=True):
+    if len (option)==2:
+        if option[0]=='-':
+            # TODO
+            pass
+        elif option[0]=='+':
+            # TODO
+            pass
+        else:
+            # TODO: syntax error:
+            pass
+    else:
+        # TODO: check
+        ayrton.runner.options[option]= value
+
 def shift (n=1):
     # we start at 1 becasuse 0 is the script's path
     # this closely follows bash's behavior
