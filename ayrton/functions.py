@@ -141,6 +141,11 @@ def shift (n=1):
 
     return ans
 
+def source (file):
+    sub_runner= ayrton.Ayrton (file=file)
+    sub_runner.run ()
+    ayrton.runner.environ.locals.update (sub_runner.environ.locals)
+
 def unset (*args):
     for k in args:
         if k in ayrton.runner.environ.globals.keys ():

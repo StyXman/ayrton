@@ -100,11 +100,16 @@ Functions
     1, the value returned is just the first element; if it's bigger than 1, it
     returns a list with those *n* elements.
 
+.. py:function:: source (file)
+
+    Executes *file* in a subprocess. Any local variable will be incorporated in
+    the current process' local namespace.
+
 .. py:function:: unset (*args)
 
     For each variable name in *\*args*, unset the variable and remove it from
-    the environment to be exported to subproceses. Notice that it must be a list
-    of strings, not the variables themselves. Unknow variables will be silently
+    the environment to be exported to subprocesses. Notice that it must be a list
+    of strings, not the variables themselves. Unknown variables will be silently
     ignored.
 
 .. py:function:: foo ([*args, [**kwars]])
