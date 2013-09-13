@@ -42,10 +42,6 @@ def export (**kwargs):
         ayrton.runner.environ.globals[k]= str (v)
         ayrton.runner.environ.os_environ[k]= str (v)
 
-def run (path, *args, **kwargs):
-    c= ayrton.CommandWrapper._create (path)
-    return c (*args, **kwargs)
-
 option_map= dict (
     e= 'errexit',
     )
@@ -62,6 +58,10 @@ def option (option, value=True):
         option= option_map[option[1]]
 
     ayrton.runner.options[option]= value
+
+def run (path, *args, **kwargs):
+    c= ayrton.CommandWrapper._create (path)
+    return c (*args, **kwargs)
 
 def shift (n=1):
     # we start at 1 becasuse 0 is the script's path
