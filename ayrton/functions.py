@@ -53,17 +53,15 @@ option_map= dict (
 def option (option, value=True):
     if len (option)==2:
         if option[0]=='-':
-            # TODO
-            pass
+            value= True
         elif option[0]=='+':
-            # TODO
-            pass
+            value= False
         else:
             # TODO: syntax error:
             pass
-    else:
-        # TODO: check
-        ayrton.runner.options[option]= value
+        option= option_map[option[1]]
+
+    ayrton.runner.options[option]= value
 
 def shift (n=1):
     # we start at 1 becasuse 0 is the script's path

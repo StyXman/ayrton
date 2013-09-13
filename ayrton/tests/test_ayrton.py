@@ -141,6 +141,16 @@ class CommandExecution (unittest.TestCase):
 false ()
 ''')
 
+    def testOptionMinus_e (self):
+        self.assertRaises (ayrton.CommandFailed,
+                           ayrton.main, '''option ('-e')
+false ()
+''')
+
+    def testOptionPlus_e (self):
+        ayrton.main ('''option ('+e')
+false ()
+''')
 
 class MiscTests (unittest.TestCase):
     setUp=    setUpMockStdout
