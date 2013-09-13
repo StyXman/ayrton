@@ -148,7 +148,7 @@ The cherry on top of the cake, or more like the melon of top of the cupcake, is
 (semi) transparent remote execution. This is achieved with the following construct:
 
     a= 42
-    with ssh ('localhost') as streams:
+    with remote ('localhost') as streams:
         foo= input ()
         print (foo)
         # we can also access variables already in the scope
@@ -163,8 +163,8 @@ The cherry on top of the cake, or more like the melon of top of the cupcake, is
     print (o.readlines ())
 
 
-The body of the `with ssh(): ...` statement is actually executed in a remote
-machine after connecting via `ssh`. The `ssh()` context manager accepts the
+The body of the `with remote(): ...` statement is actually executed in a remote
+machine after connecting via `ssh`. The `remote()` context manager accepts the
 same parameters as `paramiko`'s
 [`SSHClient.connect()`](http://docs.paramiko.org/paramiko.SSHClient-class.html#connect)
 method.

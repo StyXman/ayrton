@@ -59,22 +59,7 @@ def option (option, value=True):
 
     ayrton.runner.options[option]= value
 
-def run (path, *args, **kwargs):
-    c= ayrton.CommandWrapper._create (path)
-    return c (*args, **kwargs)
-
-def shift (n=1):
-    # we start at 1 becasuse 0 is the script's path
-    # this closely follows bash's behavior
-    if n==1:
-        ans= ayrton.runner.environ.ayrton_builtins['argv'].pop (1)
-    elif n>1:
-        ans= [ ayrton.runner.environ.ayrton_builtins['argv'].pop (1)
-               for i in range (n) ]
-
-    return ans
-
-class ssh (object):
+class remote (object):
     # TODO: inherit CommandWrapper?
     # TODO: see foo.txt
     "Uses the same arguments as paramiko.SSHClient.connect ()"
@@ -137,6 +122,24 @@ ayrton.run (ast, g, l)"''' % (len (self.ast), len (global_env), len (local_env))
 
     def __exit__ (self, *args):
         pass
+
+def run (path, *args, **kwargs):
+    c= ayrton.CommandWrapper._create (path)
+    return c (*args, **kwargs)
+
+def shift (n=1):
+    # we start at 1 becasuse 0 is the script's path
+    # this closely follows bash's behavior
+    if n==1:
+        ans= ayrton.runner.environ.ayrton_builtins['argv'].pop (1)
+    elif n>1:
+        ans= [ ayrton.runner.environ.ayrton_builtins['argv'].pop (1)
+               for i in range (n) ]
+    else:
+        # TODO
+        pass
+
+    return ans
 
 def unset (*args):
     for k in args:

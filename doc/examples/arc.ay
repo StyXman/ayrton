@@ -11,7 +11,7 @@
 
 where= argv[2]
 
-with ssh (where, allow_agent=False) as foo:
+with remote (where, allow_agent=False) as foo:
     # notice how we can reference to the local's argv
     what= argv[1]
     # we assume Audacious is running on display :0

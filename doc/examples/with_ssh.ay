@@ -4,7 +4,7 @@ import random
 
 a= 42
 
-with ssh ('localhost', allow_agent=False) as s:
+with remote ('localhost', allow_agent=False) as s:
     import random
 
     b= input ('gimme a number, bro!\n')

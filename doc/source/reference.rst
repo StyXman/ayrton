@@ -63,12 +63,7 @@ Functions
       If set, any command that exits with a code which is not 0 will raise a
       :py:exc:`CommandFailed` exception.
 
-.. py:function:: run (rel_or_abs_path, [*args, [**kwargs]])
-
-    Executes an arbitrary binary that is not in :py:data:`path`. *rel_or_abs_path*
-    must be a relative or absolute path.
-
-.. py:function:: ssh (..., [_python_only=False])
+.. py:function:: remote (..., [_python_only=False])
 
     This function is better used as a context manager::
 
@@ -93,6 +88,11 @@ Functions
 
     For the moment imports are weeded out from the remote environment, so you
     will need to reimport them.
+
+.. py:function:: run (rel_or_abs_path, [*args, [**kwargs]])
+
+    Executes an arbitrary binary that is not in :py:data:`path`. *rel_or_abs_path*
+    must be a relative or absolute path.
 
 .. py:function:: unset (*args)
 
