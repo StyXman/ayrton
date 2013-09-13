@@ -27,6 +27,11 @@ Exceptions
     Raised when an executable cannot be found in :py:data:`path`. Unluckily,
     currently is raised everytime you refer to an unknow variable too.
 
+.. py:exception:: CommandFailed
+
+    Raised when the `errexit` :py:func:`option` is set and a command exits with
+    a code that is not 0.
+
 Functions
 ---------
 
@@ -47,6 +52,16 @@ Functions
     For each *key* and *value* pair, set the variable *key* to the string
     representation of *value*, and register the variable as to be exported to
     subproceses.
+
+.. py:function:: option (opt, value=True)
+
+    Works more or less like `bash`'s `set` builtin command. *opt* can be in its
+    long form, in which case you can pass the new *value*, or in the set/unset
+    short form. So far only the following options are recognized:
+
+    `errexit`/`-e`/`+e`
+      If set, any command that exits with a code which is not 0 will raise a
+      :py:exc:`CommandFailed` exception.
 
 .. py:function:: run (rel_or_abs_path, [*args, [**kwargs]])
 
