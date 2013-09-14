@@ -15,3 +15,6 @@ i.write (bytes ('%d\n' % random.randint (10, 100), 'ascii'))
 
 print (o.readlines ())
 print (e.readlines ())
+
+for x in i, o, e:
+    x.close ()
