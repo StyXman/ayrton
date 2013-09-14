@@ -42,17 +42,31 @@ def export (**kwargs):
         ayrton.runner.environ.globals[k]= str (v)
         ayrton.runner.environ.os_environ[k]= str (v)
 
-def run (path, *args, **kwargs):
-    c= ayrton.CommandWrapper._create (path)
-    return c (*args, **kwargs)
+option_map= dict (
+    e= 'errexit',
+    )
 
-class ssh (object):
+def option (option, value=True):
+    if len (option)==2:
+        if option[0]=='-':
+            value= True
+        elif option[0]=='+':
+            value= False
+        else:
+            # TODO: syntax error:
+            pass
+        option= option_map[option[1]]
+
+    ayrton.runner.options[option]= value
+
+class remote (object):
     # TODO: inherit CommandWrapper?
     # TODO: see foo.txt
     "Uses the same arguments as paramiko.SSHClient.connect ()"
-    def __init__ (self, ast, *args, **kwargs):
+    def __init__ (self, ast, hostname, *args, **kwargs):
         # actually, it's not a proper ast, it's the pickle of such thing
         self.ast= ast
+        self.hostname= hostname
         self.args= args
         self.python_only= False
         if '_python_only' in kwargs:
@@ -64,7 +78,7 @@ class ssh (object):
     def __enter__ (self):
         self.client= paramiko.SSHClient ()
         self.client.load_host_keys (bash ('~/.ssh/known_hosts')[0])
-        self.client.connect (*self.args, **self.kwargs)
+        self.client.connect (self.hostname, *self.args, **self.kwargs)
         # get the locals from the runtime
         # we can't really export the globals: it's full of unpicklable things
         # so send an empty environment
@@ -109,6 +123,29 @@ ayrton.run (ast, g, l)"''' % (len (self.ast), len (global_env), len (local_env))
 
     def __exit__ (self, *args):
         pass
+
+def run (path, *args, **kwargs):
+    c= ayrton.CommandWrapper._create (path)
+    return c (*args, **kwargs)
+
+def shift (n=1):
+    # we start at 1 becasuse 0 is the script's path
+    # this closely follows bash's behavior
+    if n==1:
+        ans= ayrton.runner.environ.ayrton_builtins['argv'].pop (1)
+    elif n>1:
+        ans= [ ayrton.runner.environ.ayrton_builtins['argv'].pop (1)
+               for i in range (n) ]
+    else:
+        # TODO
+        pass
+
+    return ans
+
+def source (file):
+    sub_runner= ayrton.Ayrton (file=file)
+    sub_runner.run ()
+    ayrton.runner.environ.locals.update (sub_runner.environ.locals)
 
 def unset (*args):
     for k in args:

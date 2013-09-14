@@ -1,3 +1,13 @@
+ayrton (0.2) unstable; urgency=low
+
+  * New function `options()` is similar to `bash`'s `set` command. So far
+    only the `errexit` and its short versions is accepted.
+  * The `ssh()` context manager was renamed to `remote()`. See NEWS.rst.
+  * New function `shitf()` similar to `bash`'s command of the same name.
+    See the docs.
+
+ -- Marcos Dione <mdione@grulic.org.ar>  Sat, 14 Sep 2013 17:59:27 +0200
+
 ayrton (0.1.2) unstable; urgency=low
 
   * RunninCommand.exit_code is a property, not a function. Closes #13.

@@ -135,6 +135,23 @@ class CommandExecution (unittest.TestCase):
         ayrton.main ('if not false (): print ("yes!")')
         self.assertEqual (self.a.buffer.getvalue (), b'yes!\n')
 
+    def testOptionErrexit (self):
+        self.assertRaises (ayrton.CommandFailed,
+                           ayrton.main, '''option ('errexit')
+false ()
+''')
+
+    def testOptionMinus_e (self):
+        self.assertRaises (ayrton.CommandFailed,
+                           ayrton.main, '''option ('-e')
+false ()
+''')
+
+    def testOptionPlus_e (self):
+        ayrton.main ('''option ('+e')
+false ()
+''')
+
 class MiscTests (unittest.TestCase):
     setUp=    setUpMockStdout
     tearDown= tearDownMockStdout
@@ -169,3 +186,29 @@ except CommandNotFound:
     def testWithCd (self):
         ayrton.main ('import os.path\nwith cd ("bin"):\n  print (os.path.split (pwd ())[-1])')
         self.assertEqual (self.a.buffer.getvalue (), b'bin\n')
+
+    def testShift (self):
+        ayrton.main ('a= shift (); print (a)', argv=['test_script.ay', '42'])
+        self.assertEqual (self.a.buffer.getvalue (), b'42\n')
+
+    def testShifts (self):
+        ayrton.main ('a= shift (2); print (a)', argv=['test_script.ay', '42', '27'])
+        self.assertEqual (self.a.buffer.getvalue (), b"['42', '27']\n")
+
+    def testSource (self):
+        ayrton.main ('source ("ayrton/tests/source.ay"); print (a)')
+        self.assertEqual (self.a.buffer.getvalue (), b'42\n')
+
+# SSH_CLIENT='127.0.0.1 55524 22'
+# SSH_CONNECTION='127.0.0.1 55524 127.0.0.1 22'
+# SSH_TTY=/dev/pts/14
+
+    def testRemote (self):
+        ayrton.main ('''a= 42
+with remote ('localhost', allow_agent=False) as s:
+    print (SSH_CLIENT)
+print (s[1].readlines ())''')
+        expected1= b'''[b'127.0.0.1 '''
+        expected2= b''' 22\\n']\n'''
+        self.assertEqual (self.a.buffer.getvalue ()[:len (expected1)], expected1)
+        self.assertEqual (self.a.buffer.getvalue ()[-len (expected2):], expected2)

@@ -4,7 +4,7 @@ import random
 
 a= 42
 
-with ssh ('localhost', allow_agent=False) as s:
+with remote ('localhost', allow_agent=False) as s:
     import random
 
     b= input ('gimme a number, bro!\n')
@@ -15,3 +15,6 @@ i.write (bytes ('%d\n' % random.randint (10, 100), 'ascii'))
 
 print (o.readlines ())
 print (e.readlines ())
+
+for x in i, o, e:
+    x.close ()

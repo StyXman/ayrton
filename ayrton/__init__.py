@@ -27,7 +27,7 @@ from ast import Pass, Module, Bytes, copy_location, Call, Name, Load
 from ast import fix_missing_locations, Import, alias
 import pickle
 
-__version__= '0.1.2'
+__version__= '0.2'
 
 class RunningCommandWrapper (sh.RunningCommand):
     def _handle_exit_code (self, code):
@@ -50,10 +50,16 @@ runner= None
 # instead of going to stdout
 Capture= (42, )
 
+class CommandFailed (Exception):
+    def __init__ (self, code):
+        self.code= code
+
 class CommandWrapper (sh.Command):
     # this class changes the behaviour of sh.Command
     # so is more shell scripting freindly
     def __call__ (self, *args, **kwargs):
+        global runner
+
         if ('_out' in kwargs.keys () and kwargs['_out']==Capture and
                 not '_tty_out' in kwargs.keys ()):
             # for capturing, the default is to not simulate a tty
@@ -70,13 +76,17 @@ class CommandWrapper (sh.Command):
                 kwargs[std]= None
 
         # mess with the environ
-        global runner
         kwargs['_env']= runner.environ.os_environ
 
-        return super ().__call__ (*args, **kwargs)
+        ans= super ().__call__ (*args, **kwargs)
+
+        if runner.options.get ('errexit', False) and not bool (ans):
+            raise CommandFailed (ans.exit_code)
+
+        return ans
 
 class Environment (object):
-    def __init__ (self, globals=None, locals=None):
+    def __init__ (self, globals=None, locals=None, **kwargs):
         super ().__init__ ()
 
         if globals is None:
@@ -93,6 +103,14 @@ class Environment (object):
         self.ayrton_builtins= {}
         polute (self.ayrton_builtins)
         self.os_environ= os.environ.copy ()
+
+        # now polute the locals with kwargs
+        for k, v in kwargs.items ():
+            # BUG: this sucks
+            if k=='argv':
+                self.ayrton_builtins['argv']= v
+            else:
+                self.locals[k]= v
 
     def __getitem__ (self, k):
         strikes= 0
@@ -127,7 +145,7 @@ class CrazyASTTransformer (ast.NodeTransformer):
     def visit_With (self, node):
         call= node.items[0].context_expr
         # TODO: more checks
-        if call.func.id=='ssh':
+        if call.func.id=='remote':
             # capture the body and put it as the first argument to ssh()
             # but within a module, and already pickled;
             # otherwise we need to create an AST for the call of all the
@@ -152,6 +170,8 @@ class Ayrton (object):
     def __init__ (self, script=None, file=None, tree=None, globals=None,
                   locals=None, **kwargs):
         if script is None and file is not None:
+            # it's a pity that compile() does not accept a file as input
+            # so we could avoid reading the whole file
             script= open (file).read ()
         else:
             file= 'arg_to_main'
@@ -160,8 +180,9 @@ class Ayrton (object):
             tree= ast.parse (script)
             tree= CrazyASTTransformer().visit (tree)
 
+        self.options= {}
         self.source= compile (tree, file, 'exec')
-        self.environ= Environment (globals, locals)
+        self.environ= Environment (globals, locals, **kwargs)
 
     def run (self):
         exec (self.source, self.environ.globals, self.environ)
@@ -179,7 +200,8 @@ def polute (d):
                               '_k', '_p', '_r', '_s', '_u', '_w', '_x', '_L',
                               '_N', '_S', '_nt', '_ot' ],
         'ayrton.expansion': [ 'bash', ],
-        'ayrton.functions': [ 'cd', 'export', 'run', 'ssh', 'unset', ],
+        'ayrton.functions': [ 'cd', 'export', 'option', 'remote', 'run', 'shift',
+                              'source', 'unset', ],
         'ayrton': [ 'Capture', ],
         'sh': [ 'CommandNotFound', ],
         }

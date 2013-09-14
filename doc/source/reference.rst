@@ -27,6 +27,11 @@ Exceptions
     Raised when an executable cannot be found in :py:data:`path`. Unluckily,
     currently is raised everytime you refer to an unknow variable too.
 
+.. py:exception:: CommandFailed
+
+    Raised when the `errexit` :py:func:`option` is set and a command exits with
+    a code that is not 0.
+
 Functions
 ---------
 
@@ -48,12 +53,17 @@ Functions
     representation of *value*, and register the variable as to be exported to
     subproceses.
 
-.. py:function:: run (rel_or_abs_path, [*args, [**kwargs]])
+.. py:function:: option (opt, value=True)
 
-    Executes an arbitrary binary that is not in :py:data:`path`. *rel_or_abs_path*
-    must be a relative or absolute path.
+    Works more or less like `bash`'s `set` builtin command. *opt* can be in its
+    long form, in which case you can pass the new *value*, or in the set/unset
+    short form. So far only the following options are recognized:
 
-.. py:function:: ssh (..., [_python_only=False])
+    `errexit`/`-e`/`+e`
+      If set, any command that exits with a code which is not 0 will raise a
+      :py:exc:`CommandFailed` exception.
+
+.. py:function:: remote (..., [_python_only=False])
 
     This function is better used as a context manager::
 
@@ -79,11 +89,27 @@ Functions
     For the moment imports are weeded out from the remote environment, so you
     will need to reimport them.
 
+.. py:function:: run (rel_or_abs_path, [*args, [**kwargs]])
+
+    Executes an arbitrary binary that is not in :py:data:`path`. *rel_or_abs_path*
+    must be a relative or absolute path.
+
+.. py:function:: shift (n=1)
+
+    Pops the first *n* elemnets from :py:data:`argv` and return them. If *n* is
+    1, the value returned is just the first element; if it's bigger than 1, it
+    returns a list with those *n* elements.
+
+.. py:function:: source (file)
+
+    Executes *file* in a subprocess. Any local variable will be incorporated in
+    the current process' local namespace.
+
 .. py:function:: unset (*args)
 
     For each variable name in *\*args*, unset the variable and remove it from
-    the environment to be exported to subproceses. Notice that it must be a list
-    of strings, not the variables themselves. Unknow variables will be silently
+    the environment to be exported to subprocesses. Notice that it must be a list
+    of strings, not the variables themselves. Unknown variables will be silently
     ignored.
 
 .. py:function:: foo ([*args, [**kwars]])
