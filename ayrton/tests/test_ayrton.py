@@ -198,3 +198,17 @@ except CommandNotFound:
     def testSource (self):
         ayrton.main ('source ("ayrton/tests/source.ay"); print (a)')
         self.assertEqual (self.a.buffer.getvalue (), b'42\n')
+
+# SSH_CLIENT='127.0.0.1 55524 22'
+# SSH_CONNECTION='127.0.0.1 55524 127.0.0.1 22'
+# SSH_TTY=/dev/pts/14
+
+    def testRemote (self):
+        ayrton.main ('''a= 42
+with remote ('localhost', allow_agent=False) as s:
+    print (SSH_CLIENT)
+print (s[1].readlines ())''')
+        expected1= b'''[b'127.0.0.1 '''
+        expected2= b''' 22\\n']\n'''
+        self.assertEqual (self.a.buffer.getvalue ()[:len (expected1)], expected1)
+        self.assertEqual (self.a.buffer.getvalue ()[-len (expected2):], expected2)
