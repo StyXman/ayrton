@@ -145,7 +145,7 @@ class CrazyASTTransformer (ast.NodeTransformer):
     def visit_With (self, node):
         call= node.items[0].context_expr
         # TODO: more checks
-        if call.func.id=='ssh':
+        if call.func.id=='remote':
             # capture the body and put it as the first argument to ssh()
             # but within a module, and already pickled;
             # otherwise we need to create an AST for the call of all the
@@ -170,6 +170,8 @@ class Ayrton (object):
     def __init__ (self, script=None, file=None, tree=None, globals=None,
                   locals=None, **kwargs):
         if script is None and file is not None:
+            # it's a pity that compile() does not accept a file as input
+            # so we could avoid reading the whole file
             script= open (file).read ()
         else:
             file= 'arg_to_main'

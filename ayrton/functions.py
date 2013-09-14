@@ -63,9 +63,10 @@ class remote (object):
     # TODO: inherit CommandWrapper?
     # TODO: see foo.txt
     "Uses the same arguments as paramiko.SSHClient.connect ()"
-    def __init__ (self, ast, *args, **kwargs):
+    def __init__ (self, ast, hostname, *args, **kwargs):
         # actually, it's not a proper ast, it's the pickle of such thing
         self.ast= ast
+        self.hostname= hostname
         self.args= args
         self.python_only= False
         if '_python_only' in kwargs:
@@ -77,7 +78,7 @@ class remote (object):
     def __enter__ (self):
         self.client= paramiko.SSHClient ()
         self.client.load_host_keys (bash ('~/.ssh/known_hosts')[0])
-        self.client.connect (*self.args, **self.kwargs)
+        self.client.connect (self.hostname, *self.args, **self.kwargs)
         # get the locals from the runtime
         # we can't really export the globals: it's full of unpicklable things
         # so send an empty environment
