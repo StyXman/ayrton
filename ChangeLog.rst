@@ -1,4 +1,4 @@
-ayrton (0.2) UNRELEASED; urgency=low
+ayrton (0.2) unstable; urgency=low
 
   * New function `options()` is similar to `bash`'s `set` command. So far
     only the `errexit` and its short versions is accepted.
@@ -6,7 +6,7 @@ ayrton (0.2) UNRELEASED; urgency=low
   * New function `shitf()` similar to `bash`'s command of the same name.
     See the docs.
 
- -- Marcos Dione <mdione@grulic.org.ar>  Fri, 13 Sep 2013 13:43:25 +0200
+ -- Marcos Dione <mdione@grulic.org.ar>  Sat, 14 Sep 2013 17:59:27 +0200
 
 ayrton (0.1.2) unstable; urgency=low
 
