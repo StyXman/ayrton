@@ -40,6 +40,27 @@ class CrazyASTTransformer (ast.NodeTransformer):
     # The import statement of the form from ... import * binds all names defined
     # in the imported module, except those beginning with an underscore.
 
+    # A block is a piece of Python program text that is executed as a unit.
+    # The following are blocks:
+    # [ ] a module,
+    # [ ] a function body, and
+    # [ ] a class definition.
+    # [ ] A script file is a code block.
+    # [ ] The string argument passed to the built-in functions eval() and exec()
+    #     is a code block.
+
+    # A scope defines the visibility of a name within a block. If a local variable
+    # is defined in a block, its scope includes that block. If the definition
+    # occurs in a function block, the scope extends to any blocks contained within
+    # the defining one, unless a contained block introduces a different binding
+    # for the name. The scope of names defined in a class block is limited to the
+    # class block; it does not extend to the code blocks of methods – this
+    # includes comprehensions and generator expressions since they are implemented
+    # using a function scope.
+
+    # [ ] A target occurring in a del statement is also considered bound for this
+    #     purpose (though the actual semantics are to unbind the name).
+
     def visit_Import (self, node):
         self.generic_visit (node)
         # Import(names=[alias(name='foo', asname=None)])
@@ -58,16 +79,13 @@ class CrazyASTTransformer (ast.NodeTransformer):
         # Call(func=Name(id='b', ctx=Load()), args=[], keywords=[], starargs=None,
         #      kwargs=None)
         if   type (node.func)==ast.Name:
-            # pdb.set_trace ()
             func_name= node.func.id
-            # print (func_name)
             if func_name not in self.known_names:
                 try:
-                    # fisrt check if it's not one of the builting functions
-                    # print (func_name)
+                    # fisrt check if it's not one of the builtin functions
                     self.environ[func_name]
                 except KeyError:
-                    # print (func_name)
+                    # I guess I have no other option bu to try to execute somehting here...
                     new_node= Call (func=Attribute (value=Name (id='CommandWrapper', ctx=Load ()),
                                                     attr='_create', ctx=Load ()),
                                     args=[Str (s=func_name)], keywords=[],
@@ -83,6 +101,14 @@ class CrazyASTTransformer (ast.NodeTransformer):
         # Assign(targets=[Name(id='a', ctx=Store())], value=Num(n=2))
         for target in node.targets:
             self.known_names.add (target.id)
+
+        return node
+
+    def visit_Delete (self, node):
+        self.generic_visit (node)
+        # Delete(targets=[Name(id='foo', ctx=Del())])
+        for target in node.targets:
+            self.known_names.remove (target.id)
 
         return node
 

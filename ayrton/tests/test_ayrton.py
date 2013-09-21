@@ -213,6 +213,8 @@ print (a)''')
 # SSH_TTY=/dev/pts/14
 
     def testRemote (self):
+        """This test only succeeds if you you have password/passphrase-less access
+        to localhost"""
         ayrton.main ('''a= 42
 with remote ('localhost', allow_agent=False) as s:
     print (SSH_CLIENT)
@@ -225,10 +227,10 @@ print (s[1].readlines ())''')
 class CommandDetection (unittest.TestCase):
 
     def testSimpleCase (self):
-        ayrton.main ('true()')
+        ayrton.main ('true ()')
 
     def testSimpleCaseFails (self):
-        self.assertRaises (sh.CommandNotFound, ayrton.main, 'foo()')
+        self.assertRaises (sh.CommandNotFound, ayrton.main, 'foo ()')
 
     def testFromImport (self):
         ayrton.main ('''from random import seed;
@@ -237,7 +239,7 @@ seed ()''')
     def testFromImportFails (self):
         self.assertRaises (sh.CommandNotFound, ayrton.main,
                            '''from random import seed;
-foo()''')
+foo ()''')
 
     def testFromImportAs (self):
         ayrton.main ('''from random import seed as foo
@@ -246,8 +248,15 @@ foo ()''')
     def testFromImportAsFails (self):
         self.assertRaises (sh.CommandNotFound, ayrton.main,
                            '''from random import seed as foo
-bar()''')
+bar ()''')
 
     def testAssign (self):
         ayrton.main ('''a= lambda x: x
-a(1)''')
+a (1)''')
+
+    def testDel (self):
+        self.assertRaises (ayrton.CommandFailed, ayrton.main,
+                           '''option ('errexit')
+false= lambda: x
+del false
+false ()''')

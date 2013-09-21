@@ -137,6 +137,10 @@ class Environment (object):
     def __setitem__ (self, k, v):
         self.locals[k]= v
 
+    def __delitem__ (self, k):
+        print ("%s gone!" % k)
+        del self.locals[k]
+
     def __iter__ (self):
         return self.locals.__iter__ ()
 
