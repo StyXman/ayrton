@@ -40,6 +40,7 @@ class CrazyASTTransformer (ast.NodeTransformer):
         self.known_names= defaultdict (lambda: 0)
         self.stack= ()
         self.defined_names= defaultdict (lambda: [])
+        self.unnamed_block= 0
 
     # The following constructs bind names:
     # [x] formal parameters to functions,
@@ -48,7 +49,7 @@ class CrazyASTTransformer (ast.NodeTransformer):
     # [x] function definitions (these bind the class or function name
     #     in the defining block),
     # [x] and targets that are identifiers if occurring in an assignment,
-    # [ ] for loop header, or
+    # [x] for loop header, or
     # [ ] after as in a with statement
     # [ ] or except clause.
     # The import statement of the form from ... import * binds all names defined
@@ -57,8 +58,8 @@ class CrazyASTTransformer (ast.NodeTransformer):
     # A block is a piece of Python program text that is executed as a unit.
     # The following are blocks:
     # [ ] a module,
-    # [ ] a function body, and
-    # [ ] a class definition.
+    # [x] a function body, and
+    # [x] a class definition.
     # [ ] A script file is a code block.
     # [ ] The string argument passed to the built-in functions eval() and exec()
     #     is a code block.
@@ -107,9 +108,6 @@ class CrazyASTTransformer (ast.NodeTransformer):
         return node
 
     def visit_FunctionDef (self, node):
-        # FunctionDef(name='foo', args=arguments(args=[], vararg=None, kwarg=None,
-        #             defaults=[]), body=[Pass()], decorator_list=[])
-        self.stack= append_to_tuple (self.stack, node.name)
         # FunctionDef(name='foo',
         #             args=arguments(args=[arg(arg='a', annotation=None),
         #                                  arg(arg='b', annotation=None)],
@@ -118,6 +116,8 @@ class CrazyASTTransformer (ast.NodeTransformer):
         #                            kwargannotation=None, defaults=[Num(n=1)],
         #                            kw_defaults=[]),
         #             body=[Pass()], decorator_list=[], returns=None)
+        self.stack= append_to_tuple (self.stack, node.name)
+
         # add the arguments as local names
         for arg in node.args.args:
             self.known_names[arg.arg]+= 1
@@ -131,6 +131,45 @@ class CrazyASTTransformer (ast.NodeTransformer):
         # ... and remove the names defined in it from the known_names
         for name in names:
             self.known_names[name]-= 1
+
+        return node
+
+    def visit_For (self, node):
+        # For(target=Name(id='x', ctx=Store()), iter=List(elts=[], ctx=Load()),
+        #     body=[Pass()], orelse=[])
+        self.stack= append_to_tuple (self.stack, self.unnamed_block)
+        self.unnamed_block+= 1
+
+        for name in node.target:
+            self.known_names[name.id]+= 1
+            self.defined_names[self.stack].append (name.id)
+
+        self.generic_visit (node)
+
+        # take out the function from the stack
+        names= self.defined_names[self.stack]
+        self.stack= pop_from_tuple (self.stack)
+        # ... and remove the names defined in it from the known_names
+        for name in names:
+            self.known_names[name]-= 1
+
+        return node
+
+    def visit_Assign (self, node):
+        self.generic_visit (node)
+        # Assign(targets=[Name(id='a', ctx=Store())], value=Num(n=2))
+        for target in node.targets:
+            self.known_names[target.id]+= 1
+            self.defined_names[self.stack].append (target.id)
+
+        return node
+
+    def visit_Delete (self, node):
+        self.generic_visit (node)
+        # Delete(targets=[Name(id='foo', ctx=Del())])
+        for target in node.targets:
+            self.known_names[target.id]-= 1
+            self.defined_names[self.stack].remove (target.id)
 
         return node
 
@@ -154,24 +193,6 @@ class CrazyASTTransformer (ast.NodeTransformer):
                     ast.copy_location (new_node, node)
                     ast.fix_missing_locations (new_node)
                     node.func= new_node
-
-        return node
-
-    def visit_Assign (self, node):
-        self.generic_visit (node)
-        # Assign(targets=[Name(id='a', ctx=Store())], value=Num(n=2))
-        for target in node.targets:
-            self.known_names[target.id]+= 1
-            self.defined_names[self.stack].append (target.id)
-
-        return node
-
-    def visit_Delete (self, node):
-        self.generic_visit (node)
-        # Delete(targets=[Name(id='foo', ctx=Del())])
-        for target in node.targets:
-            self.known_names[target.id]-= 1
-            self.defined_names[self.stack].remove (target.id)
 
         return node
 

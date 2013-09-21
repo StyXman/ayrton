@@ -212,7 +212,7 @@ print (a)''')
 # SSH_CONNECTION='127.0.0.1 55524 127.0.0.1 22'
 # SSH_TTY=/dev/pts/14
 
-    def testRemote (self):
+    def Remote (self):
         """This test only succeeds if you you have password/passphrase-less access
         to localhost"""
         ayrton.main ('''with remote ('localhost', allow_agent=False) as s:
@@ -276,3 +276,4 @@ false ()''')
 def foo ():
     false= lambda: True
     false ()''')
+
