@@ -215,8 +215,7 @@ print (a)''')
     def testRemote (self):
         """This test only succeeds if you you have password/passphrase-less access
         to localhost"""
-        ayrton.main ('''a= 42
-with remote ('localhost', allow_agent=False) as s:
+        ayrton.main ('''with remote ('localhost', allow_agent=False) as s:
     print (SSH_CLIENT)
 print (s[1].readlines ())''')
         expected1= b'''[b'127.0.0.1 '''
@@ -261,7 +260,19 @@ false= lambda: x
 del false
 false ()''')
 
-    def testDefFun (self):
+    def testDefFun1 (self):
         ayrton.main ('''def foo ():
     true= 42
 true ()''')
+
+    def testDefFun2 (self):
+        self.assertRaises (ayrton.CommandFailed, ayrton.main, '''option ('errexit')
+def foo ():
+    false= 42
+false ()''')
+
+    def testDefFunFails1 (self):
+        ayrton.main ('''option ('errexit')
+def foo ():
+    false= lambda: True
+    false ()''')
