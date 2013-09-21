@@ -22,10 +22,11 @@ import sys
 import sh
 import importlib
 import builtins
-import ast
-from ast import Pass, Module, Bytes, copy_location, Call, Name, Load
-from ast import fix_missing_locations, Import, alias
 import pickle
+import ast
+from ast import fix_missing_locations, alias, ImportFrom
+
+from ayrton.castt import CrazyASTTransformer
 
 __version__= '0.2'
 
@@ -127,7 +128,9 @@ class Environment (object):
         if strikes==5:
             # the name was not found in any of the dicts
             # create a command for it
-            ans= CommandWrapper._create (k)
+            # ans= CommandWrapper._create (k)
+            # print (k)
+            raise KeyError (k)
 
         return ans
 
@@ -140,32 +143,6 @@ class Environment (object):
     def __str__ (self):
         return str ([ self.globals, self.locals, self.os_environ ])
 
-class CrazyASTTransformer (ast.NodeTransformer):
-
-    def visit_With (self, node):
-        call= node.items[0].context_expr
-        # TODO: more checks
-        if call.func.id=='remote':
-            # capture the body and put it as the first argument to ssh()
-            # but within a module, and already pickled;
-            # otherwise we need to create an AST for the call of all the
-            # constructors in the body we capture... it's complicated
-            m= Module (body=node.body)
-
-            data= pickle.dumps (m)
-            s= Bytes (s=data)
-            s.lineno= node.lineno
-            s.col_offset= node.col_offset
-            call.args.insert (0, s)
-
-            p= Pass ()
-            p.lineno= node.lineno+1
-            p.col_offset= node.col_offset+4
-
-            node.body= [ p ]
-
-        return node
-
 class Ayrton (object):
     def __init__ (self, script=None, file=None, tree=None, globals=None,
                   locals=None, **kwargs):
@@ -176,13 +153,22 @@ class Ayrton (object):
         else:
             file= 'arg_to_main'
 
-        if script is not None:
+        self.environ= Environment (globals, locals, **kwargs)
+
+        if tree is None:
             tree= ast.parse (script)
-            tree= CrazyASTTransformer().visit (tree)
+            # ImportFrom(module='bar', names=[alias(name='baz', asname=None)], level=0)
+            node= ImportFrom (module='ayrton',
+                              names=[alias (name='CommandWrapper', asname=None)],
+                              level=0)
+            node.lineno= 0
+            node.col_offset= 0
+            ast.fix_missing_locations (node)
+            tree.body.insert (0, node)
+            tree= CrazyASTTransformer(self.environ).visit (tree)
 
         self.options= {}
         self.source= compile (tree, file, 'exec')
-        self.environ= Environment (globals, locals, **kwargs)
 
     def run (self):
         exec (self.source, self.environ.globals, self.environ)

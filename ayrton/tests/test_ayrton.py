@@ -22,6 +22,7 @@ import os
 
 from ayrton.expansion import bash
 import ayrton
+import sh
 
 class Bash(unittest.TestCase):
     def test_simple_string (self):
@@ -121,43 +122,44 @@ class CommandExecution (unittest.TestCase):
 
     def testStdEqCapture (self):
         # do the test
-        ayrton.main ('f= echo ("foo", _out=Capture); print ("echo: %s" % f)')
+        ayrton.main ('''f= echo ("foo", _out=Capture);
+print ("echo: %s" % f)''')
         # the output is empty, as it went to /dev/null
         # BUG: check why there's a second \n
         # ANS: because echo adds the first one and print adds the second one
         self.assertEqual (self.a.buffer.getvalue (), b'echo: foo\n\n')
 
     def testExitCodeOK (self):
-        ayrton.main ('if true (): print ("yes!")')
+        ayrton.main ('''if true ():
+    print ("yes!")''')
         self.assertEqual (self.a.buffer.getvalue (), b'yes!\n')
 
     def testExitCodeNOK (self):
-        ayrton.main ('if not false (): print ("yes!")')
+        ayrton.main ('''if not false ():
+    print ("yes!")''')
         self.assertEqual (self.a.buffer.getvalue (), b'yes!\n')
 
     def testOptionErrexit (self):
         self.assertRaises (ayrton.CommandFailed,
                            ayrton.main, '''option ('errexit')
-false ()
-''')
+false ()''')
 
     def testOptionMinus_e (self):
         self.assertRaises (ayrton.CommandFailed,
                            ayrton.main, '''option ('-e')
-false ()
-''')
+false ()''')
 
     def testOptionPlus_e (self):
         ayrton.main ('''option ('+e')
-false ()
-''')
+false ()''')
 
 class MiscTests (unittest.TestCase):
     setUp=    setUpMockStdout
     tearDown= tearDownMockStdout
 
     def testEnviron (self):
-        ayrton.main ('export (TEST_ENV=42); run ("./ayrton/tests/data/test_environ.sh")')
+        ayrton.main ('''export (TEST_ENV=42);
+run ("./ayrton/tests/data/test_environ.sh")''')
         self.assertEqual (self.a.buffer.getvalue (), b'42\n')
 
     def testUnset (self):
@@ -166,7 +168,7 @@ print (TEST_ENV)
 unset ("TEST_ENV")
 try:
     TEST_ENV
-except CommandNotFound:
+except NameError:
     print ("yes")''')
         self.assertEqual (self.a.buffer.getvalue (), b'42\nyes\n')
 
@@ -176,27 +178,34 @@ except CommandNotFound:
         self.assertEqual (self.a.buffer.getvalue(), b'42\n')
 
     def testExportSetsGlobalVar (self):
-        ayrton.main ('export (foo=42); print (foo)')
+        ayrton.main ('''export (foo=42);
+print (foo)''')
         self.assertEqual (self.a.buffer.getvalue(), b'42\n')
 
     def testRename (self):
-        ayrton.main ('import os.path; print (os.path.split (pwd ())[-1])')
+        ayrton.main ('''import os.path;
+print (os.path.split (pwd ())[-1])''')
         self.assertEqual (self.a.buffer.getvalue (), b'ayrton\n')
 
     def testWithCd (self):
-        ayrton.main ('import os.path\nwith cd ("bin"):\n  print (os.path.split (pwd ())[-1])')
+        ayrton.main ('''import os.path
+with cd ("bin"):
+    print (os.path.split (pwd ())[-1])''')
         self.assertEqual (self.a.buffer.getvalue (), b'bin\n')
 
     def testShift (self):
-        ayrton.main ('a= shift (); print (a)', argv=['test_script.ay', '42'])
+        ayrton.main ('''a= shift ();
+print (a)''', argv=['test_script.ay', '42'])
         self.assertEqual (self.a.buffer.getvalue (), b'42\n')
 
     def testShifts (self):
-        ayrton.main ('a= shift (2); print (a)', argv=['test_script.ay', '42', '27'])
+        ayrton.main ('''a= shift (2);
+print (a)''', argv=['test_script.ay', '42', '27'])
         self.assertEqual (self.a.buffer.getvalue (), b"['42', '27']\n")
 
     def testSource (self):
-        ayrton.main ('source ("ayrton/tests/source.ay"); print (a)')
+        ayrton.main ('''source ("ayrton/tests/source.ay");
+print (a)''')
         self.assertEqual (self.a.buffer.getvalue (), b'42\n')
 
 # SSH_CLIENT='127.0.0.1 55524 22'
@@ -212,3 +221,33 @@ print (s[1].readlines ())''')
         expected2= b''' 22\\n']\n'''
         self.assertEqual (self.a.buffer.getvalue ()[:len (expected1)], expected1)
         self.assertEqual (self.a.buffer.getvalue ()[-len (expected2):], expected2)
+
+class CommandDetection (unittest.TestCase):
+
+    def testSimpleCase (self):
+        ayrton.main ('true()')
+
+    def testSimpleCaseFails (self):
+        self.assertRaises (sh.CommandNotFound, ayrton.main, 'foo()')
+
+    def testFromImport (self):
+        ayrton.main ('''from random import seed;
+seed ()''')
+
+    def testFromImportFails (self):
+        self.assertRaises (sh.CommandNotFound, ayrton.main,
+                           '''from random import seed;
+foo()''')
+
+    def testFromImportAs (self):
+        ayrton.main ('''from random import seed as foo
+foo ()''')
+
+    def testFromImportAsFails (self):
+        self.assertRaises (sh.CommandNotFound, ayrton.main,
+                           '''from random import seed as foo
+bar()''')
+
+    def testAssign (self):
+        ayrton.main ('''a= lambda x: x
+a(1)''')
