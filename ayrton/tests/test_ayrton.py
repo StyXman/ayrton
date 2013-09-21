@@ -260,3 +260,8 @@ a (1)''')
 false= lambda: x
 del false
 false ()''')
+
+    def testDefFun (self):
+        ayrton.main ('''def foo ():
+    true= 42
+true ()''')

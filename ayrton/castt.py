@@ -21,17 +21,31 @@ import ast
 from ast import Pass, Module, Bytes, copy_location, Call, Name, Load, Str
 from ast import fix_missing_locations, Import, alias, Attribute, ImportFrom
 import pickle
+from collections import defaultdict
+
+def append_to_tuple (t, o):
+    l= list (t)
+    l.append (o)
+    return tuple (l)
+
+def pop_from_tuple (t, n=-1):
+    l= list (t)
+    l.pop (n)
+    return tuple (l)
 
 class CrazyASTTransformer (ast.NodeTransformer):
     def __init__ (self, environ):
         super ().__init__ ()
         self.environ= environ
-        self.known_names= set ()
+        self.known_names= defaultdict (lambda: 0)
+        self.stack= ()
+        self.defined_names= defaultdict (lambda: [])
 
     # The following constructs bind names:
     # [ ] formal parameters to functions,
     # [x] import statements,
-    # [ ] class and function definitions (these bind the class or function name
+    # [ ] class and
+    # [x] function definitions (these bind the class or function name
     #     in the defining block),
     # [x] and targets that are identifiers if occurring in an assignment,
     # [ ] for loop header, or
@@ -58,7 +72,7 @@ class CrazyASTTransformer (ast.NodeTransformer):
     # includes comprehensions and generator expressions since they are implemented
     # using a function scope.
 
-    # [ ] A target occurring in a del statement is also considered bound for this
+    # [x] A target occurring in a del statement is also considered bound for this
     #     purpose (though the actual semantics are to unbind the name).
 
     def visit_Import (self, node):
@@ -66,13 +80,31 @@ class CrazyASTTransformer (ast.NodeTransformer):
         # Import(names=[alias(name='foo', asname=None)])
         for name in node.names:
             if name.asname is not None:
-                self.known_names.add (name.asname)
+                n= name.asname
             else:
-                self.known_names.add (name.name)
+                n= name.name
+            self.known_names[n]+=1
+            self.defined_names[self.stack].append (n)
+
         return node
 
     visit_ImportFrom= visit_Import
         # ImportFrom(module='bar', names=[alias(name='baz', asname=None)], level=0)
+
+    def visit_FunctionDef (self, node):
+        # FunctionDef(name='foo', args=arguments(args=[], vararg=None, kwarg=None,
+        #             defaults=[]), body=[Pass()], decorator_list=[])
+        self.stack= append_to_tuple (self.stack, node.name)
+        self.generic_visit (node)
+
+        # take out the function from the stack
+        names= self.defined_names[self.stack]
+        self.stack= pop_from_tuple (self.stack)
+        # ... and remove the names defined in it from the known_names
+        for name in names:
+            self.known_names[name]-= 1
+
+        return node
 
     def visit_Call (self, node):
         self.generic_visit (node)
@@ -80,7 +112,8 @@ class CrazyASTTransformer (ast.NodeTransformer):
         #      kwargs=None)
         if   type (node.func)==ast.Name:
             func_name= node.func.id
-            if func_name not in self.known_names:
+            defs= self.known_names[func_name]
+            if defs==0:
                 try:
                     # fisrt check if it's not one of the builtin functions
                     self.environ[func_name]
@@ -100,7 +133,8 @@ class CrazyASTTransformer (ast.NodeTransformer):
         self.generic_visit (node)
         # Assign(targets=[Name(id='a', ctx=Store())], value=Num(n=2))
         for target in node.targets:
-            self.known_names.add (target.id)
+            self.known_names[target.id]+= 1
+            self.defined_names[self.stack].append (target.id)
 
         return node
 
@@ -108,7 +142,8 @@ class CrazyASTTransformer (ast.NodeTransformer):
         self.generic_visit (node)
         # Delete(targets=[Name(id='foo', ctx=Del())])
         for target in node.targets:
-            self.known_names.remove (target.id)
+            self.known_names[target.id]-= 1
+            self.defined_names[self.stack].remove (target.id)
 
         return node
 
