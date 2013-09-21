@@ -42,9 +42,9 @@ class CrazyASTTransformer (ast.NodeTransformer):
         self.defined_names= defaultdict (lambda: [])
 
     # The following constructs bind names:
-    # [ ] formal parameters to functions,
+    # [x] formal parameters to functions,
     # [x] import statements,
-    # [ ] class and
+    # [x] class and
     # [x] function definitions (these bind the class or function name
     #     in the defining block),
     # [x] and targets that are identifiers if occurring in an assignment,
@@ -91,10 +91,38 @@ class CrazyASTTransformer (ast.NodeTransformer):
     visit_ImportFrom= visit_Import
         # ImportFrom(module='bar', names=[alias(name='baz', asname=None)], level=0)
 
+    def visit_ClassDef (self, node):
+        # ClassDef(name='foo', bases=[], keywords=[], starargs=None, kwargs=None,
+        #          body=[Pass()], decorator_list=[])
+        self.stack= append_to_tuple (self.stack, node.name)
+        self.generic_visit (node)
+
+        # take out the function from the stack
+        names= self.defined_names[self.stack]
+        self.stack= pop_from_tuple (self.stack)
+        # ... and remove the names defined in it from the known_names
+        for name in names:
+            self.known_names[name]-= 1
+
+        return node
+
     def visit_FunctionDef (self, node):
         # FunctionDef(name='foo', args=arguments(args=[], vararg=None, kwarg=None,
         #             defaults=[]), body=[Pass()], decorator_list=[])
         self.stack= append_to_tuple (self.stack, node.name)
+        # FunctionDef(name='foo',
+        #             args=arguments(args=[arg(arg='a', annotation=None),
+        #                                  arg(arg='b', annotation=None)],
+        #                            vararg='args', varargannotation=None,
+        #                            kwonlyargs=[], kwarg='kwargs',
+        #                            kwargannotation=None, defaults=[Num(n=1)],
+        #                            kw_defaults=[]),
+        #             body=[Pass()], decorator_list=[], returns=None)
+        # add the arguments as local names
+        for arg in node.args.args:
+            self.known_names[arg.arg]+= 1
+            self.defined_names[self.stack].append (arg.arg)
+
         self.generic_visit (node)
 
         # take out the function from the stack
