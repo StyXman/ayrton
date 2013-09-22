@@ -5,6 +5,7 @@
 # for licensing details see the file LICENSE.txt
 
 from distutils.core import setup
+from distutils.extension import Extension
 import ayrton
 
 setup (
@@ -15,6 +16,7 @@ setup (
     author_email= 'mdione@grulic.org.ar',
     url= 'https://github.com/StyXman/ayrton',
     packages= [ 'ayrton' ],
+    ext_modules= [ Extension ('ayrton._ast', [ 'ayrton/ast.c' ]) ],
     scripts= [ 'bin/ayrton' ],
     license= 'GPLv3',
     classifiers= [
