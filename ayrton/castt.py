@@ -49,7 +49,7 @@ class CrazyASTTransformer (ast.NodeTransformer):
     #     in the defining block),
     # [x] and targets that are identifiers if occurring in an assignment,
     # [x] for loop header, or
-    # [ ] after as in a with statement
+    # [x] after as in a with statement
     # [ ] or except clause.
     # The import statement of the form from ... import * binds all names defined
     # in the imported module, except those beginning with an underscore.
@@ -186,13 +186,20 @@ class CrazyASTTransformer (ast.NodeTransformer):
         return node
 
     def visit_With (self, node):
+        # With(items=[withitem(context_expr=Call(func=Name(id='foo', ctx=Load()),
+        #                                        args=[], keywords=[], starargs=None,
+        #                                        kwargs=None),
+        #                      optional_vars=Name(id='bar', ctx=Store()))], body=[Pass()])
+        for item in node.items:
+            if item.optional_vars is not None:
+                self.known_names[item.optional_vars.id]+= 1
+                self.defined_names[self.stack].append (item.optional_vars.id)
+
         self.generic_visit (node)
-        # With(context_expr=Call(func=Name(id='foo', ctx=Load()), args=[],
-        #                        keywords=[], starargs=None, kwargs=None),
-        #      optional_vars=Name(id='bar', ctx=Store()), ...)
-        call= node.items[0].context_expr
-        # TODO: more checks
-        if call.func.id=='remote':
+
+        # handle 'remote'
+        sub_node= node.items[0].context_expr
+        if type (sub_node)==Call and sub_node.func.id=='remote':
             # capture the body and put it as the first argument to ssh()
             # but within a module, and already pickled;
             # otherwise we need to create an AST for the call of all the
@@ -203,7 +210,7 @@ class CrazyASTTransformer (ast.NodeTransformer):
             s= Bytes (s=data)
             s.lineno= node.lineno
             s.col_offset= node.col_offset
-            call.args.insert (0, s)
+            sub_node.args.insert (0, s)
 
             p= Pass ()
             p.lineno= node.lineno+1
