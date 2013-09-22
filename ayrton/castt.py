@@ -40,7 +40,6 @@ class CrazyASTTransformer (ast.NodeTransformer):
         self.known_names= defaultdict (lambda: 0)
         self.stack= ()
         self.defined_names= defaultdict (lambda: [])
-        self.unnamed_block= 0
 
     # The following constructs bind names:
     # [x] formal parameters to functions,
@@ -137,21 +136,11 @@ class CrazyASTTransformer (ast.NodeTransformer):
     def visit_For (self, node):
         # For(target=Name(id='x', ctx=Store()), iter=List(elts=[], ctx=Load()),
         #     body=[Pass()], orelse=[])
-        self.stack= append_to_tuple (self.stack, self.unnamed_block)
-        self.unnamed_block+= 1
-
         for name in node.target:
             self.known_names[name.id]+= 1
             self.defined_names[self.stack].append (name.id)
 
         self.generic_visit (node)
-
-        # take out the function from the stack
-        names= self.defined_names[self.stack]
-        self.stack= pop_from_tuple (self.stack)
-        # ... and remove the names defined in it from the known_names
-        for name in names:
-            self.known_names[name]-= 1
 
         return node
 
