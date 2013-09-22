@@ -144,6 +144,19 @@ class CrazyASTTransformer (ast.NodeTransformer):
 
         return node
 
+    def visit_ExceptHandler (self, node):
+        # Try(body=[Expr(value=Name(id='fo', ctx=Load()))],
+        #     handlers=[ExceptHandler(type=Name(id='A', ctx=Load()), name='e',
+        #               body=[Pass()])],
+        #     orelse=[], finalbody=[])
+
+        # not sure what/how to do here
+        # self.known_names[name.id]+= 1
+        # self.defined_names[self.stack].append (name.id)
+        self.generic_visit (node)
+
+        return node
+
     def visit_Assign (self, node):
         self.generic_visit (node)
         # Assign(targets=[Name(id='a', ctx=Store())], value=Num(n=2))
@@ -174,7 +187,7 @@ class CrazyASTTransformer (ast.NodeTransformer):
                     # fisrt check if it's not one of the builtin functions
                     self.environ[func_name]
                 except KeyError:
-                    # I guess I have no other option bu to try to execute somehting here...
+                    # I guess I have no other option bu to try to execute something here...
                     new_node= Call (func=Attribute (value=Name (id='CommandWrapper', ctx=Load ()),
                                                     attr='_create', ctx=Load ()),
                                     args=[Str (s=func_name)], keywords=[],
