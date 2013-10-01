@@ -44,13 +44,14 @@ class CrazyASTTransformer (ast.NodeTransformer):
     # The following constructs bind names:
     # [x] formal parameters to functions,
     # [x] import statements,
+    # [ ] from foo import *
     # [x] class and
     # [x] function definitions (these bind the class or function name
     #     in the defining block),
     # [x] and targets that are identifiers if occurring in an assignment,
     # [x] for loop header, or
     # [x] after as in a with statement
-    # [ ] or except clause.
+    # [ ] or except clause. these unbind at the end
     # The import statement of the form from ... import * binds all names defined
     # in the imported module, except those beginning with an underscore.
 
