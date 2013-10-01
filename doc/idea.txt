@@ -533,9 +533,14 @@ gcc -pthread -c -Wno-unused-result -Werror=declaration-after-statement -DNDEBUG 
 gcc -pthread -c -Wno-unused-result -Werror=declaration-after-statement -DNDEBUG -g -fwrapv -O3 -Wall -Wstrict-prototypes -O0 -g3    -I. -IInclude -I./Include    -DPy_BUILD_CORE -o Python/asdl.o Python/asdl.c
 Parser/pgen ./Grammar/Grammar Include/graminit.h Python/graminit.c
 
-gcc -pthread -c -Wno-unused-result -Werror=declaration-after-statement -DNDEBUG -g -fwrapv -O3 -Wall -Wstrict-prototypes     -I. -IInclude -I./Include    -DPy_BUILD_CORE -o Modules/python.o ./Modules/python.c
-gcc -pthread -c -Wno-unused-result -Werror=declaration-after-statement -DNDEBUG -g -fwrapv -O3 -Wall -Wstrict-prototypes     -I. -IInclude -I./Include    -DPy_BUILD_CORE -o Python/ast.o Python/ast.c
-gcc -pthread   -Xlinker -export-dynamic -o python Modules/python.o libpython3.4m.a -lpthread -ldl  -lutil   -lm
+gcc -pthread -c -Wno-unused-result -Werror=declaration-after-statement -DNDEBUG -g -fwrapv \
+    -O3 -Wall -Wstrict-prototypes     -I. -IInclude -I./Include    -DPy_BUILD_CORE \
+    -o Modules/python.o ./Modules/python.c
+gcc -pthread -c -Wno-unused-result -Werror=declaration-after-statement -DNDEBUG -g -fwrapv \
+    -O3 -Wall -Wstrict-prototypes     -I. -IInclude -I./Include    -DPy_BUILD_CORE \
+    -o Python/ast.o Python/ast.c
+gcc -pthread   -Xlinker -export-dynamic -o python Modules/python.o libpython3.4m.a \
+    -lpthread -ldl  -lutil   -lm
 
 x86_64-linux-gnu-gcc -pthread -DNDEBUG -g -fwrapv -O2 -Wall -Wstrict-prototypes \
     -g -fstack-protector --param=ssp-buffer-size=4 -Wformat -Werror=format-security \
