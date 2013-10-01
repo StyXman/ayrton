@@ -359,3 +359,142 @@
 15:27 < StucKman> se convierte en
 15:28 < StucKman> with ssh (...) as foo: streams= foo
 15:28 < StucKman> pero tengo que ver eso porque hay varias cosas que romo a nivel consistncia
+
+13:34 < cramm> StyXman: https://github.com/tomerfiliba/plumbum
+13:51 < StyXman> cramm: y si, en algún momento tengo ganas de hacer piping
+13:52 < StyXman> pero por ahora en la forma en que anda sh me alcanza
+13:52 < StyXman> m4rgin4l: me faltan ejemplos :)
+13:52 < m4rgin4l> uno facil
+13:52 < m4rgin4l> el bloque de ssh, pero con multiples conexiones
+13:52 < m4rgin4l> o multiples whatever
+13:55 < StyXman> cramm: y redirección
+13:55 < StyXman> m4rgin4l: I don follow
+13:55 < m4rgin4l> cuando el bloque ese lo queres ejecutar en multiples ssh a la vez
+13:56 < StyXman> m4rgin4l: lindo quilombo, pero en cuanto peque el ssh() a como funcionan el resto de los comandos, vas a poder hacer & y manejarlos con sus propios streams
+13:56 < m4rgin4l> k
+13:57 < StyXman> cramm: plumbum es exactamente lo que quiero, pero la sintaxis no
+13:57 < StyXman> mi idea es seguir jugando con el AST y llegar a eso
+13:58 < StyXman> tengo un branch con eso, pero se complica un poco
+
+14:39 < rbistolfi> StucKman: pensaste algo para pipes?
+14:40 < StucKman> rbistolfi: tengo la idea en la cabeza, pero requiere un poco de inteligencia
+14:40 < StucKman> el tema es el siguiente:
+14:41 < StucKman> ls () | grep ()
+14:41 < StucKman> ls a secas te devuelve el command executor
+14:42 < StucKman> ls () llama al __call__ de dicho objeto, que devuelve un objeto de otro tipo (todo esto heredado de sh)
+14:42 < StucKman> el tema es que del otro lado pasa lo mismo
+14:42 < StucKman> para cuando llego a ejecutar el | los dos comandos se ejecutaron y ya es muy tarde
+14:42 < StucKman> ergo
+14:42 < StucKman> tengo que pasarlo a
+14:43 < StucKman> ( ls () | grep ) ()
+14:43 < StucKman> eso lo puedo hacer en el AST
+14:43 < rbistolfi> hay que hacerlo lazy
+14:43 < StucKman> pero tengo que ver que ls y grep sean dos comandos que voy a ejecutar de esa forma y no otras funciones/variables ya definidas
+14:43 < rbistolfi> lindo quilombito
+14:44 < StucKman> por eso quería ver cómo ninja-ide hacía el parsin/analyze/code completion
+14:45 < rbistolfi> y si te abris de sh ?
+14:46 < StucKman> rbistolfi: es una opción
+14:47 < StucKman> de hecho sh está haciendo cosas que por ejemplo, tenga que hacer mucho malabar pata poder hjacer
+14:47 < StucKman> mcedit ()
+14:47 < StucKman> o vi()
+14:47 < StucKman> entonces por ejemplo no me puedo hacer un script para hacer releases de ayrton :)
+14:47 < rbistolfi> te manosea stdout
+14:47 < StucKman> seh, demasiado
+14:48 < StucKman> el tema es que por otro lado sh hace mucho laburo ya
+14:49 < rbistolfi> claro
+14:49 < StucKman> bah
+14:49 < StucKman> tendría que ver cuánto laburo realmente hace
+14:50 < StucKman> otra es que, aunque me abra, el jueguito del toqueteo del AST lo tengo que hacer lo mismo
+14:51 < rbistolfi> StucKman: bueno pero podrias retrasar el __call__ seguramente
+14:51 < StucKman> rbistolfi: no veo cómo, python resuelve esas cosas antes
+14:51 < StucKman> bah, no he mirado nada de lazynes en python
+14:52 < Darni> StucKman: no he mirado mucho ayrton aun... el approach general es modificar el codigo y despues dejar que lo ejecute la VM de python?
+14:52 < Darni> o tenes tu propio interprete?
+14:54 < StucKman> Darni: lo primero por ahora
+14:55 < StucKman> capaz en algún momento cambio el parser, pero no mas que eso
+14:57 < StucKman> la idea es que, mal que mal, siga siendo pythonish
+14:57 < StucKman> y poder usar sus módulos
+15:02 < Darni> esta bien
+15:02 < Darni> estoy leyendo un poco
+15:03 < StucKman> Darni: ojo que todo esto que discutí de pipes con rbistolfi no está en el código
+15:04 < Darni> ok, igual estaba leyendo mas la idea que la implementacion
+15:04 < StucKman> el único manipuleo que hago del ast por el momento es para with ssh(): ...
+15:04 < StucKman> Darni: ah, ok
+15:05 < Darni> se me ocurre algo perverso pero que puede andar bien
+15:06 < StucKman> I'm all hair, but I have ears, go on :)
+15:06 < StucKman> hair and nose*
+15:07 < Darni> imaginate que ls(), grep() lo unico que hacen es construir un objeto de tipo ShellCommand() con información de lo que hay que ejecutar, pero no ejecutan nada afuera
+15:07 < StucKman> seh
+15:07  * StucKman se ve venir plumbum
+15:07 < Darni> entonces es facil hacer que el operador | de ShellCommand te construya un ShellCommand mas complicado
+15:07 < StucKman> seh
+15:07 < Darni> ahora, imaginate que pones la ejecucion de comandos en el metodo __del__ de ShellCommand
+15:08 < StucKman> jajajjajajajaja
+15:08 < StucKman> qué maestro :)
+15:08 < StucKman> salvo que no puedo devolver nada
+15:08 < Darni> ah vos queres que echo('hola') devuelva hola, no?
+15:08 < StucKman> a= ls() | grep ()
+15:08 < StucKman> Darni: si y no
+15:09 < StucKman> echo ('hola') *imprime* hola
+15:09 < Darni> podrías hacer que str(a) fuerce a evaluacion
+15:09 < StucKman> Darni: es lo que no quiero, meter basura que complique su uso
+15:10 < Darni> de hecho con eso podes ponerle un metodo "eval()" (que hace lo mismo que __del__, probablemente tenga sentido definir __del__ como llamada a eval()), y con eso podes
+               tener que los comandos son bichos de primer orden
+15:10 < Darni> entonces podes por ejemplo construir pipelines programaticamente
+15:10 < StucKman> además de que con _out=Capture devuelve un list of strings, pero no viene al caso
+15:10 < Darni> a esta altura, supongo que ya me estoy empezando a delirar :)
+15:10 < rbistolfi> aver si mi perversion tiene sentido
+15:11 < rbistolfi> que pasa si ShellCommand() es lazy
+15:11 < rbistolfi> no se ejecuta hasta que pedis el resultado
+15:11 < StucKman> rbistolfi: cómo?
+15:11 < StucKman> digo, cómo implementás lazyness?
+15:11 < rbistolfi> entonces | devuelve PipedShellCommand(ShellCommand(a), ShellCommand(b))
+15:12 < rbistolfi> StucKman: como en futures ponele
+15:12 < StucKman> si, el tema es cómo ejecutar todo al final
+15:12 < StucKman> puedo hace la gran plumbum y hacer
+15:13 < StucKman> (ls () | grep ()) ()
+15:13 < rbistolfi> entons en a = ls()|grep(foo"") te queda un PipedShellCommand() que no se ha ejecutado aun
+15:13 < rbistolfi> pero cuando haces a.result se ejecuta
+15:13 < StucKman> hmmm
+15:13 < rbistolfi> o cuando haces a
+15:13 < rbistolfi> con magia negra
+15:13 < rbistolfi> :)
+15:13 < StucKman> no, con a a secas no se puede
+15:14 < StucKman> se puede en algunos contextos, pero no siempre
+15:14 < StucKman> por ejemplo
+15:14 < rbistolfi> tipo inyectando properties a nivel del modulo?
+15:14 < StucKman> if a: foo
+15:14 < Darni> en cualquier caso me gusta mas lo de "cmd().result" o "eval(cmd())" que "a = cmd(_out=Capture)"
+15:14 < Darni> perdon, "a=eval(cmd())" era el segundo
+15:14 < StucKman> Darni: si, esa parte la tengo que limpiar de alguna forma
+15:15 < Darni> bueno, pero ahi te resuelve el problema de captura con mi approach
+15:15 < Darni> (no resuelve que es una negrada y que si te queda alguna referencia por ahi o un ciclo vas a cagar todo)
+15:15 < StucKman> si puedo analizar el AST y a priori saber si cmd va aterminar siendo un ShellCommand o no, puedo hacer todo eso automágicamente
+15:16 < StucKman> puedo hacer que _out no haya casi que usarlo
+15:16 < StucKman> puedo hacer piping y redirección
+15:16 < StucKman> y hasta puedo llegar a no confundirme en otras situaciones
+15:16 < Darni> por ahi podes agarrar todos los expression statements y ponerle un evalcommand(exp) alrededor
+15:16 < StucKman> porque hay un tema jodido
+15:16 < Darni> donde evalcommand es una funcion que ejecuta los shellcommands, e ignora el resto
+15:17 < StucKman> *cualquier* referencia a una variable no definida devuelve un ShellCommand
+15:17 < StucKman> y eso apesta
+15:17 < rbistolfi> StucKman: pero hace la api soportable
+15:17 < StucKman> Darni: ah, esa ya me gusta mas :)
+15:17 < StucKman> rbistolfi: si, pero si hacés
+15:17 < StucKman> a= 24
+15:17 < rbistolfi> lo que si no me disgustaria shell.ls() ponele
+15:17 < StucKman> a= non_defined
+15:18 < StucKman> te salta un error command not found ´non_defined´
+15:18 < StucKman> rbistolfi: tons usá sh :\
+15:18 < rbistolfi> ja
+15:18 < StucKman> de vuelta, el objetivo es que quede lo más limpio posible para hacer shell scripting
+15:19 < StucKman> StyXman: vos tomá nota
+15:19 < rbistolfi> StucKman: digo, para el caso que vos mencionas
+15:19 < StucKman> ajá
+15:19 < StucKman> Darni me dio una idea de cómo solucionar eso
+15:20 < StucKman> bah, me hizo pensar en una opción :)
+15:20 < StucKman> bah, ambos
+15:20 < StucKman> StyXman: a) catchaer los Call y sólo resolver a ShellCommand en esos casos
+15:21 < StucKman> b) meter código que evalué un objeto, y si es un ShellCommand o similar, ejecutarlo :)
+15:21 < StucKman> Darni: gracias :)
+15:21 < StucKman> y rbistolfi, claro :)

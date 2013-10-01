@@ -135,6 +135,7 @@
 			<item> round </item>
 			<item> set </item>
 			<item> setattr </item>
+			<item> ssh </item>
 			<item> sleep </item>
 			<item> slice </item>
 			<item> sorted </item>

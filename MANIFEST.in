@@ -1,0 +1,13 @@
+include Makefile
+include README.md
+include TODO.rst
+include LICENSE.txt
+include MANIFEST.in
+
+recursive-include contrib *
+recursive-include doc *.txt Makefile
+recursive-include doc/source *
+recursive-include doc/examples *.ay
+
+exclude doc/examples/with_ssh.ay
+exclude doc/examples/pipe.ay

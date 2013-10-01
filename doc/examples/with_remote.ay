@@ -1,0 +1,20 @@
+#! /usr/bin/env ayrton -f
+
+import random
+
+a= 42
+
+with remote ('localhost', allow_agent=False) as s:
+    import random
+
+    b= input ('gimme a number, bro!\n')
+    print (a+int (b)+random.randint (10, 100))
+
+(i, o, e)= s
+i.write (bytes ('%d\n' % random.randint (10, 100), 'ascii'))
+
+print (o.readlines ())
+print (e.readlines ())
+
+for x in i, o, e:
+    x.close ()
