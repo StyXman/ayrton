@@ -16,7 +16,10 @@ setup (
     author_email= 'mdione@grulic.org.ar',
     url= 'https://github.com/StyXman/ayrton',
     packages= [ 'ayrton' ],
-    ext_modules= [ Extension ('ayrton._ast', [ 'ayrton/ast.c' ]) ],
+    ext_modules= [
+        Extension ('ayrton._ast', [ 'ayrton/ast.c' ]),
+        Extension ('ayrton._python', [ 'bin/python.c' ]),
+        ],
     scripts= [ 'bin/ayrton' ],
     license= 'GPLv3',
     classifiers= [
