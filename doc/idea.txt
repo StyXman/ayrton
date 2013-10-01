@@ -498,3 +498,52 @@
 15:21 < StucKman> b) meter código que evalué un objeto, y si es un ShellCommand o similar, ejecutarlo :)
 15:21 < StucKman> Darni: gracias :)
 15:21 < StucKman> y rbistolfi, claro :)
+
+#0  ast_for_call (c=0x7fffffffdbc0, n=0x7ffff700d9b8, func=0x987ce8) at Python/ast.c:2427
+#1  0x00000000005bfe73 in ast_for_trailer (c=0x7fffffffdbc0, n=0x7ffff700d8a0, left_expr=0x987ce8) at Python/ast.c:2105
+#2  0x00000000005c03c0 in ast_for_power (c=0x7fffffffdbc0, n=0x7ffff6ca21c0) at Python/ast.c:2217
+#3  0x00000000005c0b01 in ast_for_expr (c=0x7fffffffdbc0, n=0x7ffff6ca21c0) at Python/ast.c:2406
+#4  0x00000000005c1108 in ast_for_testlist (c=0x7fffffffdbc0, n=0x7ffff6facfd0) at Python/ast.c:2562
+#5  0x00000000005c118e in ast_for_expr_stmt (c=0x7fffffffdbc0, n=0x7ffff6face18) at Python/ast.c:2584
+#6  0x00000000005c3e84 in ast_for_stmt (c=0x7fffffffdbc0, n=0x7ffff6face18) at Python/ast.c:3586
+#7  0x00000000005bcb72 in PyAST_FromNodeObject (n=0x7ffff705a620, flags=0x7fffffffe040, filename=0x7ffff6d43928, arena=0x901c60) at Python/ast.c:755
+#8  0x000000000050cb86 in PyParser_ASTFromFileObject (fp=0x7ffff74b5240 <_IO_2_1_stdin_>, filename=0x7ffff6d43928, enc=0x7ffff708a840 "UTF-8", start=256, ps1=0x7ffff701c8e8 ">>> ",
+    ps2=0x7ffff6d438e8 "... ", flags=0x7fffffffe040, errcode=0x7fffffffddc4, arena=0x901c60) at Python/pythonrun.c:2205
+#9  0x000000000050cc44 in PyParser_ASTFromFile (fp=0x7ffff74b5240 <_IO_2_1_stdin_>, filename_str=0x5c759e "<stdin>", enc=0x7ffff708a840 "UTF-8", start=256, ps1=0x7ffff701c8e8 ">>> ",
+    ps2=0x7ffff6d438e8 "... ", flags=0x7fffffffe040, errcode=0x7fffffffddc4, arena=0x901c60) at Python/pythonrun.c:2229
+
+#0  ast_for_call (c=0x7fffffffa300, n=0x7ffff700d918, func=0x9ccf40) at Python/ast.c:2470
+#1  0x00000000005bfe73 in ast_for_trailer (c=0x7fffffffa300, n=0x7ffff700db98, left_expr=0x9ccf40) at Python/ast.c:2105
+#2  0x00000000005c03c0 in ast_for_power (c=0x7fffffffa300, n=0x7ffff6ca4238) at Python/ast.c:2217
+#3  0x00000000005c0b01 in ast_for_expr (c=0x7fffffffa300, n=0x7ffff6ca4238) at Python/ast.c:2406
+#4  0x00000000005c1108 in ast_for_testlist (c=0x7fffffffa300, n=0x7ffff6ca4030) at Python/ast.c:2562
+#5  0x00000000005c118e in ast_for_expr_stmt (c=0x7fffffffa300, n=0x7ffff6facfa8) at Python/ast.c:2584
+#6  0x00000000005c3e84 in ast_for_stmt (c=0x7fffffffa300, n=0x7ffff6facfa8) at Python/ast.c:3586
+#7  0x00000000005bc94c in PyAST_FromNodeObject (n=0x7ffff6face18, flags=0x7fffffffa4e0, filename=0x7ffff6d56370, arena=0x8c8780) at Python/ast.c:709
+#8  0x000000000050c9e8 in PyParser_ASTFromStringObject (s=0x7ffff6ca37a0 "foo (a=3, b)", filename=0x7ffff6d56370, start=257, flags=0x7fffffffa4e0, arena=0x8c8780)
+    at Python/pythonrun.c:2160
+#9  0x000000000050c6be in Py_CompileStringObject (str=0x7ffff6ca37a0 "foo (a=3, b)", filename=0x7ffff6d56370, start=257, flags=0x7fffffffa4e0, optimize=-1) at Python/pythonrun.c:2068
+#10 0x00000000004c6e54 in builtin_compile (self=0x7ffff70f9c28, args=0x7ffff6ca04f8, kwds=0x0) at Python/bltinmodule.c:671
+
+/bin/mkdir -p Include
+python3 ./Parser/asdl_c.py -h Include ./Parser/Python.asdl
+/bin/mkdir -p Python
+python3 ./Parser/asdl_c.py -c Python ./Parser/Python.asdl
+gcc -pthread -c -Wno-unused-result -Werror=declaration-after-statement -DNDEBUG -g -fwrapv -O3 -Wall -Wstrict-prototypes -O0 -g3    -I. -IInclude -I./Include    -DPy_BUILD_CORE -o Python/Python-ast.o Python/Python-ast.c
+gcc -pthread -c -Wno-unused-result -Werror=declaration-after-statement -DNDEBUG -g -fwrapv -O3 -Wall -Wstrict-prototypes -O0 -g3    -I. -IInclude -I./Include    -DPy_BUILD_CORE -o Python/asdl.o Python/asdl.c
+Parser/pgen ./Grammar/Grammar Include/graminit.h Python/graminit.c
+
+gcc -pthread -c -Wno-unused-result -Werror=declaration-after-statement -DNDEBUG -g -fwrapv -O3 -Wall -Wstrict-prototypes     -I. -IInclude -I./Include    -DPy_BUILD_CORE -o Modules/python.o ./Modules/python.c
+gcc -pthread -c -Wno-unused-result -Werror=declaration-after-statement -DNDEBUG -g -fwrapv -O3 -Wall -Wstrict-prototypes     -I. -IInclude -I./Include    -DPy_BUILD_CORE -o Python/ast.o Python/ast.c
+gcc -pthread   -Xlinker -export-dynamic -o python Modules/python.o libpython3.4m.a -lpthread -ldl  -lutil   -lm
+
+x86_64-linux-gnu-gcc -pthread -DNDEBUG -g -fwrapv -O2 -Wall -Wstrict-prototypes \
+    -g -fstack-protector --param=ssp-buffer-size=4 -Wformat -Werror=format-security \
+    -D_FORTIFY_SOURCE=2 -fPIC -I/usr/include/python3.3m -c ayrton/ast.c \
+    -o build/temp.linux-x86_64-3.3/ayrton/ast.o
+x86_64-linux-gnu-gcc -pthread -shared -Wl,-O1 -Wl,-Bsymbolic-functions -Wl,-z,relro -\
+    Wno-unused-result -DNDEBUG -g -fwrapv -O2 -Wall -Wstrict-prototypes -g -fstack-protector \
+    --param=ssp-buffer-size=4 -Wformat -Werror=format-security -Wl,-z,relro -g \
+    -fstack-protector --param=ssp-buffer-size=4 -Wformat -Werror=format-security \
+    -D_FORTIFY_SOURCE=2 build/temp.linux-x86_64-3.3/ayrton/ast.o \
+    -o build/lib.linux-x86_64-3.3/ayrton/_ast.cpython-33m.so
