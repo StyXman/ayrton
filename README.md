@@ -48,7 +48,7 @@ So, in short:
     To generate the docs:
     # make docs
 
-# First steps
+# First steps: execution, output
 
 `ayrton` syntax is Python3's with some things changed. Here's the unavoidable
 'Hello world' example:
@@ -83,6 +83,8 @@ While we're discussing output, check out this:
 
 Just guess were the output went :) ... (ok, ok, it went to `/dev/null`).
 
+# Composing
+
 Just like `sh`, you can nest callables, but you must explicitly tell it that you
 want to capture the output so the nesting callable gets its input:
 
@@ -99,6 +101,8 @@ Another improvement over `sh` is that you can use commands as conditions:
 
 As a consequence, you can also use `and`, `or` and `not`.
 
+# Piping, redirection
+
 Of course, no shell scripting language can call itself so without piping, so
 we had to implement it:
 
@@ -111,6 +115,8 @@ also have redirection:
 
     grep ('mdione') < '/etc/passwd' > '/tmp/foo'
     grep ('root') < '/etc/passwd' >> '/tmp/foo'
+
+# Shell compatibility
 
 Do I have you attention? Let's go for your interest. Something also useful is a
 behavior similar to `pushd`/`popd`:
@@ -156,6 +162,8 @@ new variables in `ayrton` (f.i., `foo=42`) are Python variables; therefore they
 can hold any Python object, but won't be exported. The `export()` function
 gives the same behavior as `bash`'s `export` command, with the caveat that values
 will be automatically converted to `str`.
+
+# Remote execution
 
 The cherry on top of the cake, or more like the melon of top of the cupcake, is
 (semi) transparent remote execution. This is achieved with the following construct:
