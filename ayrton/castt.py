@@ -18,10 +18,12 @@
 # along with ayrton.  If not, see <http://www.gnu.org/licenses/>.
 
 import ast
-from ast import Pass, Module, Bytes, copy_location, Call, Name, Load, Str
+from ast import Pass, Module, Bytes, copy_location, Call, Name, Load, Str, BitOr
 from ast import fix_missing_locations, Import, alias, Attribute, ImportFrom
+from ast import keyword
 import pickle
 from collections import defaultdict
+import ayrton
 
 def append_to_tuple (t, o):
     l= list (t)
@@ -172,6 +174,52 @@ class CrazyASTTransformer (ast.NodeTransformer):
         for target in node.targets:
             self.known_names[target.id]-= 1
             self.defined_names[self.stack].remove (target.id)
+
+        return node
+
+    def visit_BinOp (self, node):
+        self.generic_visit (node)
+
+        # pipe
+        # BinOp (left, BitOr, right) -> right (left, ...)
+
+        # BinOp( left=Call(...), op=BitOr(), right=Call(...))
+        if type (node.op)==BitOr:
+            # check the left and right; if they're calls to CommandWrapper._create
+            # then do the magic
+
+            # Call(func=Call(func=Attribute(value=Name(id='CommandWrapper', ctx=Load()), attr='_create', ctx=Load()),
+            #                args=[Str(s='ls')], keywords=[], starargs=None, kwargs=None),
+            #      args=[], keywords=[], starargs=None, kwargs=None)
+            both= True
+            for child in (node.left, node.right):
+                both= both and (type (child)==Call and
+                                type (child.func)==Call and
+                                type (child.func.func)==Attribute and
+                                type (child.func.func.value)==Name and
+                                child.func.func.value.id=='CommandWrapper' and
+                                child.func.func.attr=='_create')
+
+            if both:
+                # right (left, ...)
+                # I can't believe it's this easy
+                node.left.keywords.append (keyword (arg='_out',
+                                                    value=Name (id='Capture', ctx=Load ())))
+                ast.fix_missing_locations (node.left)
+                node.right.args.insert (0, node.left)
+                node= node.right
+
+                # Call(func=Call(func=Attribute(value=Name(id='CommandWrapper', ctx=Load()),
+                #                               attr='_create', ctx=Load()),
+                #                args=[Str(s='grep')], keywords=[], starargs=None, kwargs=None),
+                #      args=[Call(func=Call(func=Attribute(value=Name(id='CommandWrapper', ctx=Load()),
+                #                                          attr='_create', ctx=Load()),
+                #                      args=[Str(s='ls')], keywords=[], starargs=None, kwargs=None),
+                #                 args=[], keywords=[keyword(arg='_out',
+                #                                            value=Name(id='Capture', ctx=Load()))],
+                #                 starargs=None, kwargs=None),
+                #            Str(s='foo')],
+                #      keywords=[], starargs=None, kwargs=None)
 
         return node
 

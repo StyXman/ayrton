@@ -153,6 +153,14 @@ false ()''')
         ayrton.main ('''option ('+e')
 false ()''')
 
+class PipingRedirection (unittest.TestCase):
+    setUp=    setUpMockStdout
+    tearDown= tearDownMockStdout
+
+    def testPipe (self):
+        ayrton.main ('ls () | grep ("setup")')
+        self.assertEqual (self.a.buffer.getvalue (), b'setup.py\n')
+
 class MiscTests (unittest.TestCase):
     setUp=    setUpMockStdout
     tearDown= tearDownMockStdout
