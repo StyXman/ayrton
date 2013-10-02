@@ -197,6 +197,18 @@ class PipingRedirection (unittest.TestCase):
         os.unlink (fn1)
         os.unlink (fn2)
 
+    def testRShift (self):
+        fn= tempfile.mkstemp ()[1]
+
+        ayrton.main ('echo ("yes") > "%s"' % fn)
+        ayrton.main ('echo ("yes!") >> "%s"' % fn)
+
+        contents= open (fn).read ()
+        # read() does not return bytes!
+        self.assertEqual (contents, 'yes\nyes!\n')
+        os.unlink (fn)
+
+
 class MiscTests (unittest.TestCase):
     setUp=    setUpMockStdout
     tearDown= tearDownMockStdout

@@ -20,7 +20,7 @@
 import ast
 from ast import Pass, Module, Bytes, copy_location, Call, Name, Load, Str, BitOr
 from ast import fix_missing_locations, Import, alias, Attribute, ImportFrom
-from ast import keyword, Gt, Lt
+from ast import keyword, Gt, Lt, RShift
 import pickle
 from collections import defaultdict
 import ayrton
@@ -224,7 +224,24 @@ class CrazyASTTransformer (ast.NodeTransformer):
                 #            Str(s='foo')],
                 #      keywords=[], starargs=None, kwargs=None)
 
+        elif type (node.op)==RShift:
+            # BinOp(left=Call(func=Name(id='ls', ctx=Load()), args=[], keywords=[], starargs=None, kwargs=None),
+            #       op=RShift(),
+            #       right=Str(s='foo.txt'))
+            if self.is_executable (node.left):
+                node.left.keywords.append (keyword (arg='_out',
+                                                    value=Call (func=Name (id='open', ctx=Load ()),
+                                                                args=[node.right, Str (s='ab')], keywords=[], starargs=None, kwargs=None)))
+                ast.fix_missing_locations (node.left)
+                node= node.left
+
         return node
+
+    # Compare(left=Call(func=Name(id='grep', ctx=Load()), args=[Str(s='root')], keywords=[], starargs=None, kwargs=None),
+    #        ops=[Lt()],
+    #        comparators=[BinOp(left=Str(s='/etc/passwd'),
+    #                           op=RShift(),
+    #                           right=Str(s='/tmp/foo'))])
 
     def visit_Compare (self, node):
         self.generic_visit (node)

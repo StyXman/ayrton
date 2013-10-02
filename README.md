@@ -86,7 +86,7 @@ Just guess were the output went :) ... (ok, ok, it went to `/dev/null`).
 Just like `sh`, you can nest callables, but you must explicitly tell it that you
 want to capture the output so the nesting callable gets its input:
 
-    root= grep (cat ('/etc/shadow', _out=Capture), 'root', _out=Capture)
+    root= grep (cat ('/etc/passwd', _out=Capture), 'root', _out=Capture)
 
 This seems more cumbersome than `sh`, but if you think that in any shell language
 you do something similar (either using `$()`, `|` or even redirection), it's not
@@ -94,10 +94,23 @@ a high price to pay.
 
 Another improvement over `sh` is that you can use commands as conditions:
 
-    if grep (cat ('/etc/shadow', _out=Capture), 'mdione', _out=None):
+    if grep (cat ('/etc/passwd', _out=Capture), 'mdione', _out=None):
         print ('user «mdione» is present on your system; that's a security vulnerability right there!')
 
 As a consequence, you can also use `and`, `or` and `not`.
+
+Of course, no shell scripting language can call itself so without piping, so
+we had to implement it:
+
+    if cat ('/etc/passwd') | grep ('mdione', _out=None):
+        print ('I'm here, baby!')
+
+Notice that this time you don't have to be explicit about the `cat`'s output;
+we know it's going to a pipe, so we automatically `Capture` it. Of course, we
+also have redirection:
+
+    grep ('mdione') < '/etc/passwd' > '/tmp/foo'
+    grep ('root') < '/etc/passwd' >> '/tmp/foo'
 
 Do I have you attention? Let's go for your interest. Something also useful is a
 behavior similar to `pushd`/`popd`:
