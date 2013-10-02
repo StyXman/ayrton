@@ -18,10 +18,12 @@
 # along with ayrton.  If not, see <http://www.gnu.org/licenses/>.
 
 import ast
-from ast import Pass, Module, Bytes, copy_location, Call, Name, Load, Str
+from ast import Pass, Module, Bytes, copy_location, Call, Name, Load, Str, BitOr
 from ast import fix_missing_locations, Import, alias, Attribute, ImportFrom
+from ast import keyword, Gt, Lt
 import pickle
 from collections import defaultdict
+import ayrton
 
 def append_to_tuple (t, o):
     l= list (t)
@@ -174,6 +176,89 @@ class CrazyASTTransformer (ast.NodeTransformer):
             self.defined_names[self.stack].remove (target.id)
 
         return node
+
+    def is_executable (self, node):
+        # Call(func=Call(func=Attribute(value=Name(id='CommandWrapper', ctx=Load()), attr='_create', ctx=Load()),
+        #                args=[Str(s='ls')], keywords=[], starargs=None, kwargs=None),
+        #      args=[], keywords=[], starargs=None, kwargs=None)
+        return (type (node)==Call and
+                type (node.func)==Call and
+                type (node.func.func)==Attribute and
+                type (node.func.func.value)==Name and
+                node.func.func.value.id=='CommandWrapper' and
+                node.func.func.attr=='_create')
+
+    def visit_BinOp (self, node):
+        self.generic_visit (node)
+
+        # BinOp( left=Call(...), op=BitOr(), right=Call(...))
+        if type (node.op)==BitOr:
+            # pipe
+            # BinOp (left, BitOr, right) -> right (left, ...)
+
+            # check the left and right; if they're calls to CommandWrapper._create
+            # then do the magic
+
+            both= True
+            for child in (node.left, node.right):
+                both= both and self.is_executable (child)
+
+            if both:
+                # right (left, ...)
+                # I can't believe it's this easy
+                node.left.keywords.append (keyword (arg='_out',
+                                                    value=Name (id='Capture', ctx=Load ())))
+                ast.fix_missing_locations (node.left)
+                node.right.args.insert (0, node.left)
+                node= node.right
+
+                # Call(func=Call(func=Attribute(value=Name(id='CommandWrapper', ctx=Load()),
+                #                               attr='_create', ctx=Load()),
+                #                args=[Str(s='grep')], keywords=[], starargs=None, kwargs=None),
+                #      args=[Call(func=Call(func=Attribute(value=Name(id='CommandWrapper', ctx=Load()),
+                #                                          attr='_create', ctx=Load()),
+                #                      args=[Str(s='ls')], keywords=[], starargs=None, kwargs=None),
+                #                 args=[], keywords=[keyword(arg='_out',
+                #                                            value=Name(id='Capture', ctx=Load()))],
+                #                 starargs=None, kwargs=None),
+                #            Str(s='foo')],
+                #      keywords=[], starargs=None, kwargs=None)
+
+        return node
+
+    def visit_Compare (self, node):
+        self.generic_visit (node)
+        ans= node
+
+        # ls () < "bar.txt" > "foo.txt"
+        # Compare(left=Call(func=Name(id='ls', ctx=Load()), args=[], keywords=[],
+        #                        starargs=None, kwargs=None),
+        #         ops=[Lt(), Gt()],
+        #         comparators=[Str(s='bar.txt'), Str(s='foo.txt')]))
+
+        if self.is_executable (node.left):
+            # yes, they're reversed, but it makes more sense to me like this
+            for comp, op in zip (node.ops, node.comparators):
+                if type (comp)==Gt:
+                    # > means _out
+                    node.left.keywords.append (keyword (arg='_out', value=op))
+                    ans= node.left
+                elif type (comp)==Lt:
+                    # < means _in
+
+                    # now, _in works differently
+                    # a string is written directly to the stdin,
+                    # instead of creating a file() with that name
+                    # so, we do it ourseleves.
+                    if type (op)==Str:
+                        op= Call (func=Name (id='open', ctx=Load ()), args=[op],
+                                  keywords=[], starargs=None, kwargs=None)
+
+                    node.left.keywords.append (keyword (arg='_in', value=op))
+                    ast.fix_missing_locations (node.left)
+                    ans= node.left
+
+        return ans
 
     def visit_Call (self, node):
         self.generic_visit (node)

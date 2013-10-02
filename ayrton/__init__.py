@@ -158,6 +158,7 @@ class Ayrton (object):
 
         self.environ= Environment (globals, locals, **kwargs)
 
+
         if tree is None:
             tree= ast.parse (script)
             # ImportFrom(module='bar', names=[alias(name='baz', asname=None)], level=0)
