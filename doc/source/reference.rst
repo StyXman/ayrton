@@ -25,7 +25,8 @@ Exceptions
 .. py:exception:: CommandNotFound
 
     Raised when an executable cannot be found in :py:data:`path`. Unluckily,
-    currently is raised everytime you refer to an unknow variable too.
+    currently it is raised sometimes you refer to an unknow variable too. We're
+    working to minimize that, but here might be still more cases were it does so.
 
 .. py:exception:: CommandFailed
 
