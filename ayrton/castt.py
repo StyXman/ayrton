@@ -199,9 +199,7 @@ class CrazyASTTransformer (ast.NodeTransformer):
             # check the left and right; if they're calls to CommandWrapper._create
             # then do the magic
 
-            both= True
-            for child in (node.left, node.right):
-                both= both and self.is_executable (child)
+            both= self.is_executable (node.left) and self.is_executable (node.right)
 
             if both:
                 # right (left, ...)
