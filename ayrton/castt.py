@@ -258,6 +258,13 @@ class CrazyASTTransformer (ast.NodeTransformer):
                     # > means _out
                     node.left.keywords.append (keyword (arg='_out', value=op))
                     ans= node.left
+
+                if type (comp)==GtE:
+                    # >= means _out+_err
+                    node.left.keywords.append (keyword (arg='_out', value=op))
+                    node.left.keywords.append (keyword (arg='_err_to_out', value=op))
+                    ans= node.left
+
                 elif type (comp)==Lt:
                     # < means _in
 
