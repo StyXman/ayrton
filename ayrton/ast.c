@@ -11,13 +11,13 @@
 
 #include <assert.h>
 
-static int validate_stmts(asdl_seq *);
-static int validate_exprs(asdl_seq *, expr_context_ty, int);
-static int validate_nonempty_seq(asdl_seq *, const char *, const char *);
-static int validate_stmt(stmt_ty);
-static int validate_expr(expr_ty, expr_context_ty);
+int validate_stmts(asdl_seq *);
+int validate_exprs(asdl_seq *, expr_context_ty, int);
+int validate_nonempty_seq(asdl_seq *, const char *, const char *);
+int validate_stmt(stmt_ty);
+int validate_expr(expr_ty, expr_context_ty);
 
-static int
+int
 validate_comprehension(asdl_seq *gens)
 {
     int i;
@@ -35,7 +35,7 @@ validate_comprehension(asdl_seq *gens)
     return 1;
 }
 
-static int
+int
 validate_slice(slice_ty slice)
 {
     switch (slice->kind) {
@@ -60,7 +60,7 @@ validate_slice(slice_ty slice)
     }
 }
 
-static int
+int
 validate_keywords(asdl_seq *keywords)
 {
     int i;
@@ -70,7 +70,7 @@ validate_keywords(asdl_seq *keywords)
     return 1;
 }
 
-static int
+int
 validate_args(asdl_seq *args)
 {
     int i;
@@ -82,7 +82,7 @@ validate_args(asdl_seq *args)
     return 1;
 }
 
-static const char *
+const char *
 expr_context_name(expr_context_ty ctx)
 {
     switch (ctx) {
@@ -104,7 +104,7 @@ expr_context_name(expr_context_ty ctx)
     }
 }
 
-static int
+int
 validate_arguments(arguments_ty args)
 {
     if (!validate_args(args->args))
@@ -139,7 +139,7 @@ validate_arguments(arguments_ty args)
     return validate_exprs(args->defaults, Load, 0) && validate_exprs(args->kw_defaults, Load, 1);
 }
 
-static int
+int
 validate_expr(expr_ty exp, expr_context_ty ctx)
 {
     int check_ctx = 1;
@@ -290,7 +290,7 @@ validate_expr(expr_ty exp, expr_context_ty ctx)
     }
 }
 
-static int
+int
 validate_nonempty_seq(asdl_seq *seq, const char *what, const char *owner)
 {
     if (asdl_seq_LEN(seq))
@@ -299,20 +299,20 @@ validate_nonempty_seq(asdl_seq *seq, const char *what, const char *owner)
     return 0;
 }
 
-static int
+int
 validate_assignlist(asdl_seq *targets, expr_context_ty ctx)
 {
     return validate_nonempty_seq(targets, "targets", ctx == Del ? "Delete" : "Assign") &&
         validate_exprs(targets, ctx, 0);
 }
 
-static int
+int
 validate_body(asdl_seq *body, const char *owner)
 {
     return validate_nonempty_seq(body, "body", owner) && validate_stmts(body);
 }
 
-static int
+int
 validate_stmt(stmt_ty stmt)
 {
     int i;
@@ -424,7 +424,7 @@ validate_stmt(stmt_ty stmt)
     }
 }
 
-static int
+int
 validate_stmts(asdl_seq *seq)
 {
     int i;
@@ -443,7 +443,7 @@ validate_stmts(asdl_seq *seq)
     return 1;
 }
 
-static int
+int
 validate_exprs(asdl_seq *exprs, expr_context_ty ctx, int null_ok)
 {
     int i;
@@ -503,28 +503,28 @@ struct compiling {
     PyObject *c_normalize_args; /* Normalization argument tuple. */
 };
 
-static asdl_seq *seq_for_testlist(struct compiling *, const node *);
-static expr_ty ast_for_expr(struct compiling *, const node *);
-static stmt_ty ast_for_stmt(struct compiling *, const node *);
-static asdl_seq *ast_for_suite(struct compiling *, const node *);
-static asdl_seq *ast_for_exprlist(struct compiling *, const node *,
-                                  expr_context_ty);
-static expr_ty ast_for_testlist(struct compiling *, const node *);
-static stmt_ty ast_for_classdef(struct compiling *, const node *, asdl_seq *);
+asdl_seq *seq_for_testlist(struct compiling *, const node *);
+expr_ty ast_for_expr(struct compiling *, const node *);
+stmt_ty ast_for_stmt(struct compiling *, const node *);
+asdl_seq *ast_for_suite(struct compiling *, const node *);
+asdl_seq *ast_for_exprlist(struct compiling *, const node *,
+                           expr_context_ty);
+expr_ty ast_for_testlist(struct compiling *, const node *);
+stmt_ty ast_for_classdef(struct compiling *, const node *, asdl_seq *);
 
 /* Note different signature for ast_for_call */
-static expr_ty ast_for_call(struct compiling *, const node *, expr_ty);
+expr_ty ast_for_call(struct compiling *, const node *, expr_ty);
 
-static PyObject *parsenumber(struct compiling *, const char *);
-static PyObject *parsestr(struct compiling *, const node *n, int *bytesmode);
-static PyObject *parsestrplus(struct compiling *, const node *n,
-                              int *bytesmode);
+PyObject *parsenumber(struct compiling *, const char *);
+PyObject *parsestr(struct compiling *, const node *n, int *bytesmode);
+PyObject *parsestrplus(struct compiling *, const node *n,
+                       int *bytesmode);
 
 #define COMP_GENEXP   0
 #define COMP_LISTCOMP 1
 #define COMP_SETCOMP  2
 
-static int
+int
 init_normalization(struct compiling *c)
 {
     PyObject *m = PyImport_ImportModuleNoBlock("unicodedata");
@@ -543,7 +543,7 @@ init_normalization(struct compiling *c)
     return 1;
 }
 
-static identifier
+identifier
 new_identifier(const char *n, struct compiling *c)
 {
     PyObject *id = PyUnicode_DecodeUTF8(n, strlen(n), NULL);
@@ -573,7 +573,7 @@ new_identifier(const char *n, struct compiling *c)
 
 #define NEW_IDENTIFIER(n) new_identifier(STR(n), c)
 
-static int
+int
 ast_error(struct compiling *c, const node *n, const char *errmsg)
 {
     PyObject *value, *errstr, *loc, *tmp;
@@ -626,7 +626,7 @@ ast_error(struct compiling *c, const node *n, const char *errmsg)
    small_stmt elements is returned.
 */
 
-static int
+int
 num_stmts(const node *n)
 {
     int i, l;
@@ -804,7 +804,7 @@ PyAST_FromNode(const node *n, PyCompilerFlags *flags, const char *filename,
 /* Return the AST repr. of the operator represented as syntax (|, ^, etc.)
 */
 
-static operator_ty
+operator_ty
 get_operator(const node *n)
 {
     switch (TYPE(n)) {
@@ -842,7 +842,7 @@ static const char* FORBIDDEN[] = {
     NULL,
 };
 
-static int
+int
 forbidden_name(struct compiling *c, identifier name, const node *n, int full_checks)
 {
     assert(PyUnicode_Check(name));
@@ -869,7 +869,7 @@ forbidden_name(struct compiling *c, identifier name, const node *n, int full_che
    an appropriate syntax error and returns false.
 */
 
-static int
+int
 set_context(struct compiling *c, expr_ty e, expr_context_ty ctx, const node *n)
 {
     asdl_seq *s = NULL;
@@ -994,7 +994,7 @@ set_context(struct compiling *c, expr_ty e, expr_context_ty ctx, const node *n)
     return 1;
 }
 
-static operator_ty
+operator_ty
 ast_for_augassign(struct compiling *c, const node *n)
 {
     REQ(n, augassign);
@@ -1032,7 +1032,7 @@ ast_for_augassign(struct compiling *c, const node *n)
     }
 }
 
-static cmpop_ty
+cmpop_ty
 ast_for_comp_op(struct compiling *c, const node *n)
 {
     /* comp_op: '<'|'>'|'=='|'>='|'<='|'!='|'in'|'not' 'in'|'is'
@@ -1084,7 +1084,7 @@ ast_for_comp_op(struct compiling *c, const node *n)
     return (cmpop_ty)0;
 }
 
-static asdl_seq *
+asdl_seq *
 seq_for_testlist(struct compiling *c, const node *n)
 {
     /* testlist: test (',' test)* [',']
@@ -1113,7 +1113,7 @@ seq_for_testlist(struct compiling *c, const node *n)
     return seq;
 }
 
-static arg_ty
+arg_ty
 ast_for_arg(struct compiling *c, const node *n)
 {
     identifier name;
@@ -1143,7 +1143,7 @@ ast_for_arg(struct compiling *c, const node *n)
                      ^^^
    start pointing here
  */
-static int
+int
 handle_keywordonly_args(struct compiling *c, const node *n, int start,
                         asdl_seq *kwonlyargs, asdl_seq *kwdefaults)
 {
@@ -1209,7 +1209,7 @@ handle_keywordonly_args(struct compiling *c, const node *n, int start,
 
 /* Create AST for argument list. */
 
-static arguments_ty
+arguments_ty
 ast_for_arguments(struct compiling *c, const node *n)
 {
     /* This function handles both typedargslist (function definition)
@@ -1393,7 +1393,7 @@ ast_for_arguments(struct compiling *c, const node *n)
                     kwargannotation, posdefaults, kwdefaults, c->c_arena);
 }
 
-static expr_ty
+expr_ty
 ast_for_dotted_name(struct compiling *c, const node *n)
 {
     expr_ty e;
@@ -1425,7 +1425,7 @@ ast_for_dotted_name(struct compiling *c, const node *n)
     return e;
 }
 
-static expr_ty
+expr_ty
 ast_for_decorator(struct compiling *c, const node *n)
 {
     /* decorator: '@' dotted_name [ '(' [arglist] ')' ] NEWLINE */
@@ -1461,7 +1461,7 @@ ast_for_decorator(struct compiling *c, const node *n)
     return d;
 }
 
-static asdl_seq*
+asdl_seq*
 ast_for_decorators(struct compiling *c, const node *n)
 {
     asdl_seq* decorator_seq;
@@ -1482,7 +1482,7 @@ ast_for_decorators(struct compiling *c, const node *n)
     return decorator_seq;
 }
 
-static stmt_ty
+stmt_ty
 ast_for_funcdef(struct compiling *c, const node *n, asdl_seq *decorator_seq)
 {
     /* funcdef: 'def' NAME parameters ['->' test] ':' suite */
@@ -1516,7 +1516,7 @@ ast_for_funcdef(struct compiling *c, const node *n, asdl_seq *decorator_seq)
                        n->n_col_offset, c->c_arena);
 }
 
-static stmt_ty
+stmt_ty
 ast_for_decorated(struct compiling *c, const node *n)
 {
     /* decorated: decorators (classdef | funcdef) */
@@ -1546,7 +1546,7 @@ ast_for_decorated(struct compiling *c, const node *n)
     return thing;
 }
 
-static expr_ty
+expr_ty
 ast_for_lambdef(struct compiling *c, const node *n)
 {
     /* lambdef: 'lambda' [varargslist] ':' test
@@ -1575,7 +1575,7 @@ ast_for_lambdef(struct compiling *c, const node *n)
     return Lambda(args, expression, LINENO(n), n->n_col_offset, c->c_arena);
 }
 
-static expr_ty
+expr_ty
 ast_for_ifexpr(struct compiling *c, const node *n)
 {
     /* test: or_test 'if' or_test 'else' test */
@@ -1601,7 +1601,7 @@ ast_for_ifexpr(struct compiling *c, const node *n)
    Helper for ast_for_comprehension().
 */
 
-static int
+int
 count_comp_fors(struct compiling *c, const node *n)
 {
     int n_fors = 0;
@@ -1638,7 +1638,7 @@ count_comp_fors(struct compiling *c, const node *n)
    Helper for ast_for_comprehension().
 */
 
-static int
+int
 count_comp_ifs(struct compiling *c, const node *n)
 {
     int n_ifs = 0;
@@ -1656,7 +1656,7 @@ count_comp_ifs(struct compiling *c, const node *n)
     }
 }
 
-static asdl_seq *
+asdl_seq *
 ast_for_comprehension(struct compiling *c, const node *n)
 {
     int i, n_fors;
@@ -1733,7 +1733,7 @@ ast_for_comprehension(struct compiling *c, const node *n)
     return comps;
 }
 
-static expr_ty
+expr_ty
 ast_for_itercomp(struct compiling *c, const node *n, int type)
 {
     /* testlist_comp: test ( comp_for | (',' test)* [','] )
@@ -1762,7 +1762,7 @@ ast_for_itercomp(struct compiling *c, const node *n, int type)
         return NULL;
 }
 
-static expr_ty
+expr_ty
 ast_for_dictcomp(struct compiling *c, const node *n)
 {
     expr_ty key, value;
@@ -1785,21 +1785,21 @@ ast_for_dictcomp(struct compiling *c, const node *n)
     return DictComp(key, value, comps, LINENO(n), n->n_col_offset, c->c_arena);
 }
 
-static expr_ty
+expr_ty
 ast_for_genexp(struct compiling *c, const node *n)
 {
     assert(TYPE(n) == (testlist_comp) || TYPE(n) == (argument));
     return ast_for_itercomp(c, n, COMP_GENEXP);
 }
 
-static expr_ty
+expr_ty
 ast_for_listcomp(struct compiling *c, const node *n)
 {
     assert(TYPE(n) == (testlist_comp));
     return ast_for_itercomp(c, n, COMP_LISTCOMP);
 }
 
-static expr_ty
+expr_ty
 ast_for_setcomp(struct compiling *c, const node *n)
 {
     assert(TYPE(n) == (dictorsetmaker));
@@ -1807,7 +1807,7 @@ ast_for_setcomp(struct compiling *c, const node *n)
 }
 
 
-static expr_ty
+expr_ty
 ast_for_atom(struct compiling *c, const node *n)
 {
     /* atom: '(' [yield_expr|testlist_comp] ')' | '[' [testlist_comp] ']'
@@ -1964,7 +1964,7 @@ ast_for_atom(struct compiling *c, const node *n)
     }
 }
 
-static slice_ty
+slice_ty
 ast_for_slice(struct compiling *c, const node *n)
 {
     node *ch;
@@ -2029,7 +2029,7 @@ ast_for_slice(struct compiling *c, const node *n)
     return Slice(lower, upper, step, c->c_arena);
 }
 
-static expr_ty
+expr_ty
 ast_for_binop(struct compiling *c, const node *n)
 {
     /* Must account for a sequence of expressions.
@@ -2081,7 +2081,7 @@ ast_for_binop(struct compiling *c, const node *n)
     return result;
 }
 
-static expr_ty
+expr_ty
 ast_for_trailer(struct compiling *c, const node *n, expr_ty left_expr)
 {
     /* trailer: '(' [arglist] ')' | '[' subscriptlist ']' | '.' NAME
@@ -2157,7 +2157,7 @@ ast_for_trailer(struct compiling *c, const node *n, expr_ty left_expr)
     }
 }
 
-static expr_ty
+expr_ty
 ast_for_factor(struct compiling *c, const node *n)
 {
     expr_ty expression;
@@ -2182,7 +2182,7 @@ ast_for_factor(struct compiling *c, const node *n)
     return NULL;
 }
 
-static expr_ty
+expr_ty
 ast_for_power(struct compiling *c, const node *n)
 {
     /* power: atom trailer* ('**' factor)*
@@ -2218,7 +2218,7 @@ ast_for_power(struct compiling *c, const node *n)
     return e;
 }
 
-static expr_ty
+expr_ty
 ast_for_starred(struct compiling *c, const node *n)
 {
     expr_ty tmp;
@@ -2236,7 +2236,7 @@ ast_for_starred(struct compiling *c, const node *n)
 /* Do not name a variable 'expr'!  Will cause a compile error.
 */
 
-static expr_ty
+expr_ty
 ast_for_expr(struct compiling *c, const node *n)
 {
     /* handle the full range of simple expressions
@@ -2399,7 +2399,7 @@ ast_for_expr(struct compiling *c, const node *n)
     return NULL;
 }
 
-static expr_ty
+expr_ty
 ast_for_call(struct compiling *c, const node *n, expr_ty func)
 {
     /*
@@ -2531,7 +2531,7 @@ ast_for_call(struct compiling *c, const node *n, expr_ty func)
     return Call(func, args, keywords, vararg, kwarg, func->lineno, func->col_offset, c->c_arena);
 }
 
-static expr_ty
+expr_ty
 ast_for_testlist(struct compiling *c, const node* n)
 {
     /* testlist_comp: test (comp_for | (',' test)* [',']) */
@@ -2555,7 +2555,7 @@ ast_for_testlist(struct compiling *c, const node* n)
     }
 }
 
-static stmt_ty
+stmt_ty
 ast_for_expr_stmt(struct compiling *c, const node *n)
 {
     REQ(n, expr_stmt);
@@ -2652,7 +2652,7 @@ ast_for_expr_stmt(struct compiling *c, const node *n)
 }
 
 
-static asdl_seq *
+asdl_seq *
 ast_for_exprlist(struct compiling *c, const node *n, expr_context_ty context)
 {
     asdl_seq *seq;
@@ -2675,7 +2675,7 @@ ast_for_exprlist(struct compiling *c, const node *n, expr_context_ty context)
     return seq;
 }
 
-static stmt_ty
+stmt_ty
 ast_for_del_stmt(struct compiling *c, const node *n)
 {
     asdl_seq *expr_list;
@@ -2689,7 +2689,7 @@ ast_for_del_stmt(struct compiling *c, const node *n)
     return Delete(expr_list, LINENO(n), n->n_col_offset, c->c_arena);
 }
 
-static stmt_ty
+stmt_ty
 ast_for_flow_stmt(struct compiling *c, const node *n)
 {
     /*
@@ -2751,7 +2751,7 @@ ast_for_flow_stmt(struct compiling *c, const node *n)
     return NULL;
 }
 
-static alias_ty
+alias_ty
 alias_for_import_name(struct compiling *c, const node *n, int store)
 {
     /*
@@ -2864,7 +2864,7 @@ alias_for_import_name(struct compiling *c, const node *n, int store)
     return NULL;
 }
 
-static stmt_ty
+stmt_ty
 ast_for_import_stmt(struct compiling *c, const node *n)
 {
     /*
@@ -2977,7 +2977,7 @@ ast_for_import_stmt(struct compiling *c, const node *n)
     return NULL;
 }
 
-static stmt_ty
+stmt_ty
 ast_for_global_stmt(struct compiling *c, const node *n)
 {
     /* global_stmt: 'global' NAME (',' NAME)* */
@@ -2998,7 +2998,7 @@ ast_for_global_stmt(struct compiling *c, const node *n)
     return Global(s, LINENO(n), n->n_col_offset, c->c_arena);
 }
 
-static stmt_ty
+stmt_ty
 ast_for_nonlocal_stmt(struct compiling *c, const node *n)
 {
     /* nonlocal_stmt: 'nonlocal' NAME (',' NAME)* */
@@ -3019,7 +3019,7 @@ ast_for_nonlocal_stmt(struct compiling *c, const node *n)
     return Nonlocal(s, LINENO(n), n->n_col_offset, c->c_arena);
 }
 
-static stmt_ty
+stmt_ty
 ast_for_assert_stmt(struct compiling *c, const node *n)
 {
     /* assert_stmt: 'assert' test [',' test] */
@@ -3048,7 +3048,7 @@ ast_for_assert_stmt(struct compiling *c, const node *n)
     return NULL;
 }
 
-static asdl_seq *
+asdl_seq *
 ast_for_suite(struct compiling *c, const node *n)
 {
     /* suite: simple_stmt | NEWLINE INDENT stmt+ DEDENT */
@@ -3114,7 +3114,7 @@ ast_for_suite(struct compiling *c, const node *n)
     return seq;
 }
 
-static stmt_ty
+stmt_ty
 ast_for_if_stmt(struct compiling *c, const node *n)
 {
     /* if_stmt: 'if' test ':' suite ('elif' test ':' suite)*
@@ -3234,7 +3234,7 @@ ast_for_if_stmt(struct compiling *c, const node *n)
     return NULL;
 }
 
-static stmt_ty
+stmt_ty
 ast_for_while_stmt(struct compiling *c, const node *n)
 {
     /* while_stmt: 'while' test ':' suite ['else' ':' suite] */
@@ -3275,7 +3275,7 @@ ast_for_while_stmt(struct compiling *c, const node *n)
     return NULL;
 }
 
-static stmt_ty
+stmt_ty
 ast_for_for_stmt(struct compiling *c, const node *n)
 {
     asdl_seq *_target, *seq = NULL, *suite_seq;
@@ -3314,7 +3314,7 @@ ast_for_for_stmt(struct compiling *c, const node *n)
                c->c_arena);
 }
 
-static excepthandler_ty
+excepthandler_ty
 ast_for_except_clause(struct compiling *c, const node *exc, node *body)
 {
     /* except_clause: 'except' [test ['as' test]] */
@@ -3368,7 +3368,7 @@ ast_for_except_clause(struct compiling *c, const node *exc, node *body)
     return NULL;
 }
 
-static stmt_ty
+stmt_ty
 ast_for_try_stmt(struct compiling *c, const node *n)
 {
     const int nch = NCH(n);
@@ -3433,7 +3433,7 @@ ast_for_try_stmt(struct compiling *c, const node *n)
 }
 
 /* with_item: test ['as' expr] */
-static withitem_ty
+withitem_ty
 ast_for_with_item(struct compiling *c, const node *n)
 {
     expr_ty context_expr, optional_vars = NULL;
@@ -3457,7 +3457,7 @@ ast_for_with_item(struct compiling *c, const node *n)
 }
 
 /* with_stmt: 'with' with_item (',' with_item)* ':' suite */
-static stmt_ty
+stmt_ty
 ast_for_with_stmt(struct compiling *c, const node *n)
 {
     int i, n_items;
@@ -3483,7 +3483,7 @@ ast_for_with_stmt(struct compiling *c, const node *n)
     return With(items, body, LINENO(n), n->n_col_offset, c->c_arena);
 }
 
-static stmt_ty
+stmt_ty
 ast_for_classdef(struct compiling *c, const node *n, asdl_seq *decorator_seq)
 {
     /* classdef: 'class' NAME ['(' arglist ')'] ':' suite */
@@ -3546,7 +3546,7 @@ ast_for_classdef(struct compiling *c, const node *n, asdl_seq *decorator_seq)
                     decorator_seq, LINENO(n), n->n_col_offset, c->c_arena);
 }
 
-static stmt_ty
+stmt_ty
 ast_for_stmt(struct compiling *c, const node *n)
 {
     if (TYPE(n) == stmt) {
@@ -3618,7 +3618,7 @@ ast_for_stmt(struct compiling *c, const node *n)
     }
 }
 
-static PyObject *
+PyObject *
 parsenumber(struct compiling *c, const char *s)
 {
     const char *end;
@@ -3663,7 +3663,7 @@ parsenumber(struct compiling *c, const char *s)
     }
 }
 
-static PyObject *
+PyObject *
 decode_utf8(struct compiling *c, const char **sPtr, const char *end)
 {
     char *s, *t;
@@ -3674,7 +3674,7 @@ decode_utf8(struct compiling *c, const char **sPtr, const char *end)
     return PyUnicode_DecodeUTF8(t, s - t, NULL);
 }
 
-static PyObject *
+PyObject *
 decode_unicode(struct compiling *c, const char *s, size_t len, int rawmode, const char *encoding)
 {
     PyObject *v, *u;
@@ -3743,7 +3743,7 @@ decode_unicode(struct compiling *c, const char *s, size_t len, int rawmode, cons
  * and r &/or b prefixes (if any), and embedded escape sequences (if any).
  * parsestr parses it, and returns the decoded Python string object.
  */
-static PyObject *
+PyObject *
 parsestr(struct compiling *c, const node *n, int *bytesmode)
 {
     size_t len;
@@ -3832,7 +3832,7 @@ parsestr(struct compiling *c, const node *n, int *bytesmode)
  * compile-time literal catenation, calling parsestr() on each piece, and
  * pasting the intermediate results together.
  */
-static PyObject *
+PyObject *
 parsestrplus(struct compiling *c, const node *n, int *bytesmode)
 {
     PyObject *v;
