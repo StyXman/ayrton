@@ -2418,15 +2418,20 @@ ast_for_call(struct compiling *c, const node *n, expr_ty func)
     nargs = 0;
     nkeywords = 0;
     ngens = 0;
+    convert_keywords= 0;
     for (i = 0; i < NCH(n); i++) {
         node *ch = CHILD(n, i);
         if (TYPE(ch) == argument) {
-            if (NCH(ch) == 1)
+            if (NCH(ch) == 1) {
                 nargs++;
-            else if (TYPE(CHILD(ch, 1)) == comp_for)
+                if (nkeywords) {
+                    convert_keywords= 1;
+                }
+            } else if (TYPE(CHILD(ch, 1)) == comp_for)
                 ngens++;
-            else
+            else {
                 nkeywords++;
+            }
         }
     }
     if (ngens > 1 || (ngens && (nargs || nkeywords))) {
@@ -2453,11 +2458,12 @@ ast_for_call(struct compiling *c, const node *n, expr_ty func)
         if (TYPE(ch) == argument) {
             expr_ty e;
             if (NCH(ch) == 1) {
+                /*
                 if (nkeywords) {
                     ast_error(c, CHILD(ch, 0),
                               "non-keyword arg after keyword arg, biotch!");
                     return NULL;
-                }
+                }*/
                 if (vararg) {
                     ast_error(c, CHILD(ch, 0),
                               "only named arguments may follow *expression");
@@ -2508,10 +2514,14 @@ ast_for_call(struct compiling *c, const node *n, expr_ty func)
                 e = ast_for_expr(c, CHILD(ch, 2));
                 if (!e)
                     return NULL;
-                kw = keyword(key, e, c->c_arena);
-                if (!kw)
-                    return NULL;
-                asdl_seq_SET(keywords, nkeywords++, kw);
+                if (!convert_keywords) {
+                    kw = keyword(key, e, c->c_arena);
+                    if (!kw)
+                        return NULL;
+                    asdl_seq_SET(keywords, nkeywords++, kw);
+                } else {
+                    /* build a tuple ('name', expr) */
+                }
             }
         }
         else if (TYPE(ch) == STAR) {
