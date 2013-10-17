@@ -2408,7 +2408,7 @@ ast_for_call(struct compiling *c, const node *n, expr_ty func)
       argument: [test '='] (test) [comp_for]        # Really [keyword '='] test
     */
 
-    int i, nargs, nkeywords, ngens;
+    int i, nargs, nkeywords, ngens, convert_keywords;
     asdl_seq *args;
     asdl_seq *keywords;
     expr_ty vararg = NULL, kwarg = NULL;
@@ -2456,7 +2456,7 @@ ast_for_call(struct compiling *c, const node *n, expr_ty func)
     for (i = 0; i < NCH(n); i++) {
         node *ch = CHILD(n, i);
         if (TYPE(ch) == argument) {
-            expr_ty e;
+            expr_ty e, e1;
             if (NCH(ch) == 1) {
                 /*
                 if (nkeywords) {
@@ -2484,26 +2484,27 @@ ast_for_call(struct compiling *c, const node *n, expr_ty func)
                 keyword_ty kw;
                 identifier key, tmp;
                 int k;
+                asdl_seq *t;
 
                 /* CHILD(ch, 0) is test, but must be an identifier? */
-                e = ast_for_expr(c, CHILD(ch, 0));
-                if (!e)
+                e1 = ast_for_expr(c, CHILD(ch, 0));
+                if (!e1)
                     return NULL;
                 /* f(lambda x: x[0] = 3) ends up getting parsed with
                  * LHS test = lambda x: x[0], and RHS test = 3.
                  * SF bug 132313 points out that complaining about a keyword
                  * then is very confusing.
                  */
-                if (e->kind == Lambda_kind) {
+                if (e1->kind == Lambda_kind) {
                     ast_error(c, CHILD(ch, 0), "lambda cannot contain assignment");
                     return NULL;
-                } else if (e->kind != Name_kind) {
+                } else if (e1->kind != Name_kind) {
                     ast_error(c, CHILD(ch, 0), "keyword can't be an expression");
                     return NULL;
-                } else if (forbidden_name(c, e->v.Name.id, ch, 1)) {
+                } else if (forbidden_name(c, e1->v.Name.id, ch, 1)) {
                     return NULL;
                 }
-                key = e->v.Name.id;
+                key = e1->v.Name.id;
                 for (k = 0; k < nkeywords; k++) {
                     tmp = ((keyword_ty)asdl_seq_GET(keywords, k))->arg;
                     if (!PyUnicode_Compare(tmp, key)) {
@@ -2521,6 +2522,13 @@ ast_for_call(struct compiling *c, const node *n, expr_ty func)
                     asdl_seq_SET(keywords, nkeywords++, kw);
                 } else {
                     /* build a tuple ('name', expr) */
+                    t = asdl_seq_new(2, c->c_arena);
+                    if (!t)
+                        return NULL;
+                    asdl_seq_SET(t, 0, Str (key, e1->lineno, e1->col_offset, c->c_arena));
+                    asdl_seq_SET(t, 1, e);
+                    /* ... and out it as an argument */
+                    asdl_seq_SET(args, nargs++, Tuple (t, Load, e1->lineno, e1->col_offset, c->c_arena));
                 }
             }
         }
