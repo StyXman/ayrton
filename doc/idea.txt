@@ -552,3 +552,124 @@ x86_64-linux-gnu-gcc -pthread -shared -Wl,-O1 -Wl,-Bsymbolic-functions -Wl,-z,re
     -fstack-protector --param=ssp-buffer-size=4 -Wformat -Werror=format-security \
     -D_FORTIFY_SOURCE=2 build/temp.linux-x86_64-3.3/ayrton/ast.o \
     -o build/lib.linux-x86_64-3.3/ayrton/_ast.cpython-33m.so
+
+* plumbum
+* sh
+* fabric
+* salt
+
+-----------
+ast.parse ('f (("a", 42), b)')
+
+(gdb) bt
+#0  0x00000000005a75de in decode_unicode (c=0x7fffffffc220, s=0x7ffff6fb5c08 "a\\\373\366\377\177", len=1, rawmode=0, encoding=0x5d3f18 "utf-8") at Python/ast.c:3755
+#1  0x00000000005a783a in parsestr (c=0x7fffffffc220, n=0x7ffff6cf7288, bytesmode=0x7fffffffbb04) at Python/ast.c:3814
+#1  0x00000000005a7a4d in parsestrplus (c=0x7fffffffc220, n=0x7ffff6cf7260, bytesmode=0x7fffffffbb04) at Python/ast.c:3859
+#2  0x00000000005a2140 in ast_for_atom (c=0x7fffffffc220, n=0x7ffff6cf7260) at Python/ast.c:1830
+#3  0x00000000005a3307 in ast_for_power (c=0x7fffffffc220, n=0x7ffff6cf7238) at Python/ast.c:2193
+#4  0x00000000005a3ae7 in ast_for_expr (c=0x7fffffffc220, n=0x7ffff6cf7238) at Python/ast.c:2393
+#5  0x00000000005a0647 in seq_for_testlist (c=0x7fffffffc220, n=0x7ffff7049c38) at Python/ast.c:1106
+#6  0x00000000005a4210 in ast_for_testlist (c=0x7fffffffc220, n=0x7ffff7049c38) at Python/ast.c:2569
+#7  0x00000000005a2539 in ast_for_atom (c=0x7fffffffc220, n=0x7ffff6cf7030) at Python/ast.c:1885
+#8  0x00000000005a3307 in ast_for_power (c=0x7fffffffc220, n=0x7ffff6fb5bc0) at Python/ast.c:2193
+#9  0x00000000005a3ae7 in ast_for_expr (c=0x7fffffffc220, n=0x7ffff6fb5bc0) at Python/ast.c:2393
+#10 0x00000000005a3d79 in ast_for_call (c=0x7fffffffc220, n=0x7ffff7049eb8, func=0x99ce20) at Python/ast.c:2472
+#11 0x00000000005a2e7b in ast_for_trailer (c=0x7fffffffc220, n=0x7ffff7049f58, left_expr=0x99ce20) at Python/ast.c:2097
+#12 0x00000000005a3386 in ast_for_power (c=0x7fffffffc220, n=0x7ffff6fb5da0) at Python/ast.c:2202
+#13 0x00000000005a3ae7 in ast_for_expr (c=0x7fffffffc220, n=0x7ffff6fb5da0) at Python/ast.c:2393
+#14 0x00000000005a41fb in ast_for_testlist (c=0x7fffffffc220, n=0x7ffff6fb5c38) at Python/ast.c:2567
+#15 0x00000000005a4281 in ast_for_expr_stmt (c=0x7fffffffc220, n=0x7ffff6fb5c10) at Python/ast.c:2589
+#16 0x00000000005a6e60 in ast_for_stmt (c=0x7fffffffc220, n=0x7ffff6fb5c10) at Python/ast.c:3585
+#17 0x000000000059fb0a in PyAST_FromNode (n=0x7ffff6fb5af8, flags=0x7fffffffc3f0, filename=0x7ffff6cdd140 "<unknown>", arena=0x8f3da0) at Python/ast.c:723
+#18 0x00000000004bcd34 in PyParser_ASTFromString (s=0x7ffff6ceae28 "f ((\"a\", 42), b)", filename=0x7ffff6cdd140 "<unknown>", start=257, flags=0x7fffffffc3f0, arena=0x8f3da0)
+    at Python/pythonrun.c:2092
+#19 0x00000000004bcb31 in Py_CompileStringExFlags (str=0x7ffff6ceae28 "f ((\"a\", 42), b)", filename=0x7ffff6cdd140 "<unknown>", start=257, flags=0x7fffffffc3f0, optimize=-1)
+    at Python/pythonrun.c:2029
+#20 0x000000000047f152 in builtin_compile (self=0x7ffff70ff440, args=0x7ffff7022890, kwds=0x0) at Python/bltinmodule.c:666
+
+$48 = {n_type = 3, n_str = 0x7ffff6d314d8 "\"a\"", n_lineno = 1, n_col_offset = 4, n_nchildren = 0, n_child = 0x0}
+
+1098        seq = asdl_seq_new((NCH(n) + 1) / 2, c->c_arena);
+3814            return decode_unicode(c, s, len, rawmode, c->c_encoding);
+{
+3711            u = PyBytes_FromStringAndSize((char *)NULL, len * 6);
+3714            p = buf = PyBytes_AsString(u);
+3755            v = PyUnicode_DecodeUnicodeEscape(s, len, NULL);
+        v = PyUnicode_New(len, 127); // so this is unicode
+}
+1856            PyArena_AddPyObject(c->c_arena, str);
+1860                return Str(str, LINENO(n), n->n_col_offset, c->c_arena);
+1111            asdl_seq_SET(seq, i / 2, expression);
+[...]
+1111            asdl_seq_SET(seq, i / 2, expression);
+2572            return Tuple(tmp, Load, LINENO(n), n->n_col_offset, c->c_arena);
+2475                    asdl_seq_SET(args, nargs++, e);
+
+---
+ast.parse ('f(a=42)')
+
+#0  new_identifier (n=0x7ffff6d314e8 "a", c=0x7fffffffc220) at Python/ast.c:572
+#1  0x00000000005a20d6 in ast_for_atom (c=0x7fffffffc220, n=0x7ffff6fb5be8) at Python/ast.c:1824
+#2  0x00000000005a3307 in ast_for_power (c=0x7fffffffc220, n=0x7ffff6fb5f58) at Python/ast.c:2193
+#3  0x00000000005a3ae7 in ast_for_expr (c=0x7fffffffc220, n=0x7ffff6fb5f58) at Python/ast.c:2393
+#4  0x00000000005a3e22 in ast_for_call (c=0x7fffffffc220, n=0x7ffff7049f58, func=0x99ce20) at Python/ast.c:2490
+#5  0x00000000005a2e7b in ast_for_trailer (c=0x7fffffffc220, n=0x7ffff7049d78, left_expr=0x99ce20) at Python/ast.c:2097
+#6  0x00000000005a3386 in ast_for_power (c=0x7fffffffc220, n=0x7ffff6fb5f30) at Python/ast.c:2202
+#7  0x00000000005a3ae7 in ast_for_expr (c=0x7fffffffc220, n=0x7ffff6fb5f30) at Python/ast.c:2393
+#8  0x00000000005a41fb in ast_for_testlist (c=0x7fffffffc220, n=0x7ffff6fb5c38) at Python/ast.c:2567
+#9  0x00000000005a4281 in ast_for_expr_stmt (c=0x7fffffffc220, n=0x7ffff6fb5c10) at Python/ast.c:2589
+#10 0x00000000005a6e60 in ast_for_stmt (c=0x7fffffffc220, n=0x7ffff6fb5c10) at Python/ast.c:3585
+#11 0x000000000059fb0a in PyAST_FromNode (n=0x7ffff705ff80, flags=0x7fffffffc3f0, filename=0x7ffff6cdd140 "<unknown>", arena=0x95bd70) at Python/ast.c:723
+#12 0x00000000004bcd34 in PyParser_ASTFromString (s=0x7ffff6d53e98 "f(a=42)", filename=0x7ffff6cdd140 "<unknown>", start=257, flags=0x7fffffffc3f0, arena=0x95bd70)
+    at Python/pythonrun.c:2092
+#13 0x00000000004bcb31 in Py_CompileStringExFlags (str=0x7ffff6d53e98 "f(a=42)", filename=0x7ffff6cdd140 "<unknown>", start=257, flags=0x7fffffffc3f0, optimize=-1)
+    at Python/pythonrun.c:2029
+#14 0x000000000047f152 in builtin_compile (self=0x7ffff70ff440, args=0x7ffff6d34f70, kwds=0x0) at Python/bltinmodule.c:666
+
+{
+549         PyObject *id = PyUnicode_DecodeUTF8(n, strlen(n), NULL);
+ 4752     unicode = PyUnicode_New(size, 127); // and this is unicode too
+569         PyUnicode_InternInPlace(&id);
+570         PyArena_AddPyObject(c->c_arena, id);
+}
+1827            return Name(name, Load, LINENO(n), n->n_col_offset, c->c_arena);
+2519                        kw = keyword(key, e, c->c_arena);
+2522                        asdl_seq_SET(keywords, nkeywords++, kw);
+
+---
+
+ast.parse ('f(a=42, b)')
+
+Program received signal SIGSEGV, Segmentation fault.
+0x0000000000590501 in ast2obj_keyword (_o=0x17) at Python/Python-ast.c:3452
+3452            value = ast2obj_identifier(o->arg);
+(gdb) bt
+#0  0x0000000000590501 in ast2obj_keyword (_o=0x17) at Python/Python-ast.c:3452
+#1  0x0000000000586cae in ast2obj_list (seq=0x99d4e8, func=0x590488 <ast2obj_keyword>) at Python/Python-ast.c:659
+#2  0x000000000058e3c6 in ast2obj_expr (_o=0x99d628) at Python/Python-ast.c:2908
+#3  0x000000000058cfa4 in ast2obj_stmt (_o=0x99d660) at Python/Python-ast.c:2637
+#4  0x0000000000586cae in ast2obj_list (seq=0x99d490, func=0x58b725 <ast2obj_stmt>) at Python/Python-ast.c:659
+#5  0x000000000058b44f in ast2obj_mod (_o=0x99d6a8) at Python/Python-ast.c:2285
+#6  0x000000000059d805 in PyAST_mod2obj (t=0x99d6a8) at Python/Python-ast.c:7128
+#7  0x00000000004bcb71 in Py_CompileStringExFlags (str=0x7ffff702ae20 "f(a=42, b)", filename=0x7ffff6cdd140 "<unknown>", start=257, flags=0x7fffffffc3f0, optimize=-1)
+    at Python/pythonrun.c:2035
+#8  0x000000000047f152 in builtin_compile (self=0x7ffff70ff440, args=0x7ffff7022890, kwds=0x0) at Python/bltinmodule.c:666
+#9  0x000000000058314b in PyCFunction_Call (func=0x7ffff70ff758, arg=0x7ffff7022890, kw=0x0) at Objects/methodobject.c:84
+#10 0x00000000004922ec in call_function (pp_stack=0x7fffffffc5c8, oparg=4) at Python/ceval.c:4063
+#11 0x000000000048da67 in PyEval_EvalFrameEx (f=0x9148e0, throwflag=0) at Python/ceval.c:2679
+#12 0x00000000004904d4 in PyEval_EvalCodeEx (_co=0x7ffff702c5d0, globals=0x7ffff6d36098, locals=0x0, args=0x909880, argcount=1, kws=0x909888, kwcount=0, defs=0x7ffff6d46f08,
+    defcount=2, kwdefs=0x0, closure=0x0) at Python/ceval.c:3433
+#13 0x0000000000492805 in fast_function (func=0x7ffff70ac950, pp_stack=0x7fffffffd2b8, n=1, na=1, nk=0) at Python/ceval.c:4161
+#14 0x000000000049241f in call_function (pp_stack=0x7fffffffd2b8, oparg=1) at Python/ceval.c:4084
+#15 0x000000000048da67 in PyEval_EvalFrameEx (f=0x909700, throwflag=0) at Python/ceval.c:2679
+#16 0x00000000004904d4 in PyEval_EvalCodeEx (_co=0x7ffff702cae0, globals=0x7ffff70506c8, locals=0x7ffff70506c8, args=0x0, argcount=0, kws=0x0, kwcount=0, defs=0x0, defcount=0,
+    kwdefs=0x0, closure=0x0) at Python/ceval.c:3433
+#17 0x00000000004851ce in PyEval_EvalCode (co=0x7ffff702cae0, globals=0x7ffff70506c8, locals=0x7ffff70506c8) at Python/ceval.c:771
+#18 0x00000000004bc931 in run_mod (mod=0x964f58, filename=0x5bc90e "<stdin>", globals=0x7ffff70506c8, locals=0x7ffff70506c8, flags=0x7fffffffe060, arena=0x8e9280)
+    at Python/pythonrun.c:1981
+#19 0x00000000004bac12 in PyRun_InteractiveOneFlags (fp=0x7ffff74b5240 <_IO_2_1_stdin_>, filename=0x5bc90e "<stdin>", flags=0x7fffffffe060) at Python/pythonrun.c:1304
+#20 0x00000000004ba7c8 in PyRun_InteractiveLoopFlags (fp=0x7ffff74b5240 <_IO_2_1_stdin_>, filename=0x5bc90e "<stdin>", flags=0x7fffffffe060) at Python/pythonrun.c:1194
+#21 0x00000000004ba678 in PyRun_AnyFileExFlags (fp=0x7ffff74b5240 <_IO_2_1_stdin_>, filename=0x5bc90e "<stdin>", closeit=0, flags=0x7fffffffe060) at Python/pythonrun.c:1163
+#22 0x00000000004d729e in run_file (fp=0x7ffff74b5240 <_IO_2_1_stdin_>, filename=0x0, p_cf=0x7fffffffe060) at Modules/main.c:306
+#23 0x00000000004d7dc3 in Py_Main (argc=1, argv=0x896010) at Modules/main.c:743
+#24 0x0000000000419b57 in main (argc=1, argv=0x7fffffffe248) at ./Modules/python.c:58
