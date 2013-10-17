@@ -28,7 +28,7 @@ from ast import fix_missing_locations, alias, ImportFrom
 
 from ayrton.castt import CrazyASTTransformer
 
-__version__= '0.2'
+__version__= '0.3'
 
 class RunningCommandWrapper (sh.RunningCommand):
     def _handle_exit_code (self, code):
@@ -157,6 +157,7 @@ class Ayrton (object):
             file= 'arg_to_main'
 
         self.environ= Environment (globals, locals, **kwargs)
+
 
         if tree is None:
             tree= ast.parse (script)

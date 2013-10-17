@@ -19,6 +19,7 @@ import unittest
 import sys
 import io
 import os
+import tempfile
 
 from ayrton.expansion import bash
 import ayrton
@@ -152,6 +153,61 @@ false ()''')
     def testOptionPlus_e (self):
         ayrton.main ('''option ('+e')
 false ()''')
+
+class PipingRedirection (unittest.TestCase):
+    setUp=    setUpMockStdout
+    tearDown= tearDownMockStdout
+
+    def testPipe (self):
+        ayrton.main ('ls () | grep ("setup")')
+        self.assertEqual (self.a.buffer.getvalue (), b'setup.py\n')
+
+    def testGt (self):
+        fn= tempfile.mkstemp ()[1]
+
+        ayrton.main ('echo ("yes") > "%s"' % fn)
+
+        contents= open (fn).read ()
+        # read() does not return bytes!
+        self.assertEqual (contents, 'yes\n')
+        os.unlink (fn)
+
+    def testLt (self):
+        fd, fn= tempfile.mkstemp ()
+        os.write (fd, b'42\n')
+        os.close (fd)
+
+        ayrton.main ('cat () < "%s"' % fn)
+
+        self.assertEqual (self.a.buffer.getvalue (), b'42\n')
+        os.unlink (fn)
+
+    def testLtGt (self):
+        fd, fn1= tempfile.mkstemp ()
+        os.write (fd, b'42\n')
+        os.close (fd)
+        fn2= tempfile.mkstemp ()[1]
+
+        ayrton.main ('cat () < "%s" > "%s"' % (fn1, fn2))
+
+        contents= open (fn2).read ()
+        # read() does not return bytes!
+        self.assertEqual (contents, '42\n')
+
+        os.unlink (fn1)
+        os.unlink (fn2)
+
+    def testRShift (self):
+        fn= tempfile.mkstemp ()[1]
+
+        ayrton.main ('echo ("yes") > "%s"' % fn)
+        ayrton.main ('echo ("yes!") >> "%s"' % fn)
+
+        contents= open (fn).read ()
+        # read() does not return bytes!
+        self.assertEqual (contents, 'yes\nyes!\n')
+        os.unlink (fn)
+
 
 class MiscTests (unittest.TestCase):
     setUp=    setUpMockStdout

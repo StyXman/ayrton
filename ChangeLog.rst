@@ -1,3 +1,9 @@
+ayrton (0.3) unstable; urgency=low
+
+  * Piping and basic redirection works.
+
+ -- Marcos Dione <mdione@grulic.org.ar>  Thu, 03 Oct 2013 20:42:12 +0200
+
 ayrton (0.2) unstable; urgency=low
 
   * New function `options()` is similar to `bash`'s `set` command. So far

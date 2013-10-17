@@ -18,10 +18,12 @@
 # along with ayrton.  If not, see <http://www.gnu.org/licenses/>.
 
 import ast
-from ast import Pass, Module, Bytes, copy_location, Call, Name, Load, Str
+from ast import Pass, Module, Bytes, copy_location, Call, Name, Load, Str, BitOr
 from ast import fix_missing_locations, Import, alias, Attribute, ImportFrom
+from ast import keyword, Gt, Lt, RShift
 import pickle
 from collections import defaultdict
+import ayrton
 
 def append_to_tuple (t, o):
     l= list (t)
@@ -145,6 +147,19 @@ class CrazyASTTransformer (ast.NodeTransformer):
 
         return node
 
+    def visit_ExceptHandler (self, node):
+        # Try(body=[Expr(value=Name(id='fo', ctx=Load()))],
+        #     handlers=[ExceptHandler(type=Name(id='A', ctx=Load()), name='e',
+        #               body=[Pass()])],
+        #     orelse=[], finalbody=[])
+
+        # not sure what/how to do here
+        # self.known_names[name.id]+= 1
+        # self.defined_names[self.stack].append (name.id)
+        self.generic_visit (node)
+
+        return node
+
     def visit_Assign (self, node):
         self.generic_visit (node)
         # Assign(targets=[Name(id='a', ctx=Store())], value=Num(n=2))
@@ -163,6 +178,111 @@ class CrazyASTTransformer (ast.NodeTransformer):
 
         return node
 
+    def is_executable (self, node):
+        # Call(func=Call(func=Attribute(value=Name(id='CommandWrapper', ctx=Load()), attr='_create', ctx=Load()),
+        #                args=[Str(s='ls')], keywords=[], starargs=None, kwargs=None),
+        #      args=[], keywords=[], starargs=None, kwargs=None)
+        return (type (node)==Call and
+                type (node.func)==Call and
+                type (node.func.func)==Attribute and
+                type (node.func.func.value)==Name and
+                node.func.func.value.id=='CommandWrapper' and
+                node.func.func.attr=='_create')
+
+    def visit_BinOp (self, node):
+        self.generic_visit (node)
+
+        # BinOp( left=Call(...), op=BitOr(), right=Call(...))
+        if type (node.op)==BitOr:
+            # pipe
+            # BinOp (left, BitOr, right) -> right (left, ...)
+
+            # check the left and right; if they're calls to CommandWrapper._create
+            # then do the magic
+
+            both= self.is_executable (node.left) and self.is_executable (node.right)
+
+            if both:
+                # right (left, ...)
+                # I can't believe it's this easy
+                node.left.keywords.append (keyword (arg='_out',
+                                                    value=Name (id='Capture', ctx=Load ())))
+                ast.fix_missing_locations (node.left)
+                node.right.args.insert (0, node.left)
+                node= node.right
+
+                # Call(func=Call(func=Attribute(value=Name(id='CommandWrapper', ctx=Load()),
+                #                               attr='_create', ctx=Load()),
+                #                args=[Str(s='grep')], keywords=[], starargs=None, kwargs=None),
+                #      args=[Call(func=Call(func=Attribute(value=Name(id='CommandWrapper', ctx=Load()),
+                #                                          attr='_create', ctx=Load()),
+                #                      args=[Str(s='ls')], keywords=[], starargs=None, kwargs=None),
+                #                 args=[], keywords=[keyword(arg='_out',
+                #                                            value=Name(id='Capture', ctx=Load()))],
+                #                 starargs=None, kwargs=None),
+                #            Str(s='foo')],
+                #      keywords=[], starargs=None, kwargs=None)
+
+        elif type (node.op)==RShift:
+            # BinOp(left=Call(func=Name(id='ls', ctx=Load()), args=[], keywords=[], starargs=None, kwargs=None),
+            #       op=RShift(),
+            #       right=Str(s='foo.txt'))
+            if self.is_executable (node.left):
+                node.left.keywords.append (keyword (arg='_out',
+                                                    value=Call (func=Name (id='open', ctx=Load ()),
+                                                                args=[node.right, Str (s='ab')], keywords=[], starargs=None, kwargs=None)))
+                ast.fix_missing_locations (node.left)
+                node= node.left
+
+        return node
+
+    # Compare(left=Call(func=Name(id='grep', ctx=Load()), args=[Str(s='root')], keywords=[], starargs=None, kwargs=None),
+    #        ops=[Lt()],
+    #        comparators=[BinOp(left=Str(s='/etc/passwd'),
+    #                           op=RShift(),
+    #                           right=Str(s='/tmp/foo'))])
+
+    def visit_Compare (self, node):
+        self.generic_visit (node)
+        ans= node
+
+        # ls () < "bar.txt" > "foo.txt"
+        # Compare(left=Call(func=Name(id='ls', ctx=Load()), args=[], keywords=[],
+        #                        starargs=None, kwargs=None),
+        #         ops=[Lt(), Gt()],
+        #         comparators=[Str(s='bar.txt'), Str(s='foo.txt')]))
+
+        if self.is_executable (node.left):
+            # yes, they're reversed, but it makes more sense to me like this
+            for comp, op in zip (node.ops, node.comparators):
+                if type (comp)==Gt:
+                    # > means _out
+                    node.left.keywords.append (keyword (arg='_out', value=op))
+                    ans= node.left
+
+                if type (comp)==GtE:
+                    # >= means _out+_err
+                    node.left.keywords.append (keyword (arg='_out', value=op))
+                    node.left.keywords.append (keyword (arg='_err_to_out', value=op))
+                    ans= node.left
+
+                elif type (comp)==Lt:
+                    # < means _in
+
+                    # now, _in works differently
+                    # a string is written directly to the stdin,
+                    # instead of creating a file() with that name
+                    # so, we do it ourseleves.
+                    if type (op)==Str:
+                        op= Call (func=Name (id='open', ctx=Load ()), args=[op],
+                                  keywords=[], starargs=None, kwargs=None)
+
+                    node.left.keywords.append (keyword (arg='_in', value=op))
+                    ast.fix_missing_locations (node.left)
+                    ans= node.left
+
+        return ans
+
     def visit_Call (self, node):
         self.generic_visit (node)
         # Call(func=Name(id='b', ctx=Load()), args=[], keywords=[], starargs=None,
@@ -175,7 +295,7 @@ class CrazyASTTransformer (ast.NodeTransformer):
                     # fisrt check if it's not one of the builtin functions
                     self.environ[func_name]
                 except KeyError:
-                    # I guess I have no other option bu to try to execute somehting here...
+                    # I guess I have no other option bu to try to execute something here...
                     new_node= Call (func=Attribute (value=Name (id='CommandWrapper', ctx=Load ()),
                                                     attr='_create', ctx=Load ()),
                                     args=[Str (s=func_name)], keywords=[],
