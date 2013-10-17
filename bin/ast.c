@@ -2445,6 +2445,11 @@ ast_for_call(struct compiling *c, const node *n, expr_ty func)
         return NULL;
     }
 
+    if (convert_keywords) {
+        nargs+= nkeywords;
+        nkeywords= 0;
+    }
+
     args = asdl_seq_new(nargs + ngens, c->c_arena);
     if (!args)
         return NULL;
@@ -2461,9 +2466,10 @@ ast_for_call(struct compiling *c, const node *n, expr_ty func)
                 /*
                 if (nkeywords) {
                     ast_error(c, CHILD(ch, 0),
-                              "non-keyword arg after keyword arg, biotch!");
+                              "non-keyword arg after keyword arg");
                     return NULL;
-                }*/
+                }
+                */
                 if (vararg) {
                     ast_error(c, CHILD(ch, 0),
                               "only named arguments may follow *expression");
