@@ -27,6 +27,7 @@ import ast
 from ast import fix_missing_locations, alias, ImportFrom
 
 from ayrton.castt import CrazyASTTransformer
+from ayrton.functions import o
 
 __version__= '0.3'
 
@@ -78,6 +79,36 @@ class CommandWrapper (sh.Command):
 
         # mess with the environ
         kwargs['_env']= runner.environ.os_environ
+
+        # check the args for o()'s; convert to positional argumens
+        # copied almost verbatim from sh.command._aggregate_keywords()
+        processed = []
+        for index, arg in enumerate (args):
+            if isinstance (arg, o):
+                # we're passing a short arg as a kwarg, example:
+                # cut(d="\t")
+                if len(arg.key) == 1:
+                    if arg.value is not False:
+                        processed.append("-" + arg.key)
+                        if arg.value is not True:
+                            processed.append(self._format_arg(arg.balue))
+
+                # we're doing a long arg
+                else:
+                    if not kwargs.get ('_raw', False):
+                        arg.key = arg.key.replace("_", "-")
+
+                    if arg.value is True:
+                        processed.append("--" + arg.key)
+                    elif arg.value is False:
+                        pass
+                    else:
+                        processed.append("--%s%s%s" % (arg.key, sep,
+                                                       self._format_arg(arg.value)))
+            else:
+                processed.append (arg)
+
+        args= processed
 
         ans= super ().__call__ (*args, **kwargs)
 
@@ -190,8 +221,8 @@ def polute (d):
                               '_k', '_p', '_r', '_s', '_u', '_w', '_x', '_L',
                               '_N', '_S', '_nt', '_ot' ],
         'ayrton.expansion': [ 'bash', ],
-        'ayrton.functions': [ 'cd', 'export', 'option', 'remote', 'run', 'shift',
-                              'source', 'unset', ],
+        'ayrton.functions': [ 'cd', 'export', 'o', 'option', 'remote', 'run',
+                               'shift', 'source', 'unset', ],
         'ayrton': [ 'Capture', ],
         'sh': [ 'CommandNotFound', ],
         }

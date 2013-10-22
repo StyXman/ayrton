@@ -264,6 +264,10 @@ print (a)''', argv=['test_script.ay', '42', '27'])
 print (a)''')
         self.assertEqual (self.a.buffer.getvalue (), b'42\n')
 
+    def testO (self):
+        # this should not explode
+        ayrton.main ('''ls (o (full_time=True))''')
+
 # SSH_CLIENT='127.0.0.1 55524 22'
 # SSH_CONNECTION='127.0.0.1 55524 127.0.0.1 22'
 # SSH_TTY=/dev/pts/14
