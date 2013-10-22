@@ -20,7 +20,7 @@
 import ast
 from ast import Pass, Module, Bytes, copy_location, Call, Name, Load, Str, BitOr
 from ast import fix_missing_locations, Import, alias, Attribute, ImportFrom
-from ast import keyword, Gt, Lt, RShift
+from ast import keyword, Gt, Lt, GtE, RShift
 import pickle
 from collections import defaultdict
 import ayrton
