@@ -283,6 +283,15 @@ class CrazyASTTransformer (ast.NodeTransformer):
 
         return ans
 
+    def visit_AugAssign (self, node):
+        # AugAssign(target=Name(id='a', ctx=Store()), op=RShift(), value=Num(n=13))
+        self.generic_visit (node)
+        # ufa:
+        # In [4]: ast.dump (ast.parse ("f()>>=13"))
+        # SyntaxError: can't assign to function call
+
+        return node
+
     def visit_Call (self, node):
         self.generic_visit (node)
         # Call(func=Name(id='b', ctx=Load()), args=[], keywords=[], starargs=None,
