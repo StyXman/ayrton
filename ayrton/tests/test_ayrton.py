@@ -337,3 +337,10 @@ def foo ():
     false= lambda: True
     false ()''')
 
+class ParsingErrors (unittest.TestCase):
+
+    def testTupleAssign (self):
+        ayrton.main ('''(a, b)= (1, 2)''')
+
+    def testSimpleFor (self):
+        ayrton.main ('''for a in (1, 2): pass''')
