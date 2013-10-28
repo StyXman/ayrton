@@ -203,6 +203,7 @@ class Ayrton (object):
             tree= CrazyASTTransformer(self.environ).visit (tree)
 
         self.options= {}
+        # print (ast.dump (tree))
         self.source= compile (tree, file, 'exec')
 
     def run (self):
