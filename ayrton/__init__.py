@@ -25,6 +25,7 @@ import builtins
 import pickle
 import ast
 from ast import fix_missing_locations, alias, ImportFrom
+import traceback
 
 from ayrton.castt import CrazyASTTransformer
 from ayrton.functions import o
@@ -207,7 +208,13 @@ class Ayrton (object):
         self.source= compile (tree, file, 'exec')
 
     def run (self):
-        exec (self.source, self.environ.globals, self.environ)
+        try:
+            exec (self.source, self.environ.globals, self.environ)
+        except Exception:
+            t, e, tb= sys.exc_info ()
+            # skip ayrton's stack
+            tb= tb.tb_next
+            traceback.print_exception (t, e, tb)
 
 def polute (d):
     # these functions will be loaded from each module and put in the globals
@@ -224,7 +231,7 @@ def polute (d):
         'ayrton.expansion': [ 'bash', ],
         'ayrton.functions': [ 'cd', 'export', 'o', 'option', 'remote', 'run',
                                'shift', 'source', 'unset', ],
-        'ayrton': [ 'Capture', ],
+        'ayrton': [ 'Capture', 'CommandFailed', ],
         'sh': [ 'CommandNotFound', ],
         }
 
