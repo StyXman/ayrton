@@ -20,7 +20,7 @@
 import ast
 from ast import Pass, Module, Bytes, copy_location, Call, Name, Load, Str, BitOr
 from ast import fix_missing_locations, Import, alias, Attribute, ImportFrom
-from ast import keyword, Gt, Lt, RShift
+from ast import keyword, Gt, Lt, GtE, RShift, Tuple
 import pickle
 from collections import defaultdict
 import ayrton
@@ -139,9 +139,8 @@ class CrazyASTTransformer (ast.NodeTransformer):
     def visit_For (self, node):
         # For(target=Name(id='x', ctx=Store()), iter=List(elts=[], ctx=Load()),
         #     body=[Pass()], orelse=[])
-        for name in node.target:
-            self.known_names[name.id]+= 1
-            self.defined_names[self.stack].append (name.id)
+        self.known_names[node.target.id]+= 1
+        self.defined_names[self.stack].append (node.target.id)
 
         self.generic_visit (node)
 
@@ -162,12 +161,20 @@ class CrazyASTTransformer (ast.NodeTransformer):
 
     def visit_Assign (self, node):
         self.generic_visit (node)
-        # Assign(targets=[Name(id='a', ctx=Store())], value=Num(n=2))
         for target in node.targets:
-            self.known_names[target.id]+= 1
-            self.defined_names[self.stack].append (target.id)
+            self.assign (target)
 
         return node
+
+    def assign (self, node):
+        if type (node)==Name:
+            # Assign(targets=[Name(id='a', ctx=Store())], value=Num(n=2))
+            self.known_names[node.id]+= 1
+            self.defined_names[self.stack].append (node.id)
+        elif type (node)==Tuple:
+            # Assign(targets=[Tuple(elts=[Name(id='a', ctx=Store()), Name(id='b', ctx=Store())], ...
+            for elt in node.elts:
+                self.assign (elt)
 
     def visit_Delete (self, node):
         self.generic_visit (node)

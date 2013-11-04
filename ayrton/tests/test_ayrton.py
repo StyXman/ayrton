@@ -27,10 +27,10 @@ import sh
 
 class Bash(unittest.TestCase):
     def test_simple_string (self):
-        self.assertEqual (bash ('s'), [ 's' ])
+        self.assertEqual (bash ('s'), 's')
 
     def test_glob1 (self):
-        self.assertEqual (sorted (bash ('*.py')), [ 'setup.py' ])
+        self.assertEqual (bash ('*.py'), 'setup.py')
 
     def test_glob2 (self):
         self.assertEqual (sorted (bash ([ '*.py', '*.txt' ])), [ 'LICENSE.txt', 'setup.py', ])
@@ -48,10 +48,10 @@ class Bash(unittest.TestCase):
         self.assertEqual (bash ('a{b,ce}d'), [ 'abd', 'aced' ])
 
     def test_simple3_brace (self):
-        self.assertEqual (bash ('{a}'), [ '{a}' ])
+        self.assertEqual (bash ('{a}'), '{a}')
 
     def test_simple4_brace (self):
-        self.assertEqual (bash ('a}'), [ 'a}' ])
+        self.assertEqual (bash ('a}'), 'a}')
 
     def test_simple5_brace (self):
         self.assertEqual (bash ('a{bfgh,{ci,djkl}e'), [ 'a{bfgh,cie', 'a{bfgh,djkle' ])
@@ -70,14 +70,14 @@ class Bash(unittest.TestCase):
         self.assertEqual (bash ('{c{a,b}d,e{f,g}h}'), [ 'cad', 'cbd', 'efh', 'egh' ])
 
     def test_escaped_brace (self):
-        self.assertEqual (bash ('\{a,b}'), [ '{a,b}' ])
+        self.assertEqual (bash ('\{a,b}'), '{a,b}')
 
     def test_real_example1 (self):
         # tiles/{legend*,Elevation.dgml,preview.png,Makefile}
         pass
 
     def test_tilde (self):
-        self.assertEqual (bash ('~'), [ os.environ['HOME'] ])
+        self.assertEqual (bash ('~'), os.environ['HOME'])
 
 class HardExpansion(unittest.TestCase):
     # test cases deemed too hard to comply and corner cases
@@ -264,6 +264,10 @@ print (a)''', argv=['test_script.ay', '42', '27'])
 print (a)''')
         self.assertEqual (self.a.buffer.getvalue (), b'42\n')
 
+    def testO (self):
+        # this should not explode
+        ayrton.main ('''ls (o (full_time=True))''')
+
 # SSH_CLIENT='127.0.0.1 55524 22'
 # SSH_CONNECTION='127.0.0.1 55524 127.0.0.1 22'
 # SSH_TTY=/dev/pts/14
@@ -333,3 +337,10 @@ def foo ():
     false= lambda: True
     false ()''')
 
+class ParsingErrors (unittest.TestCase):
+
+    def testTupleAssign (self):
+        ayrton.main ('''(a, b)= (1, 2)''')
+
+    def testSimpleFor (self):
+        ayrton.main ('''for a in (1, 2): pass''')
