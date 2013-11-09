@@ -57,4 +57,10 @@ for i, a in enumerate (args):
 
 opts= parser.parse_args (ayrton_args)
 
-ayrton.main (**vars (opts))
+try:
+    ayrton.main (**vars (opts))
+except Exception:
+    t, e, tb= sys.exc_info ()
+    # skip ayrton's stack
+    tb= tb.tb_next
+    traceback.print_exception (t, e, tb)

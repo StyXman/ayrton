@@ -208,13 +208,7 @@ class Ayrton (object):
         self.source= compile (tree, file, 'exec')
 
     def run (self):
-        try:
-            exec (self.source, self.environ.globals, self.environ)
-        except Exception:
-            t, e, tb= sys.exc_info ()
-            # skip ayrton's stack
-            tb= tb.tb_next
-            traceback.print_exception (t, e, tb)
+        exec (self.source, self.environ.globals, self.environ)
 
 def polute (d):
     # these functions will be loaded from each module and put in the globals
