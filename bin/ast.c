@@ -2490,7 +2490,8 @@ ast_for_call(struct compiling *c, const node *n, expr_ty func)
                 keyword_ty kw;
                 identifier key, tmp;
                 int k;
-                asdl_seq *t;
+                asdl_seq *t, *kws;
+                expr_ty name;
 
                 /* CHILD(ch, 0) is test, but must be an identifier? */
                 e1 = ast_for_expr(c, CHILD(ch, 0));
@@ -2527,14 +2528,20 @@ ast_for_call(struct compiling *c, const node *n, expr_ty func)
                         return NULL;
                     asdl_seq_SET(keywords, nkeywords++, kw);
                 } else {
-                    /* build a tuple ('name', expr) */
-                    t = asdl_seq_new(2, c->c_arena);
-                    if (!t)
+                    /* build a call o(name=expr) */
+                    name= ...('o');
+
+                    kw= keyword (key, e, c->c_arena);
+                    if (!kw)
                         return NULL;
-                    asdl_seq_SET(t, 0, Str (key, e1->lineno, e1->col_offset, c->c_arena));
-                    asdl_seq_SET(t, 1, e);
+
+                    kws= asdl_seq_new(1, c->c_arena);
+                    if (!kws)
+                        return NULL;
+                    asdl_seq_SET (kws, 0, kw);
+
                     /* ... and out it as an argument */
-                    asdl_seq_SET(args, nargs++, Tuple (t, Load, e1->lineno, e1->col_offset, c->c_arena));
+                    asdl_seq_SET(args, nargs++, Call (name, NULL, kw, NULL, NULL, e1->lineno, e1->col_offset, c->c_arena));
                 }
             }
         }
