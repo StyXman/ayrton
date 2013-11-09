@@ -22,12 +22,15 @@ import sys
 import sh
 import importlib
 import builtins
-import ast
-from ast import Pass, Module, Bytes, copy_location, Call, Name, Load
-from ast import fix_missing_locations, Import, alias
 import pickle
+import ast
+from ast import fix_missing_locations, alias, ImportFrom
+import traceback
 
-__version__= '0.2'
+from ayrton.castt import CrazyASTTransformer
+from ayrton.functions import o
+
+__version__= '0.3'
 
 class RunningCommandWrapper (sh.RunningCommand):
     def _handle_exit_code (self, code):
@@ -78,6 +81,36 @@ class CommandWrapper (sh.Command):
         # mess with the environ
         kwargs['_env']= runner.environ.os_environ
 
+        # check the args for o()'s; convert to positional argumens
+        # copied almost verbatim from sh.command._aggregate_keywords()
+        processed = []
+        for index, arg in enumerate (args):
+            if isinstance (arg, o):
+                # we're passing a short arg as a kwarg, example:
+                # cut(d="\t")
+                if len(arg.key) == 1:
+                    if arg.value is not False:
+                        processed.append("-" + arg.key)
+                        if arg.value is not True:
+                            processed.append(self._format_arg(arg.balue))
+
+                # we're doing a long arg
+                else:
+                    if not kwargs.get ('_raw', False):
+                        arg.key = arg.key.replace("_", "-")
+
+                    if arg.value is True:
+                        processed.append("--" + arg.key)
+                    elif arg.value is False:
+                        pass
+                    else:
+                        processed.append("--%s%s%s" % (arg.key, sep,
+                                                       self._format_arg(arg.value)))
+            else:
+                processed.append (arg)
+
+        args= processed
+
         ans= super ().__call__ (*args, **kwargs)
 
         if runner.options.get ('errexit', False) and not bool (ans):
@@ -127,44 +160,23 @@ class Environment (object):
         if strikes==5:
             # the name was not found in any of the dicts
             # create a command for it
-            ans= CommandWrapper._create (k)
+            # ans= CommandWrapper._create (k)
+            # print (k)
+            raise KeyError (k)
 
         return ans
 
     def __setitem__ (self, k, v):
         self.locals[k]= v
 
+    def __delitem__ (self, k):
+        del self.locals[k]
+
     def __iter__ (self):
         return self.locals.__iter__ ()
 
     def __str__ (self):
         return str ([ self.globals, self.locals, self.os_environ ])
-
-class CrazyASTTransformer (ast.NodeTransformer):
-
-    def visit_With (self, node):
-        call= node.items[0].context_expr
-        # TODO: more checks
-        if call.func.id=='remote':
-            # capture the body and put it as the first argument to ssh()
-            # but within a module, and already pickled;
-            # otherwise we need to create an AST for the call of all the
-            # constructors in the body we capture... it's complicated
-            m= Module (body=node.body)
-
-            data= pickle.dumps (m)
-            s= Bytes (s=data)
-            s.lineno= node.lineno
-            s.col_offset= node.col_offset
-            call.args.insert (0, s)
-
-            p= Pass ()
-            p.lineno= node.lineno+1
-            p.col_offset= node.col_offset+4
-
-            node.body= [ p ]
-
-        return node
 
 class Ayrton (object):
     def __init__ (self, script=None, file=None, tree=None, globals=None,
@@ -176,16 +188,33 @@ class Ayrton (object):
         else:
             file= 'arg_to_main'
 
-        if script is not None:
-            tree= ast.parse (script)
-            tree= CrazyASTTransformer().visit (tree)
-
-        self.options= {}
-        self.source= compile (tree, file, 'exec')
         self.environ= Environment (globals, locals, **kwargs)
 
+
+        if tree is None:
+            tree= ast.parse (script)
+            # ImportFrom(module='bar', names=[alias(name='baz', asname=None)], level=0)
+            node= ImportFrom (module='ayrton',
+                              names=[alias (name='CommandWrapper', asname=None)],
+                              level=0)
+            node.lineno= 0
+            node.col_offset= 0
+            ast.fix_missing_locations (node)
+            tree.body.insert (0, node)
+            tree= CrazyASTTransformer(self.environ).visit (tree)
+
+        self.options= {}
+        # print (ast.dump (tree))
+        self.source= compile (tree, file, 'exec')
+
     def run (self):
-        exec (self.source, self.environ.globals, self.environ)
+        try:
+            exec (self.source, self.environ.globals, self.environ)
+        except Exception:
+            t, e, tb= sys.exc_info ()
+            # skip ayrton's stack
+            tb= tb.tb_next
+            traceback.print_exception (t, e, tb)
 
 def polute (d):
     # these functions will be loaded from each module and put in the globals
@@ -200,9 +229,9 @@ def polute (d):
                               '_k', '_p', '_r', '_s', '_u', '_w', '_x', '_L',
                               '_N', '_S', '_nt', '_ot' ],
         'ayrton.expansion': [ 'bash', ],
-        'ayrton.functions': [ 'cd', 'export', 'option', 'remote', 'run', 'shift',
-                              'source', 'unset', ],
-        'ayrton': [ 'Capture', ],
+        'ayrton.functions': [ 'cd', 'export', 'o', 'option', 'remote', 'run',
+                               'shift', 'source', 'unset', ],
+        'ayrton': [ 'Capture', 'CommandFailed', ],
         'sh': [ 'CommandNotFound', ],
         }
 

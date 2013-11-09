@@ -19,16 +19,18 @@ import unittest
 import sys
 import io
 import os
+import tempfile
 
 from ayrton.expansion import bash
 import ayrton
+import sh
 
 class Bash(unittest.TestCase):
     def test_simple_string (self):
-        self.assertEqual (bash ('s'), [ 's' ])
+        self.assertEqual (bash ('s'), 's')
 
     def test_glob1 (self):
-        self.assertEqual (sorted (bash ('*.py')), [ 'setup.py' ])
+        self.assertEqual (bash ('*.py'), 'setup.py')
 
     def test_glob2 (self):
         self.assertEqual (sorted (bash ([ '*.py', '*.txt' ])), [ 'LICENSE.txt', 'setup.py', ])
@@ -46,10 +48,10 @@ class Bash(unittest.TestCase):
         self.assertEqual (bash ('a{b,ce}d'), [ 'abd', 'aced' ])
 
     def test_simple3_brace (self):
-        self.assertEqual (bash ('{a}'), [ '{a}' ])
+        self.assertEqual (bash ('{a}'), '{a}')
 
     def test_simple4_brace (self):
-        self.assertEqual (bash ('a}'), [ 'a}' ])
+        self.assertEqual (bash ('a}'), 'a}')
 
     def test_simple5_brace (self):
         self.assertEqual (bash ('a{bfgh,{ci,djkl}e'), [ 'a{bfgh,cie', 'a{bfgh,djkle' ])
@@ -68,14 +70,14 @@ class Bash(unittest.TestCase):
         self.assertEqual (bash ('{c{a,b}d,e{f,g}h}'), [ 'cad', 'cbd', 'efh', 'egh' ])
 
     def test_escaped_brace (self):
-        self.assertEqual (bash ('\{a,b}'), [ '{a,b}' ])
+        self.assertEqual (bash ('\{a,b}'), '{a,b}')
 
     def test_real_example1 (self):
         # tiles/{legend*,Elevation.dgml,preview.png,Makefile}
         pass
 
     def test_tilde (self):
-        self.assertEqual (bash ('~'), [ os.environ['HOME'] ])
+        self.assertEqual (bash ('~'), os.environ['HOME'])
 
 class HardExpansion(unittest.TestCase):
     # test cases deemed too hard to comply and corner cases
@@ -121,43 +123,99 @@ class CommandExecution (unittest.TestCase):
 
     def testStdEqCapture (self):
         # do the test
-        ayrton.main ('f= echo ("foo", _out=Capture); print ("echo: %s" % f)')
+        ayrton.main ('''f= echo ("foo", _out=Capture);
+print ("echo: %s" % f)''')
         # the output is empty, as it went to /dev/null
         # BUG: check why there's a second \n
         # ANS: because echo adds the first one and print adds the second one
         self.assertEqual (self.a.buffer.getvalue (), b'echo: foo\n\n')
 
     def testExitCodeOK (self):
-        ayrton.main ('if true (): print ("yes!")')
+        ayrton.main ('''if true ():
+    print ("yes!")''')
         self.assertEqual (self.a.buffer.getvalue (), b'yes!\n')
 
     def testExitCodeNOK (self):
-        ayrton.main ('if not false (): print ("yes!")')
+        ayrton.main ('''if not false ():
+    print ("yes!")''')
         self.assertEqual (self.a.buffer.getvalue (), b'yes!\n')
 
     def testOptionErrexit (self):
         self.assertRaises (ayrton.CommandFailed,
                            ayrton.main, '''option ('errexit')
-false ()
-''')
+false ()''')
 
     def testOptionMinus_e (self):
         self.assertRaises (ayrton.CommandFailed,
                            ayrton.main, '''option ('-e')
-false ()
-''')
+false ()''')
 
     def testOptionPlus_e (self):
         ayrton.main ('''option ('+e')
-false ()
-''')
+false ()''')
+
+class PipingRedirection (unittest.TestCase):
+    setUp=    setUpMockStdout
+    tearDown= tearDownMockStdout
+
+    def testPipe (self):
+        ayrton.main ('ls () | grep ("setup")')
+        self.assertEqual (self.a.buffer.getvalue (), b'setup.py\n')
+
+    def testGt (self):
+        fn= tempfile.mkstemp ()[1]
+
+        ayrton.main ('echo ("yes") > "%s"' % fn)
+
+        contents= open (fn).read ()
+        # read() does not return bytes!
+        self.assertEqual (contents, 'yes\n')
+        os.unlink (fn)
+
+    def testLt (self):
+        fd, fn= tempfile.mkstemp ()
+        os.write (fd, b'42\n')
+        os.close (fd)
+
+        ayrton.main ('cat () < "%s"' % fn)
+
+        self.assertEqual (self.a.buffer.getvalue (), b'42\n')
+        os.unlink (fn)
+
+    def testLtGt (self):
+        fd, fn1= tempfile.mkstemp ()
+        os.write (fd, b'42\n')
+        os.close (fd)
+        fn2= tempfile.mkstemp ()[1]
+
+        ayrton.main ('cat () < "%s" > "%s"' % (fn1, fn2))
+
+        contents= open (fn2).read ()
+        # read() does not return bytes!
+        self.assertEqual (contents, '42\n')
+
+        os.unlink (fn1)
+        os.unlink (fn2)
+
+    def testRShift (self):
+        fn= tempfile.mkstemp ()[1]
+
+        ayrton.main ('echo ("yes") > "%s"' % fn)
+        ayrton.main ('echo ("yes!") >> "%s"' % fn)
+
+        contents= open (fn).read ()
+        # read() does not return bytes!
+        self.assertEqual (contents, 'yes\nyes!\n')
+        os.unlink (fn)
+
 
 class MiscTests (unittest.TestCase):
     setUp=    setUpMockStdout
     tearDown= tearDownMockStdout
 
     def testEnviron (self):
-        ayrton.main ('export (TEST_ENV=42); run ("./ayrton/tests/data/test_environ.sh")')
+        ayrton.main ('''export (TEST_ENV=42);
+run ("./ayrton/tests/data/test_environ.sh")''')
         self.assertEqual (self.a.buffer.getvalue (), b'42\n')
 
     def testUnset (self):
@@ -166,7 +224,7 @@ print (TEST_ENV)
 unset ("TEST_ENV")
 try:
     TEST_ENV
-except CommandNotFound:
+except NameError:
     print ("yes")''')
         self.assertEqual (self.a.buffer.getvalue (), b'42\nyes\n')
 
@@ -176,39 +234,113 @@ except CommandNotFound:
         self.assertEqual (self.a.buffer.getvalue(), b'42\n')
 
     def testExportSetsGlobalVar (self):
-        ayrton.main ('export (foo=42); print (foo)')
+        ayrton.main ('''export (foo=42);
+print (foo)''')
         self.assertEqual (self.a.buffer.getvalue(), b'42\n')
 
     def testRename (self):
-        ayrton.main ('import os.path; print (os.path.split (pwd ())[-1])')
+        ayrton.main ('''import os.path;
+print (os.path.split (pwd ())[-1])''')
         self.assertEqual (self.a.buffer.getvalue (), b'ayrton\n')
 
     def testWithCd (self):
-        ayrton.main ('import os.path\nwith cd ("bin"):\n  print (os.path.split (pwd ())[-1])')
+        ayrton.main ('''import os.path
+with cd ("bin"):
+    print (os.path.split (pwd ())[-1])''')
         self.assertEqual (self.a.buffer.getvalue (), b'bin\n')
 
     def testShift (self):
-        ayrton.main ('a= shift (); print (a)', argv=['test_script.ay', '42'])
+        ayrton.main ('''a= shift ();
+print (a)''', argv=['test_script.ay', '42'])
         self.assertEqual (self.a.buffer.getvalue (), b'42\n')
 
     def testShifts (self):
-        ayrton.main ('a= shift (2); print (a)', argv=['test_script.ay', '42', '27'])
+        ayrton.main ('''a= shift (2);
+print (a)''', argv=['test_script.ay', '42', '27'])
         self.assertEqual (self.a.buffer.getvalue (), b"['42', '27']\n")
 
     def testSource (self):
-        ayrton.main ('source ("ayrton/tests/source.ay"); print (a)')
+        ayrton.main ('''source ("ayrton/tests/source.ay");
+print (a)''')
         self.assertEqual (self.a.buffer.getvalue (), b'42\n')
+
+    def testO (self):
+        # this should not explode
+        ayrton.main ('''ls (o (full_time=True))''')
 
 # SSH_CLIENT='127.0.0.1 55524 22'
 # SSH_CONNECTION='127.0.0.1 55524 127.0.0.1 22'
 # SSH_TTY=/dev/pts/14
 
-    def testRemote (self):
-        ayrton.main ('''a= 42
-with remote ('localhost', allow_agent=False) as s:
+    def Remote (self):
+        """This test only succeeds if you you have password/passphrase-less access
+        to localhost"""
+        ayrton.main ('''with remote ('localhost', allow_agent=False) as s:
     print (SSH_CLIENT)
 print (s[1].readlines ())''')
         expected1= b'''[b'127.0.0.1 '''
         expected2= b''' 22\\n']\n'''
         self.assertEqual (self.a.buffer.getvalue ()[:len (expected1)], expected1)
         self.assertEqual (self.a.buffer.getvalue ()[-len (expected2):], expected2)
+
+class CommandDetection (unittest.TestCase):
+
+    def testSimpleCase (self):
+        ayrton.main ('true ()')
+
+    def testSimpleCaseFails (self):
+        self.assertRaises (sh.CommandNotFound, ayrton.main, 'foo ()')
+
+    def testFromImport (self):
+        ayrton.main ('''from random import seed;
+seed ()''')
+
+    def testFromImportFails (self):
+        self.assertRaises (sh.CommandNotFound, ayrton.main,
+                           '''from random import seed;
+foo ()''')
+
+    def testFromImportAs (self):
+        ayrton.main ('''from random import seed as foo
+foo ()''')
+
+    def testFromImportAsFails (self):
+        self.assertRaises (sh.CommandNotFound, ayrton.main,
+                           '''from random import seed as foo
+bar ()''')
+
+    def testAssign (self):
+        ayrton.main ('''a= lambda x: x
+a (1)''')
+
+    def testDel (self):
+        self.assertRaises (ayrton.CommandFailed, ayrton.main,
+                           '''option ('errexit')
+false= lambda: x
+del false
+false ()''')
+
+    def testDefFun1 (self):
+        ayrton.main ('''def foo ():
+    true= 42
+true ()''')
+
+    def testDefFun2 (self):
+        self.assertRaises (ayrton.CommandFailed, ayrton.main, '''option ('errexit')
+def foo ():
+    false= 42
+false ()''')
+
+    def testDefFunFails1 (self):
+        ayrton.main ('''option ('errexit')
+def foo ():
+    false= lambda: True
+    false ()''')
+
+class ParsingErrors (unittest.TestCase):
+
+    def testTupleAssign (self):
+        ayrton.main ('''(a, b)= (1, 2)''')
+
+    def testSimpleFor (self):
+        ayrton.main ('''for a in (1, 2): pass''')

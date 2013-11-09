@@ -46,6 +46,12 @@ option_map= dict (
     e= 'errexit',
     )
 
+class o (object):
+    def __init__ (self, **kwargs):
+        option= list (kwargs.items ())[0]
+        self.key=   option[0]
+        self.value= option[1]
+
 def option (option, value=True):
     if len (option)==2:
         if option[0]=='-':
