@@ -27,7 +27,8 @@ encoding= sys.getdefaultencoding ()
 def execute (cmd, *args, **kwargs):
     options= dict (
         _end= os.linesep.encode (encoding),
-        _comp= True,
+        _chomp= True,
+        _encoding= encoding,
         )
     options.update (kwargs)
 
@@ -49,6 +50,8 @@ def execute (cmd, *args, **kwargs):
         # if stdout is also Capture'd, then use the same pipe
         if not '_out' in options or options['_out']!=Capture:
             stderr_pipe= os.pipe ()
+
+    reader_pipe= None
 
     r= os.fork ()
     if r==0:
@@ -138,16 +141,19 @@ def execute (cmd, *args, **kwargs):
 
         if stdout_pipe is not None:
             # this will also read stderr if both are Capture'd
-            r, w= stdout_pipe
-            os.close (w)
-            ans= os.read (r, 1024).decode (encoding)
-            os.close (r)
-
+            reader_pipe= stdout_pipe
         if stderr_pipe is not None:
-            r, w= stderr_pipe
+            reader_pipe= stderr_pipe
+
+        if reader_pipe is not None:
+            r, w= reader_pipe
             os.close (w)
-            ans= os.read (r, 1024).decode (encoding)
-            os.close (r)
+            reader= open (r)
+            ans= reader.readlines ()
+            reader.close ()
+
+            if options['_chomp']:
+                ans= [ line.strip (os.linesep) for line in ans ]
 
         return ans
 
@@ -189,4 +195,7 @@ if __name__=='__main__':
     print (repr (a))
 
     a= execute ('ls', 'Makefile', '_err=Capture', _out=Capture, _err=Capture)
+    print (repr (a))
+
+    a= execute ('ls', _out=Capture, _chomp=False)
     print (repr (a))
