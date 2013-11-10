@@ -39,6 +39,10 @@ def execute (cmd, *args, **kwargs):
         if not isinstance (i, io.IOBase) and i is not None:
             stdin_pipe= os.pipe ()
 
+    stdout_pipe= None
+    if '_out' in options and options['_out']==Capture:
+        stdout_pipe= os.pipe ()
+
     r= os.fork ()
     if r==0:
         # child
@@ -69,6 +73,11 @@ def execute (cmd, *args, **kwargs):
                 # dup its fd int stdout (1)
                 os.dup2 (o.fileno (), 1)
 
+            if o==Capture:
+                r, w= stdout_pipe
+                os.dup2 (w, 1)
+                os.close (r)
+
         os.execvp (cmd, [cmd]+[str (x) for x in args])
     else:
         # parent, r is the pid of the child
@@ -97,7 +106,15 @@ def execute (cmd, *args, **kwargs):
 
             os.close (w)
 
-        return os.wait ()
+        ans= os.wait ()
+
+        if stdout_pipe is not None:
+            r, w= stdout_pipe
+            os.close (w)
+            ans= os.read (r, 1024).decode (encoding)
+            os.close (r)
+
+        return ans
 
 if __name__=='__main__':
     a= execute ('echo', 'simple')
@@ -123,3 +140,4 @@ if __name__=='__main__':
     a= execute ('echo', '_out=None', _out=None)
 
     a= execute ('echo', 'Capture', _out=Capture)
+    print (repr (a))
