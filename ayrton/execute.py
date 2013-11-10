@@ -24,15 +24,23 @@ from collections.abc import Iterable
 encoding= sys.getdefaultencoding ()
 
 def execute (cmd, *args, **kwargs):
+    options= dict (
+        _end= os.linesep.encode (encoding),
+        )
+    options.update (kwargs)
+
+    if type (options['_end'])!=bytes:
+        options['_end']= options['_end'].encode (encoding)
+
     stdin_pipe= None
-    if '_in' in kwargs and not isinstance (kwargs['_in'], io.IOBase):
+    if '_in' in options and not isinstance (options['_in'], io.IOBase):
         stdin_pipe= os.pipe ()
 
     r= os.fork ()
     if r==0:
         # child
-        if '_in' in kwargs:
-            i= kwargs['_in']
+        if '_in' in options:
+            i= options['_in']
             if isinstance (i, io.IOBase):
                 # this does not work with file like objects
                 # dup its fd int stdin (0)
@@ -42,8 +50,8 @@ def execute (cmd, *args, **kwargs):
                 os.dup2 (r, 0)
                 os.close (w)
 
-        if '_out' in kwargs:
-            o= kwargs['_out']
+        if '_out' in options:
+            o= options['_out']
 
         os.execvp (cmd, [cmd]+[str (x) for x in args])
     else:
@@ -52,20 +60,24 @@ def execute (cmd, *args, **kwargs):
             # str -> write into the fd
             # list -> write each
             # file -> take fd
-            i= kwargs['_in']
+            i= options['_in']
 
             r, w= stdin_pipe
             os.close (r)
 
             if type (i)==str:
                 os.write (w, i.encode (encoding))
+                os.write (w, options['_end'])
             elif type (i)==bytes:
                 os.write (w, i)
+                os.write (w, options['_end'])
             elif isinstance (i, Iterable):
                 for e in i:
                     os.write (w, str (e).encode (encoding))
+                    os.write (w, options['_end'])
             else:
                 os.write (w, str (i).encode (encoding))
+                os.write (w, options['_end'])
 
             os.close (w)
 
