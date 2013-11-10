@@ -52,6 +52,10 @@ def execute (cmd, *args, **kwargs):
 
         if '_out' in options:
             o= options['_out']
+            if isinstance (o, io.IOBase):
+                # this does not work with file like objects
+                # dup its fd int stdout (1)
+                os.dup2 (o.fileno (), 1)
 
         os.execvp (cmd, [cmd]+[str (x) for x in args])
     else:
@@ -92,5 +96,12 @@ if __name__=='__main__':
 
     f= open ('ayrton/tests/string_stdin.txt', 'rb')
     a= execute ('cat', _in=f)
+    f.close ()
 
     a= execute ('cat', _in=['a', 'b'])
+
+    f= open ('ayrton/tests/string_stdout.txt', 'wb+')
+    a= execute ('echo', 'yes!', _out=f)
+    f.close ()
+
+    a= execute ('cat', _in=None)
