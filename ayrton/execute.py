@@ -20,44 +20,58 @@ import sys
 import io
 from collections.abc import Iterable
 from ayrton import Capture
+import pdb
 
 # encoding= 'utf-8'
 encoding= sys.getdefaultencoding ()
 
-def execute (cmd, *args, **kwargs):
-    options= dict (
-        _end= os.linesep.encode (encoding),
-        _chomp= True,
-        _encoding= encoding,
-        )
-    options.update (kwargs)
+# yes, we finally are going the class way
+class Command:
+    def __init__ (self):
+        self.stdin_pipe= None
+        self.stdout_pipe= None
+        self.stderr_pipe= None
 
-    if type (options['_end'])!=bytes:
-        options['_end']= options['_end'].encode (encoding)
+        self.exit_code= None
+        self.capture_file= None
 
-    stdin_pipe= None
-    if '_in' in options:
-        i= options['_in']
-        if not isinstance (i, io.IOBase) and i is not None:
-            stdin_pipe= os.pipe ()
+        self.options= dict (
+            _in_tty= False,
+            _out_tty= False,
+            _end= os.linesep.encode (encoding),
+            _chomp= True,
+            _encoding= encoding,
+            )
 
-    stdout_pipe= None
-    if '_out' in options and options['_out']==Capture:
-        stdout_pipe= os.pipe ()
+    def prepare_fds (self):
+        if '_in' in self.options:
+            i= self.options['_in']
+            if not isinstance (i, io.IOBase) and i is not None:
+                if self.options['_in_tty']:
+                    # TODO: no support yet for input from file when _in_tty
+                    self.stdin_pipe= os.openpty ()
+                else:
+                    self.stdin_pipe= os.pipe ()
 
-    stderr_pipe= None
-    if '_err' in options and options['_err']==Capture:
-        # if stdout is also Capture'd, then use the same pipe
-        if not '_out' in options or options['_out']!=Capture:
-            stderr_pipe= os.pipe ()
+        if '_out' in self.options and self.options['_out']==Capture:
+            if self.options['_out_tty']:
+                if self.options['_in_tty']:
+                    # we use a copy of the pty created for the stdin
+                    self.stdout_pipe= (os.dup (self.stdin_pipe[0]),
+                                       os.dup (self.stdin_pipe[1]))
+                else:
+                    self.stdout_pipe= os.openpty ()
+            else:
+                self.stdout_pipe= os.pipe ()
 
-    reader_pipe= None
+        if '_err' in self.options and self.options['_err']==Capture:
+            # if stdout is also Capture'd, then use the same pipe
+            if not '_out' in self.options or self.options['_out']!=Capture:
+                self.stderr_pipe= os.pipe ()
 
-    r= os.fork ()
-    if r==0:
-        # child
-        if '_in' in options:
-            i= options['_in']
+    def child (self, cmd, *args):
+        if '_in' in self.options:
+            i= self.options['_in']
             if i is None:
                 # connect to /dev/null
                 # it's not /dev/zero, see man (4) zero
@@ -68,12 +82,12 @@ def execute (cmd, *args, **kwargs):
                 # dup its fd int stdin (0)
                 os.dup2 (i.fileno (), 0)
             else:
-                r, w= stdin_pipe
+                r, w= self.stdin_pipe
                 os.dup2 (r, 0)
                 os.close (w)
 
-        if '_out' in options:
-            o= options['_out']
+        if '_out' in self.options:
+            o= self.options['_out']
             if o is None:
                 # connect to /dev/null
                 o= open (os.devnull, 'wb') # no need to create it
@@ -84,12 +98,12 @@ def execute (cmd, *args, **kwargs):
                 os.dup2 (o.fileno (), 1)
 
             if o==Capture:
-                r, w= stdout_pipe
+                r, w= self.stdout_pipe
                 os.dup2 (w, 1)
                 os.close (r)
 
-        if '_err' in options:
-            e= options['_err']
+        if '_err' in self.options:
+            e= self.options['_err']
             if e is None:
                 # connect to /dev/null
                 e= open (os.devnull, 'wb') # no need to create it
@@ -100,102 +114,144 @@ def execute (cmd, *args, **kwargs):
                 os.dup2 (e.fileno (), 2)
 
             if e==Capture:
-                if '_out' in options and options['_out']==Capture:
+                if '_out' in self.options and self.options['_out']==Capture:
                     # send it to the same pipe as stdout
-                    r, w= stdout_pipe
+                    r, w= self.stdout_pipe
                     os.dup2 (w, 2)
                 else:
-                    r, w= stderr_pipe
+                    r, w= self.stderr_pipe
                     os.dup2 (w, 2)
                     os.close (r)
 
         os.execvp (cmd, [cmd]+[str (x) for x in args])
-    else:
-        # parent, r is the pid of the child
-        if stdin_pipe is not None:
+
+    def parent (self, child_pid):
+        reader_pipe= None
+
+        if self.stdin_pipe is not None:
             # str -> write into the fd
             # list -> write each
             # file -> take fd
-            i= options['_in']
+            i= self.options['_in']
 
-            r, w= stdin_pipe
+            r, w= self.stdin_pipe
             os.close (r)
 
             if type (i)==str:
                 os.write (w, i.encode (encoding))
-                os.write (w, options['_end'])
+                os.write (w, self.options['_end'])
             elif type (i)==bytes:
                 os.write (w, i)
-                os.write (w, options['_end'])
+                os.write (w, self.options['_end'])
             elif isinstance (i, Iterable):
                 for e in i:
                     os.write (w, str (e).encode (encoding))
-                    os.write (w, options['_end'])
+                    os.write (w, self.options['_end'])
             else:
                 os.write (w, str (i).encode (encoding))
-                os.write (w, options['_end'])
+                os.write (w, self.options['_end'])
 
             os.close (w)
 
-        ans= os.wait ()
+        self.exit_code= os.waitpid (child_pid, 0)
 
-        if stdout_pipe is not None:
+        if self.stdout_pipe is not None:
             # this will also read stderr if both are Capture'd
-            reader_pipe= stdout_pipe
-        if stderr_pipe is not None:
-            reader_pipe= stderr_pipe
+            reader_pipe= self.stdout_pipe
+        if self.stderr_pipe is not None:
+            reader_pipe= self.stderr_pipe
 
         if reader_pipe is not None:
             r, w= reader_pipe
             os.close (w)
-            reader= open (r)
-            ans= reader.readlines ()
-            reader.close ()
+            self.capture_file= open (r)
 
-            if options['_chomp']:
-                ans= [ line.strip (os.linesep) for line in ans ]
+    def execute (self, cmd, *args, **kwargs):
+        self.options.update (kwargs)
+        self.prepare_fds ()
 
-        return ans
+        if type (self.options['_end'])!=bytes:
+            self.options['_end']= str (self.options['_end']).encode (encoding)
+
+        r= os.fork ()
+        if r==0:
+            self.child (cmd, *args)
+        else:
+            self.parent (r)
+
+    def __bool__ (self):
+        return self.exit_code!=0
+
+    def __iter__ (self):
+        return self
+
+    def __next__ (self):
+        for line in self.capture_file.readlines ():
+            if self.options['_chomp']:
+                line= line.strip (os.linesep)
+
+            yield line
 
 if __name__=='__main__':
-    a= execute ('echo', 'simple')
+    c= Command ()
+    a= c.execute ('echo', 'simple')
 
-    a= execute ('echo', 42)
+    c= Command ()
+    a= c.execute ('echo', 42)
 
-    a= execute ('cat', _in='_in=str')
+    c= Command ()
+    a= c.execute ('cat', _in='_in=str')
 
-    a= execute ('cat', _in=b'_in=bytes')
+    c= Command ()
+    a= c.execute ('cat', _in=b'_in=bytes')
 
     f= open ('ayrton/tests/data/string_stdin.txt', 'rb')
-    a= execute ('cat', _in=f)
+    c= Command ()
+    a= c.execute ('cat', _in=f)
     f.close ()
 
-    a= execute ('cat', _in=['<<<', 'multi', 'line', 'sequence', 'test', '>>>'])
+    c= Command ()
+    a= c.execute ('cat', _in=['<<<', 'multi', 'line', 'sequence', 'test', '>>>'])
 
-    a= execute ('cat', _in=['single,', 'line,', 'sequence,', 'test\n'], _end='')
+    c= Command ()
+    a= c.execute ('cat', _in=['single,', 'line,', 'sequence,', 'test\n'], _end='')
 
     f= open ('ayrton/tests/data/string_stdout.txt', 'wb+')
-    a= execute ('echo', 'stdout_to_file', _out=f)
+    c= Command ()
+    a= c.execute ('echo', 'stdout_to_file', _out=f)
     f.close ()
 
-    a= execute ('cat', _in=None)
+    c= Command ()
+    a= c.execute ('cat', _in=None)
 
-    a= execute ('echo', '_out=None', _out=None)
+    c= Command ()
+    a= c.execute ('echo', '_out=None', _out=None)
 
-    a= execute ('echo', '_out=Capture', _out=Capture)
+    c= Command ()
+    a= c.execute ('echo', '_out=Capture', _out=Capture)
     print (repr (a))
 
     f= open ('ayrton/tests/data/string_stderr.txt', 'wb+')
-    a= execute ('ls', 'stderr_to_file', _err=f)
+    c= Command ()
+    a= c.execute ('ls', 'stderr_to_file', _err=f)
     f.close ()
 
-    a= execute ('ls', '_err=None', _err=None)
+    c= Command ()
+    a= c.execute ('ls', '_err=None', _err=None)
 
-    a= execute ('ls', '_err=Capture', _err=Capture)
+    c= Command ()
+    a= c.execute ('ls', '_err=Capture', _err=Capture)
     print (repr (a))
 
-    a= execute ('ls', 'Makefile', '_err=Capture', _out=Capture, _err=Capture)
+    c= Command ()
+    a= c.execute ('ls', 'Makefile', '_err=Capture', _out=Capture, _err=Capture)
     print (repr (a))
 
-    a= execute ('ls', _out=Capture, _chomp=False)
+    c= Command ()
+    a= c.execute ('ls', _out=Capture, _chomp=False)
+    print (repr (a))
+
+    c= Command ()
+    a= c.execute ('ssh', 'mx.grulic.org.ar', 'ls -l',
+                _in_tty=True, _out=Capture, _out_tty=True)
     print (repr (a))
