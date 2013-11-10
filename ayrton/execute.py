@@ -78,6 +78,27 @@ def execute (cmd, *args, **kwargs):
                 os.dup2 (w, 1)
                 os.close (r)
 
+        if '_err' in options:
+            e= options['_err']
+            if e is None:
+                # connect to /dev/null
+                e= open (os.devnull, 'wb') # no need to create it
+
+            if isinstance (e, io.IOBase):
+                # this does not work with file like objects
+                # dup its fd int stderr (2)
+                os.dup2 (e.fileno (), 2)
+
+            if e==Capture:
+                if '_out' in options and options['_out']==Capture:
+                    # send it to the same pipe as stdout
+                    r, w= stdout_pipe
+                    os.dup2 (w, 2)
+                else:
+                    r, w= stderr_pipe
+                    os.dup2 (w, 2)
+                    os.close (r)
+
         os.execvp (cmd, [cmd]+[str (x) for x in args])
     else:
         # parent, r is the pid of the child
@@ -125,13 +146,13 @@ if __name__=='__main__':
 
     a= execute ('cat', _in=b'_in=bytes')
 
-    f= open ('ayrton/tests/string_stdin.txt', 'rb')
+    f= open ('ayrton/tests/data/string_stdin.txt', 'rb')
     a= execute ('cat', _in=f)
     f.close ()
 
     a= execute ('cat', _in=['sequence', 'test'])
 
-    f= open ('ayrton/tests/string_stdout.txt', 'wb+')
+    f= open ('ayrton/tests/data/string_stdout.txt', 'wb+')
     a= execute ('echo', 'stdout_to_file', _out=f)
     f.close ()
 
@@ -141,3 +162,7 @@ if __name__=='__main__':
 
     a= execute ('echo', 'Capture', _out=Capture)
     print (repr (a))
+
+    f= open ('ayrton/tests/data/string_stderr.txt', 'wb+')
+    a= execute ('ls', 'stderr_to_file', _err=f)
+    f.close ()
