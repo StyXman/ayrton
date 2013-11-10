@@ -27,6 +27,7 @@ encoding= sys.getdefaultencoding ()
 def execute (cmd, *args, **kwargs):
     options= dict (
         _end= os.linesep.encode (encoding),
+        _comp= True,
         )
     options.update (kwargs)
 
@@ -42,6 +43,12 @@ def execute (cmd, *args, **kwargs):
     stdout_pipe= None
     if '_out' in options and options['_out']==Capture:
         stdout_pipe= os.pipe ()
+
+    stderr_pipe= None
+    if '_err' in options and options['_err']==Capture:
+        # if stdout is also Capture'd, then use the same pipe
+        if not '_out' in options or options['_out']!=Capture:
+            stderr_pipe= os.pipe ()
 
     r= os.fork ()
     if r==0:
@@ -130,7 +137,14 @@ def execute (cmd, *args, **kwargs):
         ans= os.wait ()
 
         if stdout_pipe is not None:
+            # this will also read stderr if both are Capture'd
             r, w= stdout_pipe
+            os.close (w)
+            ans= os.read (r, 1024).decode (encoding)
+            os.close (r)
+
+        if stderr_pipe is not None:
+            r, w= stderr_pipe
             os.close (w)
             ans= os.read (r, 1024).decode (encoding)
             os.close (r)
@@ -150,7 +164,9 @@ if __name__=='__main__':
     a= execute ('cat', _in=f)
     f.close ()
 
-    a= execute ('cat', _in=['sequence', 'test'])
+    a= execute ('cat', _in=['<<<', 'multi', 'line', 'sequence', 'test', '>>>'])
+
+    a= execute ('cat', _in=['single,', 'line,', 'sequence,', 'test\n'], _end='')
 
     f= open ('ayrton/tests/data/string_stdout.txt', 'wb+')
     a= execute ('echo', 'stdout_to_file', _out=f)
@@ -160,9 +176,17 @@ if __name__=='__main__':
 
     a= execute ('echo', '_out=None', _out=None)
 
-    a= execute ('echo', 'Capture', _out=Capture)
+    a= execute ('echo', '_out=Capture', _out=Capture)
     print (repr (a))
 
     f= open ('ayrton/tests/data/string_stderr.txt', 'wb+')
     a= execute ('ls', 'stderr_to_file', _err=f)
     f.close ()
+
+    a= execute ('ls', '_err=None', _err=None)
+
+    a= execute ('ls', '_err=Capture', _err=Capture)
+    print (repr (a))
+
+    a= execute ('ls', 'Makefile', '_err=Capture', _out=Capture, _err=Capture)
+    print (repr (a))
