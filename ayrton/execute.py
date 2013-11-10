@@ -33,14 +33,21 @@ def execute (cmd, *args, **kwargs):
         options['_end']= options['_end'].encode (encoding)
 
     stdin_pipe= None
-    if '_in' in options and not isinstance (options['_in'], io.IOBase):
-        stdin_pipe= os.pipe ()
+    if '_in' in options:
+        i= options['_in']
+        if not isinstance (i, io.IOBase) and i is not None:
+            stdin_pipe= os.pipe ()
 
     r= os.fork ()
     if r==0:
         # child
         if '_in' in options:
             i= options['_in']
+            if i is None:
+                # connect to /dev/null
+                # it's not /dev/zero, see man (4) zero
+                i= open (os.devnull, 'rb')
+
             if isinstance (i, io.IOBase):
                 # this does not work with file like objects
                 # dup its fd int stdin (0)
@@ -52,6 +59,10 @@ def execute (cmd, *args, **kwargs):
 
         if '_out' in options:
             o= options['_out']
+            if o is None:
+                # connect to /dev/null
+                o= open (os.devnull, 'wb') # no need to create it
+
             if isinstance (o, io.IOBase):
                 # this does not work with file like objects
                 # dup its fd int stdout (1)
@@ -105,3 +116,5 @@ if __name__=='__main__':
     f.close ()
 
     a= execute ('cat', _in=None)
+
+    a= execute ('echo', 'yes!', _out=None)
