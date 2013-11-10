@@ -19,6 +19,7 @@ import os
 import sys
 import io
 from collections.abc import Iterable
+from ayrton import Capture
 
 # encoding= 'utf-8'
 encoding= sys.getdefaultencoding ()
@@ -99,22 +100,26 @@ def execute (cmd, *args, **kwargs):
         return os.wait ()
 
 if __name__=='__main__':
-    a= execute ('echo', 'yes!')
+    a= execute ('echo', 'simple')
 
     a= execute ('echo', 42)
 
-    a= execute ('cat', _in='yes!')
+    a= execute ('cat', _in='_in=str')
+
+    a= execute ('cat', _in=b'_in=bytes')
 
     f= open ('ayrton/tests/string_stdin.txt', 'rb')
     a= execute ('cat', _in=f)
     f.close ()
 
-    a= execute ('cat', _in=['a', 'b'])
+    a= execute ('cat', _in=['sequence', 'test'])
 
     f= open ('ayrton/tests/string_stdout.txt', 'wb+')
-    a= execute ('echo', 'yes!', _out=f)
+    a= execute ('echo', 'stdout_to_file', _out=f)
     f.close ()
 
     a= execute ('cat', _in=None)
 
-    a= execute ('echo', 'yes!', _out=None)
+    a= execute ('echo', '_out=None', _out=None)
+
+    a= execute ('echo', 'Capture', _out=Capture)
