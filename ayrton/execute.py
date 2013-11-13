@@ -27,21 +27,23 @@ encoding= sys.getdefaultencoding ()
 
 # yes, we finally are going the class way
 class Command:
-    def __init__ (self):
+    default_options= dict (
+        _in_tty= False,
+        _out_tty= False,
+        _end= os.linesep.encode (encoding),
+        _chomp= True,
+        _encoding= encoding,
+        )
+
+    def __init__ (self, path):
+        self.path= path
+
         self.stdin_pipe= None
         self.stdout_pipe= None
         self.stderr_pipe= None
 
         self.exit_code= None
         self.capture_file= None
-
-        self.options= dict (
-            _in_tty= False,
-            _out_tty= False,
-            _end= os.linesep.encode (encoding),
-            _chomp= True,
-            _encoding= encoding,
-            )
 
     def prepare_fds (self):
         if '_in' in self.options:
@@ -176,8 +178,17 @@ class Command:
             os.close (w)
             self.capture_file= open (r)
 
-    def execute (self, cmd, *args, **kwargs):
+    def __call__ (self, *args, **kwargs):
+        self.options= self.default_options.copy ()
         self.options.update (kwargs)
+
+        self.stdin_pipe= None
+        self.stdout_pipe= None
+        self.stderr_pipe= None
+
+        self.exit_code= None
+        self.capture_file= None
+
         self.prepare_fds ()
 
         if type (self.options['_end'])!=bytes:
@@ -185,100 +196,94 @@ class Command:
 
         r= os.fork ()
         if r==0:
-            self.child (cmd, *args)
+            self.child (self.path, *args)
         else:
             self.parent (r)
+
+        return self
 
     def __bool__ (self):
         return self.exit_code!=0
 
     def __iter__ (self):
-        for line in self.capture_file.readlines ():
-            if self.options['_chomp']:
-                line= line.rstrip (os.linesep)
+        if self.capture_file is not None:
+            for line in self.capture_file.readlines ():
+                if self.options['_chomp']:
+                    line= line.rstrip (os.linesep)
 
-            yield line
+                yield line
 
-        # finish him!
-        self.capture_file.close ()
+            # finish him!
+            # self.capture_file.close ()
+        else:
+            # TODO
+            pass
 
 if __name__=='__main__':
-    c= Command ()
-    a= c.execute ('echo', 'simple')
+    echo= Command ('echo', )
+
+    a= echo ('simple')
     print ('=========')
 
-    c= Command ()
-    a= c.execute ('echo', 42)
+    a= echo (42)
     print ('=========')
 
-    c= Command ()
-    a= c.execute ('cat', _in='_in=str')
+    cat= Command ('cat', )
+    a= cat (_in='_in=str')
     print ('=========')
 
-    c= Command ()
-    a= c.execute ('cat', _in=b'_in=bytes')
+    a= cat (_in=b'_in=bytes')
     print ('=========')
 
     f= open ('ayrton/tests/data/string_stdin.txt', 'rb')
-    c= Command ()
-    a= c.execute ('cat', _in=f)
+    a= cat (_in=f)
     f.close ()
     print ('=========')
 
-    c= Command ()
-    a= c.execute ('cat', _in=['multi', 'line', 'sequence', 'test'])
+    a= cat (_in=['multi', 'line', 'sequence', 'test'])
     print ('=========')
 
-    c= Command ()
-    a= c.execute ('cat', _in=['single,', 'line,', 'sequence,', 'test\n'], _end='')
+    a= cat (_in=['single,', 'line,', 'sequence,', 'test\n'], _end='')
     print ('=========')
 
     f= open ('ayrton/tests/data/string_stdout.txt', 'wb+')
-    c= Command ()
-    a= c.execute ('echo', 'stdout_to_file', _out=f)
+    a= echo ('stdout_to_file', _out=f)
     f.close ()
 
-    c= Command ()
-    a= c.execute ('cat', _in=None)
+    a= cat (_in=None)
 
-    c= Command ()
-    a= c.execute ('echo', '_out=None', _out=None)
+    a= echo ('_out=None', _out=None)
 
-    c= Command ()
-    a= c.execute ('echo', '_out=Capture', _out=Capture)
-    for i in c:
+    a= echo ('_out=Capture', _out=Capture)
+    for i in a:
         print (repr (i))
     print ('=========')
 
     f= open ('ayrton/tests/data/string_stderr.txt', 'wb+')
-    c= Command ()
-    a= c.execute ('ls', 'stderr_to_file', _err=f)
+    ls= Command ('ls')
+    a= ls ('stderr_to_file', _err=f)
     f.close ()
 
-    c= Command ()
-    a= c.execute ('ls', '_err=None', _err=None)
+    a= ls ('_err=None', _err=None)
 
-    c= Command ()
-    a= c.execute ('ls', '_err=Capture', _err=Capture)
-    for i in c:
+    a= ls ('_err=Capture', _err=Capture)
+    for i in a:
         print (repr (i))
     print ('=========')
 
-    c= Command ()
-    a= c.execute ('ls', 'Makefile', '_err=Capture', _out=Capture, _err=Capture)
-    for i in c:
+    a= ls ('Makefile', '_err=Capture', _out=Capture, _err=Capture)
+    for i in a:
         print (repr (i))
     print ('=========')
 
-    c= Command ()
-    a= c.execute ('ls', _out=Capture, _chomp=False)
-    for i in c:
+    a= ls (_out=Capture, _chomp=False)
+    for i in a:
         print (repr (i))
     print ('=========')
 
-    c= Command ()
+    ssh= Command ('ssh')
     #a= c.execute ('ssh', 'mx.grulic.org.ar', 'ls -l',
                   #_in_tty=True, _out=Capture, _out_tty=True, _err=Capture)
-    a= c.execute ('ssh', 'localhost', 'ls -l', _out=Capture)
-    for i in c:
+    a= ssh ('localhost', 'ls -l', _out=Capture)
+    for i in a:
         print (repr (i))
