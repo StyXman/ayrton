@@ -49,7 +49,10 @@ class Command:
             if not isinstance (i, io.IOBase) and i is not None:
                 if self.options['_in_tty']:
                     # TODO: no support yet for input from file when _in_tty
-                    self.stdin_pipe= os.openpty ()
+                    # NOTE: os.openpty() returns (master, slave)
+                    # but when writing master=w, slave=r
+                    (master, slave)= os.openpty ()
+                    self.stdin_pipe= (slave, master)
                 else:
                     self.stdin_pipe= os.pipe ()
 
@@ -57,17 +60,24 @@ class Command:
             if self.options['_out_tty']:
                 if self.options['_in_tty']:
                     # we use a copy of the pty created for the stdin
-                    self.stdout_pipe= (os.dup (self.stdin_pipe[0]),
-                                       os.dup (self.stdin_pipe[1]))
+                    self.stdout_pipe= (os.dup (self.stdin_pipe[1]),
+                                       os.dup (self.stdin_pipe[0]))
                 else:
-                    self.stdout_pipe= os.openpty ()
+                    # this time the order is right
+                    (master, slave)= os.openpty ()
+                    self.stdout_pipe= (master, slave)
             else:
                 self.stdout_pipe= os.pipe ()
 
         if '_err' in self.options and self.options['_err']==Capture:
             # if stdout is also Capture'd, then use the same pipe
             if not '_out' in self.options or self.options['_out']!=Capture:
-                self.stderr_pipe= os.pipe ()
+                # if stdout is a tty, hook to that one
+                if self.options['_out_tty']:
+                    self.stderr_pipe= (os.dup (self.stdout_pipe[0]),
+                                       os.dup (self.stdout_pipe[1]))
+                else:
+                    self.stderr_pipe= os.pipe ()
 
     def child (self, cmd, *args):
         if '_in' in self.options:
@@ -183,38 +193,45 @@ class Command:
         return self.exit_code!=0
 
     def __iter__ (self):
-        return self
-
-    def __next__ (self):
         for line in self.capture_file.readlines ():
             if self.options['_chomp']:
-                line= line.strip (os.linesep)
+                line= line.rstrip (os.linesep)
 
             yield line
+
+        # finish him!
+        self.capture_file.close ()
 
 if __name__=='__main__':
     c= Command ()
     a= c.execute ('echo', 'simple')
+    print ('=========')
 
     c= Command ()
     a= c.execute ('echo', 42)
+    print ('=========')
 
     c= Command ()
     a= c.execute ('cat', _in='_in=str')
+    print ('=========')
 
     c= Command ()
     a= c.execute ('cat', _in=b'_in=bytes')
+    print ('=========')
 
     f= open ('ayrton/tests/data/string_stdin.txt', 'rb')
     c= Command ()
     a= c.execute ('cat', _in=f)
     f.close ()
+    print ('=========')
 
     c= Command ()
-    a= c.execute ('cat', _in=['<<<', 'multi', 'line', 'sequence', 'test', '>>>'])
+    a= c.execute ('cat', _in=['multi', 'line', 'sequence', 'test'])
+    print ('=========')
 
     c= Command ()
     a= c.execute ('cat', _in=['single,', 'line,', 'sequence,', 'test\n'], _end='')
+    print ('=========')
 
     f= open ('ayrton/tests/data/string_stdout.txt', 'wb+')
     c= Command ()
@@ -229,7 +246,9 @@ if __name__=='__main__':
 
     c= Command ()
     a= c.execute ('echo', '_out=Capture', _out=Capture)
-    print (repr (a))
+    for i in c:
+        print (repr (i))
+    print ('=========')
 
     f= open ('ayrton/tests/data/string_stderr.txt', 'wb+')
     c= Command ()
@@ -241,17 +260,25 @@ if __name__=='__main__':
 
     c= Command ()
     a= c.execute ('ls', '_err=Capture', _err=Capture)
-    print (repr (a))
+    for i in c:
+        print (repr (i))
+    print ('=========')
 
     c= Command ()
     a= c.execute ('ls', 'Makefile', '_err=Capture', _out=Capture, _err=Capture)
-    print (repr (a))
+    for i in c:
+        print (repr (i))
+    print ('=========')
 
     c= Command ()
     a= c.execute ('ls', _out=Capture, _chomp=False)
-    print (repr (a))
+    for i in c:
+        print (repr (i))
+    print ('=========')
 
     c= Command ()
-    a= c.execute ('ssh', 'mx.grulic.org.ar', 'ls -l',
-                _in_tty=True, _out=Capture, _out_tty=True)
-    print (repr (a))
+    #a= c.execute ('ssh', 'mx.grulic.org.ar', 'ls -l',
+                  #_in_tty=True, _out=Capture, _out_tty=True, _err=Capture)
+    a= c.execute ('ssh', 'localhost', 'ls -l', _out=Capture)
+    for i in c:
+        print (repr (i))
