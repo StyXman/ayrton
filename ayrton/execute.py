@@ -136,15 +136,20 @@ class Command:
                     os.close (r)
 
         # args is a tuple
-        args= list (args)
+        args= self.prepare_args (cmd, args, kwargs)
+        os.execvp (cmd, args)
+
+    def prepare_args (self, cmd, args, kwargs):
+        ans= [cmd]+[str (x) for x in args]
+
         for k, v in kwargs.items ():
             arg, value= self.format_arg (k, v)
             if value!=False:
-                args.append (arg)
+                ans.append (arg)
                 if value!=True:
-                    args.append (value)
+                    ans.append (str (value))
 
-        os.execvp (cmd, [cmd]+[str (x) for x in args])
+        return ans
 
     def format_arg (self, name, value):
         if len (name)==1:
@@ -321,3 +326,10 @@ if __name__=='__main__':
 
     ls (l=True)
     print ('=========')
+
+    echo (l=True, more=42)
+    print ('=========')
+
+    echo (o(l=True), o(more=42))
+    print ('=========')
+
