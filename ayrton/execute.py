@@ -28,12 +28,14 @@ class Command:
     default_options= dict (
         _in_tty= False,
         _out_tty= False,
+        _env= {},
         _end= os.linesep.encode (encoding),
         _chomp= True,
         _encoding= encoding,
         )
 
-    supported_options= ('_in', '_out', '_err', '_end', '_chomp', '_encoding',)
+    supported_options= ('_in', '_out', '_err', '_end', '_chomp', '_encoding',
+                        '_env',)
 
     def __init__ (self, path):
         self.path= path
@@ -137,7 +139,7 @@ class Command:
 
         # args is a tuple
         args= self.prepare_args (cmd, args, kwargs)
-        os.execvp (cmd, args)
+        os.execvpe (cmd, args, self.options['_env'])
 
     def prepare_args (self, cmd, args, kwargs):
         ans= [cmd]
@@ -335,8 +337,10 @@ if __name__=='__main__':
     echo (l=True, more=42)
     print ('=========')
 
-    # print (dir (o (l=True)))
-
     echo (o(l=True), o(more=42))
     print ('=========')
 
+    bash= Command ('bash')
+    # NOTE: we convert envvars to str when we export(0 them
+    # bash (c='echo $FOO', _env=dict (FOO=42))
+    bash (c='echo $FOO', _env=dict (FOO='42'))
