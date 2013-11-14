@@ -140,24 +140,29 @@ class Command:
         os.execvp (cmd, args)
 
     def prepare_args (self, cmd, args, kwargs):
-        ans= [cmd]+[str (x) for x in args]
+        ans= [cmd]
+
+        for arg in args:
+            if type (arg)==o:
+                self.prepare_arg (ans, arg.key, arg.value)
+            else:
+                ans.append (arg)
 
         for k, v in kwargs.items ():
-            arg, value= self.format_arg (k, v)
-            if value!=False:
-                ans.append (arg)
-                if value!=True:
-                    ans.append (str (value))
+            self.prepare_arg (ans, k, v)
 
         return ans
 
-    def format_arg (self, name, value):
-        if len (name)==1:
-            arg="-%s" % name
-        else:
-            arg="--%s" % name
+    def prepare_arg (self, seq, name, value):
+        if value!=False:
+            if len (name)==1:
+                arg="-%s" % name
+            else:
+                arg="--%s" % name
+            seq.append (arg)
 
-        return (arg, value)
+            if value!=True:
+                seq.append (str (value))
 
     def parent (self, child_pid):
         reader_pipe= None
@@ -329,6 +334,8 @@ if __name__=='__main__':
 
     echo (l=True, more=42)
     print ('=========')
+
+    # print (dir (o (l=True)))
 
     echo (o(l=True), o(more=42))
     print ('=========')
