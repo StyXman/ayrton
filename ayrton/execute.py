@@ -20,12 +20,10 @@ import sys
 import io
 from collections.abc import Iterable
 from ayrton import Capture
-import pdb
+from ayrton.functions import o
 
-# encoding= 'utf-8'
 encoding= sys.getdefaultencoding ()
 
-# yes, we finally are going the class way
 class Command:
     default_options= dict (
         _in_tty= False,
@@ -34,6 +32,8 @@ class Command:
         _chomp= True,
         _encoding= encoding,
         )
+
+    supported_options= ('_in', '_out', '_err', '_end', '_chomp', '_encoding',)
 
     def __init__ (self, path):
         self.path= path
@@ -81,7 +81,7 @@ class Command:
                 else:
                     self.stderr_pipe= os.pipe ()
 
-    def child (self, cmd, *args):
+    def child (self, cmd, *args, **kwargs):
         if '_in' in self.options:
             i= self.options['_in']
             if i is None:
@@ -135,7 +135,24 @@ class Command:
                     os.dup2 (w, 2)
                     os.close (r)
 
+        # args is a tuple
+        args= list (args)
+        for k, v in kwargs.items ():
+            arg, value= self.format_arg (k, v)
+            if value!=False:
+                args.append (arg)
+                if value!=True:
+                    args.append (value)
+
         os.execvp (cmd, [cmd]+[str (x) for x in args])
+
+    def format_arg (self, name, value):
+        if len (name)==1:
+            arg="-%s" % name
+        else:
+            arg="--%s" % name
+
+        return (arg, value)
 
     def parent (self, child_pid):
         reader_pipe= None
@@ -180,7 +197,15 @@ class Command:
 
     def __call__ (self, *args, **kwargs):
         self.options= self.default_options.copy ()
-        self.options.update (kwargs)
+        for option in self.supported_options:
+            try:
+                # update with the passed value
+                self.options[option]= kwargs[option]
+                # we don't need the option anymore
+                del kwargs[option]
+            except KeyError:
+                # ignore
+                pass
 
         self.stdin_pipe= None
         self.stdout_pipe= None
@@ -196,7 +221,7 @@ class Command:
 
         r= os.fork ()
         if r==0:
-            self.child (self.path, *args)
+            self.child (self.path, *args, **kwargs)
         else:
             self.parent (r)
 
@@ -282,8 +307,17 @@ if __name__=='__main__':
     print ('=========')
 
     ssh= Command ('ssh')
+    # ssh always opens the tty for reading the passphrase, so I'm not sure
+    # we can trick it to read it from us
     #a= c.execute ('ssh', 'mx.grulic.org.ar', 'ls -l',
+                  #in='passphrase',
                   #_in_tty=True, _out=Capture, _out_tty=True, _err=Capture)
-    a= ssh ('localhost', 'ls -l', _out=Capture)
-    for i in a:
-        print (repr (i))
+    # a= ssh ('localhost', 'ls -l', _out=Capture)
+    # for i in a:
+    #     print (repr (i))
+
+    mcedit= Command ('mcedit')
+    # mcedit ()
+
+    ls (l=True)
+    print ('=========')
