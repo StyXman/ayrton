@@ -19,7 +19,7 @@ import os
 import sys
 import io
 from collections.abc import Iterable
-from ayrton import Capture
+from ayrton import Capture, CommandFailed, runner
 from ayrton.functions import o
 
 encoding= sys.getdefaultencoding ()
@@ -194,7 +194,7 @@ class Command:
 
             os.close (w)
 
-        self.exit_code= os.waitpid (child_pid, 0)
+        self.exit_code= os.waitpid (child_pid, 0)[1]
 
         if self.stdout_pipe is not None:
             # this will also read stderr if both are Capture'd
@@ -206,6 +206,9 @@ class Command:
             r, w= reader_pipe
             os.close (w)
             self.capture_file= open (r)
+
+        # if runner.options.get ('errexit', False) and not self:
+        #     raise CommandFailed (self)
 
     def __call__ (self, *args, **kwargs):
         self.options= self.default_options.copy ()
@@ -240,7 +243,7 @@ class Command:
         return self
 
     def __bool__ (self):
-        return self.exit_code!=0
+        return self.exit_code==0
 
     def __iter__ (self):
         if self.capture_file is not None:
@@ -344,3 +347,10 @@ if __name__=='__main__':
     # NOTE: we convert envvars to str when we export(0 them
     # bash (c='echo $FOO', _env=dict (FOO=42))
     bash (c='echo $FOO', _env=dict (FOO='42'))
+    print ('=========')
+
+    false= Command ('false')
+    if not false ():
+        print ('yes!')
+
+    # runner.options['errexit']= True
