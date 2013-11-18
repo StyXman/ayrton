@@ -112,8 +112,9 @@ class Command:
                 # this does not work with file like objects
                 # dup its fd int stdout (1)
                 os.dup2 (o.fileno (), 1)
-
-            if o==Capture:
+            elif type (o)==int:
+                os.dup2 (o, 1)
+            elif o==Capture:
                 r, w= self.stdout_pipe
                 os.dup2 (w, 1)
                 os.close (r)
@@ -281,7 +282,7 @@ if __name__=='__main__':
     a= echo ('simple')
     print ('=========')
 
-    a= echo (42)
+    a= echo (str (42))
     print ('=========')
 
     a= cat (_in='_in=str')
@@ -304,6 +305,8 @@ if __name__=='__main__':
     f= open ('ayrton/tests/data/string_stdout.txt', 'wb+')
     a= echo ('stdout_to_file', _out=f)
     f.close ()
+    cat ('ayrton/tests/data/string_stdout.txt')
+    print ('=========')
 
     a= cat (_in=None)
 
@@ -317,6 +320,8 @@ if __name__=='__main__':
     f= open ('ayrton/tests/data/string_stderr.txt', 'wb+')
     a= ls ('stderr_to_file', _err=f)
     f.close ()
+    cat ('ayrton/tests/data/string_stderr.txt')
+    print ('=========')
 
     a= ls ('_err=None', _err=None)
 
@@ -378,3 +383,12 @@ if __name__=='__main__':
     f= open ('ayrton/tests/data/string_stdout.txt', 'wb+')
     a= echo ('stdout_to_file', _out=f.fileno ())
     f.close ()
+    cat ('ayrton/tests/data/string_stdout.txt')
+    print ('=========')
+
+    r, w= os.pipe ()
+    echo ('pipe!', _out=w)
+    os.close (w)
+    grep ('pipe', _in=r)
+    os.close (r)
+    print ('=========')
