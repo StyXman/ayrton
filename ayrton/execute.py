@@ -50,7 +50,7 @@ class Command:
     def prepare_fds (self):
         if '_in' in self.options:
             i= self.options['_in']
-            if not isinstance (i, io.IOBase) and i is not None:
+            if not isinstance (i, io.IOBase) and type (i)!=int and i is not None:
                 if self.options['_in_tty']:
                     # TODO: no support yet for input from file when _in_tty
                     # NOTE: os.openpty() returns (master, slave)
@@ -95,6 +95,8 @@ class Command:
                 # this does not work with file like objects
                 # dup its fd int stdin (0)
                 os.dup2 (i.fileno (), 0)
+            elif type (i)==int:
+                os.dup2 (i, 0)
             else:
                 r, w= self.stdin_pipe
                 os.dup2 (r, 0)
@@ -268,6 +270,13 @@ class Command:
 
 if __name__=='__main__':
     echo= Command ('echo', )
+    cat= Command ('cat', )
+    ls= Command ('ls')
+    ssh= Command ('ssh')
+    mcedit= Command ('mcedit')
+    bash= Command ('bash')
+    false= Command ('false')
+    grep= Command ('grep')
 
     a= echo ('simple')
     print ('=========')
@@ -275,7 +284,6 @@ if __name__=='__main__':
     a= echo (42)
     print ('=========')
 
-    cat= Command ('cat', )
     a= cat (_in='_in=str')
     print ('=========')
 
@@ -307,7 +315,6 @@ if __name__=='__main__':
     print ('=========')
 
     f= open ('ayrton/tests/data/string_stderr.txt', 'wb+')
-    ls= Command ('ls')
     a= ls ('stderr_to_file', _err=f)
     f.close ()
 
@@ -328,7 +335,6 @@ if __name__=='__main__':
         print (repr (i))
     print ('=========')
 
-    ssh= Command ('ssh')
     # ssh always opens the tty for reading the passphrase, so I'm not sure
     # we can trick it to read it from us
     #a= c.execute ('ssh', 'mx.grulic.org.ar', 'ls -l',
@@ -338,7 +344,6 @@ if __name__=='__main__':
     # for i in a:
     #     print (repr (i))
 
-    mcedit= Command ('mcedit')
     # mcedit ()
 
     ls (l=True)
@@ -350,20 +355,26 @@ if __name__=='__main__':
     echo (o(l=True), o(more=42), o(o_orders_options='yes!'))
     print ('=========')
 
-    bash= Command ('bash')
     # NOTE: we convert envvars to str when we export(0 them
     # bash (c='echo $FOO', _env=dict (FOO=42))
     bash (c='echo environments works: $FOO', _env=dict (FOO='yes'))
     print ('=========')
 
-    false= Command ('false')
     if not false ():
         print ('false!')
         print ('=========')
 
     # runner.options['errexit']= True
 
-    grep= Command ('grep')
     a= echo ('grep!', _out=Capture)
     grep ('grep', _in=a.readline ())
     print ('=========')
+
+    f= open ('ayrton/tests/data/string_stdin.txt', 'rb')
+    a= cat (_in=f.fileno ())
+    f.close ()
+    print ('=========')
+
+    f= open ('ayrton/tests/data/string_stdout.txt', 'wb+')
+    a= echo ('stdout_to_file', _out=f.fileno ())
+    f.close ()
