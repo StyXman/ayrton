@@ -259,6 +259,13 @@ class Command:
             # TODO
             pass
 
+    def readline (self):
+        line= self.capture_file.readline ()
+        if self.options['_chomp']:
+            line= line.rstrip (os.linesep)
+
+        return line
+
 if __name__=='__main__':
     echo= Command ('echo', )
 
@@ -337,20 +344,26 @@ if __name__=='__main__':
     ls (l=True)
     print ('=========')
 
-    echo (l=True, more=42)
+    echo (l=True, more=42, kwargs_as_unordered_options='yes!')
     print ('=========')
 
-    echo (o(l=True), o(more=42))
+    echo (o(l=True), o(more=42), o(o_orders_options='yes!'))
     print ('=========')
 
     bash= Command ('bash')
     # NOTE: we convert envvars to str when we export(0 them
     # bash (c='echo $FOO', _env=dict (FOO=42))
-    bash (c='echo $FOO', _env=dict (FOO='42'))
+    bash (c='echo environments works: $FOO', _env=dict (FOO='yes'))
     print ('=========')
 
     false= Command ('false')
     if not false ():
-        print ('yes!')
+        print ('false!')
+        print ('=========')
 
     # runner.options['errexit']= True
+
+    grep= Command ('grep')
+    a= echo ('grep!', _out=Capture)
+    grep ('grep', _in=a.readline ())
+    print ('=========')
