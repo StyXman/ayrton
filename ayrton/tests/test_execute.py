@@ -73,17 +73,30 @@ class BasicCommandExecution (unittest.TestCase):
         self.assertEqual (self.mock_stdout.read (), '_in=bytes\n')
         self.mock_stdout.close ()
 
+    def testInfile (self):
+        f= open ('ayrton/tests/data/string_stdin.txt', 'rb')
+        a= cat (_in=f)
+        f.close ()
+        tearDownMockStdout (self)
+        self.assertEqual (self.mock_stdout.read (), 'stdin_from_file!\n')
+        self.mock_stdout.close ()
+
+    def testInMultiLineSeq (self):
+        a= cat (_in=['multi', 'line', 'sequence', 'test'])
+        tearDownMockStdout (self)
+        self.assertEqual (self.mock_stdout.read (), 'multi\nline\nsequence\ntest\n')
+        self.mock_stdout.close ()
+
+    def testInSingleLineSeq (self):
+        a= cat (_in=['single,', 'line,', 'sequence,', 'test\n'], _end='')
+        tearDownMockStdout (self)
+        self.assertEqual (self.mock_stdout.read (), 'single,line,sequence,test\n')
+        self.mock_stdout.close ()
+
     def foo (self):
         a= echo (str (42))
 
 
-        f= open ('ayrton/tests/data/string_stdin.txt', 'rb')
-        a= cat (_in=f)
-        f.close ()
-
-        a= cat (_in=['multi', 'line', 'sequence', 'test'])
-
-        a= cat (_in=['single,', 'line,', 'sequence,', 'test\n'], _end='')
 
         f= open ('ayrton/tests/data/string_stdout.txt', 'wb+')
         a= echo ('stdout_to_file', _out=f)
