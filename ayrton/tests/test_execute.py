@@ -30,7 +30,7 @@ bash= Command ('bash')
 false= Command ('false')
 grep= Command ('grep')
 
-def setUpMockStdout (self):
+def setUpMockStdOut (self):
     # this is a trick to (hopefulliy) save the original stdout fd
     self.save_stdout= os.dup (1)
 
@@ -44,33 +44,32 @@ def setUpMockStdout (self):
     # save the reading fd for reference in the tests
     self.mock_stdout= open (r)
 
-def tearDownMockStdout (self):
+def tearDownMockStdOut (self):
     os.dup2 (self.save_stdout, 1)
     os.close (self.save_stdout)
 
-class BasicCommandExecution (unittest.TestCase):
-    setUp=    setUpMockStdout
-    # tearDown= tearDownMockStdout
+class MockedStdOut (unittest.TestCase):
+    setUp=    setUpMockStdOut
 
     def testSimple (self):
         echo ('simple')
 
         # restore stdout before reading,
         # otherwise it gets stuck because there's still one writing side
-        tearDownMockStdout (self)
+        tearDownMockStdOut (self)
 
         self.assertEqual (self.mock_stdout.read (), 'simple\n')
         self.mock_stdout.close ()
 
     def testInStr (self):
         a= cat (_in='_in=str')
-        tearDownMockStdout (self)
+        tearDownMockStdOut (self)
         self.assertEqual (self.mock_stdout.read (), '_in=str\n')
         self.mock_stdout.close ()
 
     def testIbBytes (self):
         a= cat (_in=b'_in=bytes')
-        tearDownMockStdout (self)
+        tearDownMockStdOut (self)
         self.assertEqual (self.mock_stdout.read (), '_in=bytes\n')
         self.mock_stdout.close ()
 
@@ -78,46 +77,67 @@ class BasicCommandExecution (unittest.TestCase):
         f= open ('ayrton/tests/data/string_stdin.txt', 'rb')
         a= cat (_in=f)
         f.close ()
-        tearDownMockStdout (self)
+        tearDownMockStdOut (self)
         self.assertEqual (self.mock_stdout.read (), 'stdin_from_file!\n')
         self.mock_stdout.close ()
 
     def testInMultiLineSeq (self):
         a= cat (_in=['multi', 'line', 'sequence', 'test'])
-        tearDownMockStdout (self)
+        tearDownMockStdOut (self)
         self.assertEqual (self.mock_stdout.read (), 'multi\nline\nsequence\ntest\n')
         self.mock_stdout.close ()
 
     def testInSingleLineSeq (self):
         a= cat (_in=['single,', 'line,', 'sequence,', 'test\n'], _end='')
-        tearDownMockStdout (self)
+        tearDownMockStdOut (self)
         self.assertEqual (self.mock_stdout.read (), 'single,line,sequence,test\n')
         self.mock_stdout.close ()
 
     def testInNone (self):
         a= cat (_in=None)
-        tearDownMockStdout (self)
+        tearDownMockStdOut (self)
         self.assertEqual (self.mock_stdout.read (), '')
         self.mock_stdout.close ()
 
     def testOutNone (self):
         a= echo ('_out=None', _out=None)
-        tearDownMockStdout (self)
+        tearDownMockStdOut (self)
         self.assertEqual (self.mock_stdout.read (), '')
         self.mock_stdout.close ()
 
     def testOutAsIterable (self):
         text= '_out=Capture'
         a= echo (text, _out=Capture)
-        tearDownMockStdout (self)
+        tearDownMockStdOut (self)
         for i in a:
             # notice that here there's no \n
             self.assertEqual (i, text)
         self.mock_stdout.close ()
 
-class StdOutCommandexecution (unittest.TestCase):
+def setUpMockStdErr (self):
+    # this is a trick to (hopefulliy) save the original stdout fd
+    self.save_stderr= os.dup (1)
 
-    def testOutfile (self):
+    self.pipe= os.pipe ()
+    r, w= self.pipe
+
+    # point stdout to w
+    os.dup2 (w, 2)
+    os.close (w)
+
+    # save the reading fd for reference in the tests
+    self.mock_stderr= open (r)
+
+def tearDownMockStdErr (self):
+    os.dup2 (self.save_stderr, 2)
+    os.close (self.save_stderr)
+
+class MockedStdErr (unittest.TestCase):
+    setUp=    setUpMockStdErr
+
+class Redirected (unittest.TestCase):
+
+    def testOutToFile (self):
         file_path= 'ayrton/tests/data/string_stdout.txt'
         r= random.randint (0, 1000000)
 
@@ -130,14 +150,20 @@ class StdOutCommandexecution (unittest.TestCase):
         f.close ()
         os.unlink (file_path)
 
-    def foo (self):
-        a= echo ('_out=Capture', _out=Capture)
-        for i in a:
-            print (repr (i))
+    def testErrToFile (self):
+        file_path= 'ayrton/tests/data/string_stderr.txt'
+        r= random.randint (0, 1000000)
 
-        f= open ('ayrton/tests/data/string_stderr.txt', 'wb+')
-        a= ls ('stderr_to_file', _err=f)
+        f= open (file_path, 'wb+')
+        a= ls ('stderr_to_file: %d' % r, _err=f)
         f.close ()
+
+        f= open (file_path, 'rb')
+        self.assertEqual (f.read (), bytes ('ls: cannot access stderr_to_file: %d: No such file or directory\n' % r, 'ascii'))
+        f.close ()
+        os.unlink (file_path)
+
+    def foo (self):
         cat ('ayrton/tests/data/string_stderr.txt')
 
         a= ls ('_err=None', _err=None)
