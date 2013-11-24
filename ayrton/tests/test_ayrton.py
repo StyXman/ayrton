@@ -23,7 +23,7 @@ import tempfile
 
 from ayrton.expansion import bash
 import ayrton
-import sh
+from ayrton.execute import CommandNotFound
 
 class Bash(unittest.TestCase):
     def test_simple_string (self):
@@ -106,7 +106,6 @@ def tearDownMockStdout (self):
     sys.stdout= self.old_stdout
 
 class CommandExecution (unittest.TestCase):
-    # for the moment I will just test my changes over sh.Command
     setUp=    setUpMockStdout
     tearDown= tearDownMockStdout
 
@@ -114,6 +113,7 @@ class CommandExecution (unittest.TestCase):
         # do the test
         ayrton.main ('echo ("foo")')
         self.assertEqual (self.a.buffer.getvalue (), b'foo\n')
+        self.mock_stdout.close ()
 
     def testStdEqNone (self):
         # do the test
@@ -280,8 +280,9 @@ print (a)''')
 print (s[1].readlines ())''')
         expected1= b'''[b'127.0.0.1 '''
         expected2= b''' 22\\n']\n'''
-        self.assertEqual (self.a.buffer.getvalue ()[:len (expected1)], expected1)
-        self.assertEqual (self.a.buffer.getvalue ()[-len (expected2):], expected2)
+        output= self.a.buffer.getvalue ()
+        self.assertEqual (output[:len (expected1)], expected1)
+        self.assertEqual (output[-len (expected2):], expected2)
 
 class CommandDetection (unittest.TestCase):
 
@@ -289,14 +290,14 @@ class CommandDetection (unittest.TestCase):
         ayrton.main ('true ()')
 
     def testSimpleCaseFails (self):
-        self.assertRaises (sh.CommandNotFound, ayrton.main, 'foo ()')
+        self.assertRaises (CommandNotFound, ayrton.main, 'foo ()')
 
     def testFromImport (self):
         ayrton.main ('''from random import seed;
 seed ()''')
 
     def testFromImportFails (self):
-        self.assertRaises (sh.CommandNotFound, ayrton.main,
+        self.assertRaises (CommandNotFound, ayrton.main,
                            '''from random import seed;
 foo ()''')
 
@@ -305,7 +306,7 @@ foo ()''')
 foo ()''')
 
     def testFromImportAsFails (self):
-        self.assertRaises (sh.CommandNotFound, ayrton.main,
+        self.assertRaises (CommandNotFound, ayrton.main,
                            '''from random import seed as foo
 bar ()''')
 

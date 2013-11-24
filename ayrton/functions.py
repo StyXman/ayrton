@@ -18,6 +18,7 @@
 # along with ayrton.  If not, see <http://www.gnu.org/licenses/>.
 
 import ayrton
+import ayrton.execute
 import os
 import paramiko
 from ayrton.expansion import bash
@@ -45,12 +46,6 @@ def export (**kwargs):
 option_map= dict (
     e= 'errexit',
     )
-
-class o (object):
-    def __init__ (self, **kwargs):
-        option= list (kwargs.items ())[0]
-        self.key=   option[0]
-        self.value= option[1]
 
 def option (option, value=True):
     if len (option)==2:
@@ -131,7 +126,7 @@ ayrton.run (ast, g, l)"''' % (len (self.ast), len (global_env), len (local_env))
         pass
 
 def run (path, *args, **kwargs):
-    c= ayrton.CommandWrapper._create (path)
+    c= ayrton.execute.Command (path)
     return c (*args, **kwargs)
 
 def shift (n=1):

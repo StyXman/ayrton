@@ -19,7 +19,7 @@ import unittest
 import os
 import random
 
-from ayrton.execute import Command
+from ayrton.execute import Command, Capture
 
 echo= Command ('echo', )
 cat= Command ('cat', )
@@ -104,6 +104,15 @@ class BasicCommandExecution (unittest.TestCase):
         a= echo ('_out=None', _out=None)
         tearDownMockStdout (self)
         self.assertEqual (self.mock_stdout.read (), '')
+        self.mock_stdout.close ()
+
+    def testOutAsIterable (self):
+        text= '_out=Capture'
+        a= echo (text, _out=Capture)
+        tearDownMockStdout (self)
+        for i in a:
+            # notice that here there's no \n
+            self.assertEqual (i, text)
         self.mock_stdout.close ()
 
 class StdOutCommandexecution (unittest.TestCase):

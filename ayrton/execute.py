@@ -19,10 +19,27 @@ import os
 import sys
 import io
 from collections.abc import Iterable
-from ayrton import Capture, CommandFailed, runner
-from ayrton.functions import o
+from ayrton import runner
 
 encoding= sys.getdefaultencoding ()
+
+# special value to signal that the output should be captured
+# instead of going to stdout
+Capture= (42, )
+
+class o (object):
+    def __init__ (self, **kwargs):
+        option= list (kwargs.items ())[0]
+        self.key=   option[0]
+        self.value= option[1]
+
+class CommandFailed (Exception):
+    def __init__ (self, code):
+        self.code= code
+
+class CommandNotFound (Exception):
+    def __init__ (self, path):
+        self.path= path
 
 class Command:
     default_options= dict (
@@ -142,7 +159,10 @@ class Command:
 
         # args is a tuple
         args= self.prepare_args (cmd, args, kwargs)
-        os.execvpe (cmd, args, self.options['_env'])
+        try:
+            os.execvpe (cmd, args, self.options['_env'])
+        except OSError:
+            raise CommandNotFound (cmd)
 
     def prepare_args (self, cmd, args, kwargs):
         ans= [cmd]
@@ -257,7 +277,7 @@ class Command:
                 yield line
 
             # finish him!
-            # self.capture_file.close ()
+            self.capture_file.close ()
         else:
             # TODO
             pass
@@ -268,127 +288,3 @@ class Command:
             line= line.rstrip (os.linesep)
 
         return line
-
-if __name__=='__main__':
-    echo= Command ('echo', )
-    cat= Command ('cat', )
-    ls= Command ('ls')
-    ssh= Command ('ssh')
-    mcedit= Command ('mcedit')
-    bash= Command ('bash')
-    false= Command ('false')
-    grep= Command ('grep')
-
-    a= echo ('simple')
-    print ('=========')
-
-    a= echo (str (42))
-    print ('=========')
-
-    a= cat (_in='_in=str')
-    print ('=========')
-
-    a= cat (_in=b'_in=bytes')
-    print ('=========')
-
-    f= open ('ayrton/tests/data/string_stdin.txt', 'rb')
-    a= cat (_in=f)
-    f.close ()
-    print ('=========')
-
-    a= cat (_in=['multi', 'line', 'sequence', 'test'])
-    print ('=========')
-
-    a= cat (_in=['single,', 'line,', 'sequence,', 'test\n'], _end='')
-    print ('=========')
-
-    f= open ('ayrton/tests/data/string_stdout.txt', 'wb+')
-    a= echo ('stdout_to_file', _out=f)
-    f.close ()
-    cat ('ayrton/tests/data/string_stdout.txt')
-    print ('=========')
-
-    a= cat (_in=None)
-
-    a= echo ('_out=None', _out=None)
-
-    a= echo ('_out=Capture', _out=Capture)
-    for i in a:
-        print (repr (i))
-    print ('=========')
-
-    f= open ('ayrton/tests/data/string_stderr.txt', 'wb+')
-    a= ls ('stderr_to_file', _err=f)
-    f.close ()
-    cat ('ayrton/tests/data/string_stderr.txt')
-    print ('=========')
-
-    a= ls ('_err=None', _err=None)
-
-    a= ls ('_err=Capture', _err=Capture)
-    for i in a:
-        print (repr (i))
-    print ('=========')
-
-    a= ls ('Makefile', '_err=Capture', _out=Capture, _err=Capture)
-    for i in a:
-        print (repr (i))
-    print ('=========')
-
-    a= ls (_out=Capture, _chomp=False)
-    for i in a:
-        print (repr (i))
-    print ('=========')
-
-    # ssh always opens the tty for reading the passphrase, so I'm not sure
-    # we can trick it to read it from us
-    #a= c.execute ('ssh', 'mx.grulic.org.ar', 'ls -l',
-                  #in='passphrase',
-                  #_in_tty=True, _out=Capture, _out_tty=True, _err=Capture)
-    # a= ssh ('localhost', 'ls -l', _out=Capture)
-    # for i in a:
-    #     print (repr (i))
-
-    # mcedit ()
-
-    ls (l=True)
-    print ('=========')
-
-    echo (l=True, more=42, kwargs_as_unordered_options='yes!')
-    print ('=========')
-
-    echo (o(l=True), o(more=42), o(o_orders_options='yes!'))
-    print ('=========')
-
-    # NOTE: we convert envvars to str when we export(0 them
-    # bash (c='echo $FOO', _env=dict (FOO=42))
-    bash (c='echo environments works: $FOO', _env=dict (FOO='yes'))
-    print ('=========')
-
-    if not false ():
-        print ('false!')
-        print ('=========')
-
-    # runner.options['errexit']= True
-
-    a= echo ('grep!', _out=Capture)
-    grep ('grep', _in=a.readline ())
-    print ('=========')
-
-    f= open ('ayrton/tests/data/string_stdin.txt', 'rb')
-    a= cat (_in=f.fileno ())
-    f.close ()
-    print ('=========')
-
-    f= open ('ayrton/tests/data/string_stdout.txt', 'wb+')
-    a= echo ('stdout_to_file', _out=f.fileno ())
-    f.close ()
-    cat ('ayrton/tests/data/string_stdout.txt')
-    print ('=========')
-
-    r, w= os.pipe ()
-    echo ('pipe!', _out=w)
-    os.close (w)
-    grep ('pipe', _in=r)
-    os.close (r)
-    print ('=========')
