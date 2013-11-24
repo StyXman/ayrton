@@ -106,7 +106,7 @@ class MockedStdOut (unittest.TestCase):
         self.assertEqual (self.mock_stdout.read (), '')
         self.mock_stdout.close ()
 
-    def testKwarsAsUnorderedOptions (self):
+    def testKwargsAsUnorderedOptions (self):
         echo (l=True, more=42, kwargs_as_unordered_options='yes!')
         tearDownMockStdOut (self)
 
@@ -223,6 +223,13 @@ class CommandExecution (unittest.TestCase):
         if false ():
             self.fail ()
 
+    def testEchoGrep (self):
+        a= echo (_in=['grap not found', 'grep found', 'grip not found, fell'],
+                 _out=Capture)
+        b= grep ('grep', _in=a.readlines (), _out=Capture)
+        for i in b:
+            self.assertEqual (i, 'grep found')
+
     def foo (self):
         # ssh always opens the tty for reading the passphrase, so I'm not sure
         # we can trick it to read it from us
@@ -236,9 +243,6 @@ class CommandExecution (unittest.TestCase):
         # mcedit ()
 
         # runner.options['errexit']= True
-
-        a= echo ('grep!', _out=Capture)
-        grep ('grep', _in=a.readline ())
 
         f= open ('ayrton/tests/data/string_stdin.txt', 'rb')
         a= cat (_in=f.fileno ())
