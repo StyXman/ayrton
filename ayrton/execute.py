@@ -282,9 +282,18 @@ class Command:
             # TODO
             pass
 
+    # BUG this method is leaking an opend file()
+    # self.capture_file
     def readline (self):
         line= self.capture_file.readline ()
         if self.options['_chomp']:
             line= line.rstrip (os.linesep)
 
         return line
+
+    def readlines (self):
+        if self.options['_chomp']:
+            return ( line.rstrip (os.linesep) for line in self )
+        else:
+            # ugly way toi not leak the file()
+            return ( line for line in self )
