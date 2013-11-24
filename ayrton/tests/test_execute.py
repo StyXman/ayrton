@@ -17,6 +17,7 @@
 
 import unittest
 import os
+import random
 
 from ayrton.execute import Command
 
@@ -93,14 +94,26 @@ class BasicCommandExecution (unittest.TestCase):
         self.assertEqual (self.mock_stdout.read (), 'single,line,sequence,test\n')
         self.mock_stdout.close ()
 
+class StdOutCommandexecution (unittest.TestCase):
+
+    def testOutfile (self):
+        file_path= 'ayrton/tests/data/string_stdout.txt'
+        r= random.randint (0, 1000000)
+
+        f= open (file_path, 'wb+')
+        a= echo ('stdout_to_file: %d' % r, _out=f)
+        f.close ()
+
+        f= open (file_path, 'rb')
+        self.assertEqual (f.read (), bytes ('stdout_to_file: %d\n' % r, 'ascii'))
+        f.close ()
+        os.unlink (file_path)
+
     def foo (self):
         a= echo (str (42))
 
 
 
-        f= open ('ayrton/tests/data/string_stdout.txt', 'wb+')
-        a= echo ('stdout_to_file', _out=f)
-        f.close ()
         cat ('ayrton/tests/data/string_stdout.txt')
 
         a= cat (_in=None)
