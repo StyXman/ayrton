@@ -27,6 +27,7 @@ ls= Command ('ls')
 ssh= Command ('ssh')
 mcedit= Command ('mcedit')
 bash= Command ('bash')
+true= Command ('true')
 false= Command ('false')
 grep= Command ('grep')
 
@@ -105,13 +106,30 @@ class MockedStdOut (unittest.TestCase):
         self.assertEqual (self.mock_stdout.read (), '')
         self.mock_stdout.close ()
 
-    def testOutAsIterable (self):
-        text= '_out=Capture'
-        a= echo (text, _out=Capture)
+    def testKwarsAsUnorderedOptions (self):
+        echo (l=True, more=42, kwargs_as_unordered_options='yes!')
         tearDownMockStdOut (self)
-        for i in a:
-            # notice that here there's no \n
-            self.assertEqual (i, text)
+
+        output= self.mock_stdout.read ()
+        # we can't know for sure the order of the options in the final command line
+        # '-l --more 42 --kwargs_as_unordered_options yes!\n'
+        self.assertTrue ('-l' in output)
+        self.assertTrue ('--more 42' in output)
+        self.assertTrue ('--kwargs_as_unordered_options yes!' in output)
+        self.assertTrue (output[-1]=='\n')
+        self.mock_stdout.close ()
+
+    def testOOrdersOptions (self):
+        echo (o(l=True), o(more=42), o(o_orders_options='yes!'))
+        tearDownMockStdOut (self)
+        self.assertEqual (self.mock_stdout.read (), '-l --more 42 --o_orders_options yes!\n')
+        self.mock_stdout.close ()
+
+    def testEnvironment (self):
+        # NOTE: we convert envvars to str when we export() them
+        bash (c='echo environments works: $FOO', _env=dict (FOO='yes'))
+        tearDownMockStdOut (self)
+        self.assertEqual (self.mock_stdout.read (), 'environments works: yes\n')
         self.mock_stdout.close ()
 
 def setUpMockStdErr (self):
@@ -141,13 +159,6 @@ class MockedStdErr (unittest.TestCase):
         self.assertEqual (self.mock_stderr.read (), '')
         self.mock_stderr.close ()
 
-    def testErrCapture (self):
-        a= ls ('_err=Capture', _err=Capture)
-        tearDownMockStdErr (self)
-        for i in a:
-            self.assertEqual (i, 'ls: cannot access _err=Capture: No such file or directory')
-        self.mock_stderr.close ()
-
 class Redirected (unittest.TestCase):
 
     def testOutToFile (self):
@@ -163,6 +174,13 @@ class Redirected (unittest.TestCase):
         f.close ()
         os.unlink (file_path)
 
+    def testOutAsIterable (self):
+        text= '_out=Capture'
+        a= echo (text, _out=Capture)
+        for i in a:
+            # notice that here there's no \n
+            self.assertEqual (i, text)
+
     def testErrToFile (self):
         file_path= 'ayrton/tests/data/string_stderr.txt'
         r= random.randint (0, 1000000)
@@ -176,33 +194,36 @@ class Redirected (unittest.TestCase):
         f.close ()
         os.unlink (file_path)
 
+    def testErrCapture (self):
+        a= ls ('_err=Capture', _err=Capture)
+        for i in a:
+            self.assertEqual (i, 'ls: cannot access _err=Capture: No such file or directory')
+
+    def testOutErrCaptured (self):
+        a= ls ('Makefile', '_err=Capture', _out=Capture, _err=Capture)
+        # list() exercises __iter__()
+        l= list (a)
+        self.assertEqual (l[0], 'ls: cannot access _err=Capture: No such file or directory')
+        self.assertEqual (l[1], 'Makefile')
+
 class CommandExecution (unittest.TestCase):
-    setUp= setUpMockStdOut
+    def testFalse (self):
+        a= false ()
+        self.assertEqual (a.exit_code, 256)
 
-    def testKwarsAsUnorderedOptions (self):
-        echo (l=True, more=42, kwargs_as_unordered_options='yes!')
-        tearDownMockStdOut (self)
+    def testTrue (self):
+        a= true ()
+        self.assertEqual (a.exit_code, 0)
 
-        output= self.mock_stdout.read ()
-        # we can't know for sure the order of the options in the final command line
-        # '-l --more 42 --kwargs_as_unordered_options yes!\n'
-        self.assertTrue ('-l' in output)
-        self.assertTrue ('--more 42' in output)
-        self.assertTrue ('--kwargs_as_unordered_options yes!' in output)
-        self.assertTrue (output[-1]=='\n')
-        self.mock_stdout.close ()
+    def testIfTrue (self):
+        if not true ():
+            self.fail ()
 
-    def testOOrdersOptions (self):
-        echo (o(l=True), o(more=42), o(o_orders_options='yes!'))
-        tearDownMockStdOut (self)
-        self.assertEqual (self.mock_stdout.read (), '-l --more 42 --o_orders_options yes!\n')
-        self.mock_stdout.close ()
+    def testIfFrue (self):
+        if false ():
+            self.fail ()
 
     def foo (self):
-        a= ls ('Makefile', '_err=Capture', _out=Capture, _err=Capture)
-        for i in a:
-            print (repr (i))
-
         # ssh always opens the tty for reading the passphrase, so I'm not sure
         # we can trick it to read it from us
         #a= c.execute ('ssh', 'mx.grulic.org.ar', 'ls -l',
@@ -213,17 +234,6 @@ class CommandExecution (unittest.TestCase):
         #     print (repr (i))
 
         # mcedit ()
-
-        ls (l=True)
-
-        echo (o(l=True), o(more=42), o(o_orders_options='yes!'))
-
-        # NOTE: we convert envvars to str when we export(0 them
-        # bash (c='echo $FOO', _env=dict (FOO=42))
-        bash (c='echo environments works: $FOO', _env=dict (FOO='yes'))
-
-        if not false ():
-            print ('false!')
 
         # runner.options['errexit']= True
 
