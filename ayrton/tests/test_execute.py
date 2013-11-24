@@ -19,7 +19,7 @@ import unittest
 import os
 import random
 
-from ayrton.execute import Command, Capture
+from ayrton.execute import Command, Capture, o
 
 echo= Command ('echo', )
 cat= Command ('cat', )
@@ -67,7 +67,7 @@ class MockedStdOut (unittest.TestCase):
         self.assertEqual (self.mock_stdout.read (), '_in=str\n')
         self.mock_stdout.close ()
 
-    def testIbBytes (self):
+    def testInBytes (self):
         a= cat (_in=b'_in=bytes')
         tearDownMockStdOut (self)
         self.assertEqual (self.mock_stdout.read (), '_in=bytes\n')
@@ -135,6 +135,19 @@ def tearDownMockStdErr (self):
 class MockedStdErr (unittest.TestCase):
     setUp=    setUpMockStdErr
 
+    def testErrNone (self):
+        a= ls ('_err=None', _err=None)
+        tearDownMockStdErr (self)
+        self.assertEqual (self.mock_stderr.read (), '')
+        self.mock_stderr.close ()
+
+    def testErrCapture (self):
+        a= ls ('_err=Capture', _err=Capture)
+        tearDownMockStdErr (self)
+        for i in a:
+            self.assertEqual (i, 'ls: cannot access _err=Capture: No such file or directory')
+        self.mock_stderr.close ()
+
 class Redirected (unittest.TestCase):
 
     def testOutToFile (self):
@@ -163,20 +176,30 @@ class Redirected (unittest.TestCase):
         f.close ()
         os.unlink (file_path)
 
+class CommandExecution (unittest.TestCase):
+    setUp= setUpMockStdOut
+
+    def testKwarsAsUnorderedOptions (self):
+        echo (l=True, more=42, kwargs_as_unordered_options='yes!')
+        tearDownMockStdOut (self)
+
+        output= self.mock_stdout.read ()
+        # we can't know for sure the order of the options in the final command line
+        # '-l --more 42 --kwargs_as_unordered_options yes!\n'
+        self.assertTrue ('-l' in output)
+        self.assertTrue ('--more 42' in output)
+        self.assertTrue ('--kwargs_as_unordered_options yes!' in output)
+        self.assertTrue (output[-1]=='\n')
+        self.mock_stdout.close ()
+
+    def testOOrdersOptions (self):
+        echo (o(l=True), o(more=42), o(o_orders_options='yes!'))
+        tearDownMockStdOut (self)
+        self.assertEqual (self.mock_stdout.read (), '-l --more 42 --o_orders_options yes!\n')
+        self.mock_stdout.close ()
+
     def foo (self):
-        cat ('ayrton/tests/data/string_stderr.txt')
-
-        a= ls ('_err=None', _err=None)
-
-        a= ls ('_err=Capture', _err=Capture)
-        for i in a:
-            print (repr (i))
-
         a= ls ('Makefile', '_err=Capture', _out=Capture, _err=Capture)
-        for i in a:
-            print (repr (i))
-
-        a= ls (_out=Capture, _chomp=False)
         for i in a:
             print (repr (i))
 
@@ -192,8 +215,6 @@ class Redirected (unittest.TestCase):
         # mcedit ()
 
         ls (l=True)
-
-        echo (l=True, more=42, kwargs_as_unordered_options='yes!')
 
         echo (o(l=True), o(more=42), o(o_orders_options='yes!'))
 
