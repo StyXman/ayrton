@@ -94,6 +94,18 @@ class BasicCommandExecution (unittest.TestCase):
         self.assertEqual (self.mock_stdout.read (), 'single,line,sequence,test\n')
         self.mock_stdout.close ()
 
+    def testInNone (self):
+        a= cat (_in=None)
+        tearDownMockStdout (self)
+        self.assertEqual (self.mock_stdout.read (), '')
+        self.mock_stdout.close ()
+
+    def testOutNone (self):
+        a= echo ('_out=None', _out=None)
+        tearDownMockStdout (self)
+        self.assertEqual (self.mock_stdout.read (), '')
+        self.mock_stdout.close ()
+
 class StdOutCommandexecution (unittest.TestCase):
 
     def testOutfile (self):
@@ -110,16 +122,6 @@ class StdOutCommandexecution (unittest.TestCase):
         os.unlink (file_path)
 
     def foo (self):
-        a= echo (str (42))
-
-
-
-        cat ('ayrton/tests/data/string_stdout.txt')
-
-        a= cat (_in=None)
-
-        a= echo ('_out=None', _out=None)
-
         a= echo ('_out=Capture', _out=Capture)
         for i in a:
             print (repr (i))
