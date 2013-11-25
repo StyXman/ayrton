@@ -161,6 +161,15 @@ class MockedStdErr (unittest.TestCase):
 
 class Redirected (unittest.TestCase):
 
+    def testInAsFd (self):
+        f= open ('ayrton/tests/data/string_stdin.txt', 'rb')
+        a= cat (_in=f.fileno (), _out=Capture)
+        f.close ()
+
+        l= a.readline ()
+        self.assertEqual (l, 'stdin_from_file!')
+        a.close ()
+
     def testOutToFile (self):
         file_path= 'ayrton/tests/data/string_stdout.txt'
         r= random.randint (0, 1000000)
@@ -180,6 +189,19 @@ class Redirected (unittest.TestCase):
         for i in a:
             # notice that here there's no \n
             self.assertEqual (i, text)
+
+    def testOutAsFd (self):
+        file_path= 'ayrton/tests/data/string_stdout.txt'
+        r= random.randint (0, 1000000)
+
+        f= open (file_path, 'wb+')
+        a= echo ('stdout_to_fd: %d' % r, _out=f.fileno ())
+        f.close ()
+
+        f= open (file_path, 'rb')
+        self.assertEqual (f.read (), bytes ('stdout_to_fd: %d\n' % r, 'ascii'))
+        f.close ()
+        os.unlink (file_path)
 
     def testErrToFile (self):
         file_path= 'ayrton/tests/data/string_stderr.txt'
@@ -205,6 +227,17 @@ class Redirected (unittest.TestCase):
         l= list (a)
         self.assertEqual (l[0], 'ls: cannot access _err=Capture: No such file or directory')
         self.assertEqual (l[1], 'Makefile')
+
+    def testPipe (self):
+        r, w= os.pipe ()
+        echo ('pipe!', _out=w)
+        os.close (w)
+        a= grep ('pipe', _in=r, _out=Capture)
+        os.close (r)
+
+        l= a.readline ()
+        self.assertEqual (l, 'pipe!')
+        a.close ()
 
 class CommandExecution (unittest.TestCase):
     def testFalse (self):
@@ -243,18 +276,4 @@ class CommandExecution (unittest.TestCase):
         # mcedit ()
 
         # runner.options['errexit']= True
-
-        f= open ('ayrton/tests/data/string_stdin.txt', 'rb')
-        a= cat (_in=f.fileno ())
-        f.close ()
-
-        f= open ('ayrton/tests/data/string_stdout.txt', 'wb+')
-        a= echo ('stdout_to_file', _out=f.fileno ())
-        f.close ()
-        cat ('ayrton/tests/data/string_stdout.txt')
-
-        r, w= os.pipe ()
-        echo ('pipe!', _out=w)
-        os.close (w)
-        grep ('pipe', _in=r)
-        os.close (r)
+        pass

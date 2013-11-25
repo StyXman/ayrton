@@ -291,6 +291,9 @@ class Command:
 
         return line
 
+    def close (self):
+        self.capture_file.close ()
+
     def readlines (self):
         if self.options['_chomp']:
             return ( line.rstrip (os.linesep) for line in self )
