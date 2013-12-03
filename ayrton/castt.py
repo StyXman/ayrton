@@ -207,7 +207,21 @@ class CrazyASTTransformer (ast.NodeTransformer):
             both= self.is_executable (node.left) and self.is_executable (node.right)
 
             if both:
-                # right (left, ...)
+                # left (...) | right (...)
+
+                # r, w= os.pipe ()
+                # left (..., _out=w)
+                # os.close (w)
+                # right (..., _in=r)
+                # os.close (r)
+
+                # Assign(targets=[Tuple(elts=[Name(id='r', ctx=Store()),
+                #                             Name(id='w', ctx=Store())], ctx=Store())],
+                #        value=Call(func=Attribute(value=Name(id='os', ctx=Load()),
+                #                                  attr='pipe', ctx=Load()),
+                #                   args=[], keywords=[], starargs=None, kwargs=None)),
+                # Expr(value=Call(func=Name(id='echo', ctx=Load()), args=[Str(s='pipe!')], keywords=[keyword(arg='_out', value=Name(id='w', ctx=Load()))], starargs=None, kwargs=None)), Expr(value=Call(func=Attribute(value=Name(id='os', ctx=Load()), attr='close', ctx=Load()), args=[Name(id='w', ctx=Load())], keywords=[], starargs=None, kwargs=None)), Expr(value=Call(func=Name(id='grep', ctx=Load()), args=[Str(s='pipe')], keywords=[keyword(arg='_in', value=Name(id='r', ctx=Load()))], starargs=None, kwargs=None)), Expr(value=Call(func=Attribute(value=Name(id='os', ctx=Load()), attr='close', ctx=Load()), args=[Name(id='r', ctx=Load())], keywords=[], starargs=None, kwargs=None))
+
                 # I can't believe it's this easy
                 node.left.keywords.append (keyword (arg='_out',
                                                     value=Name (id='Capture', ctx=Load ())))
