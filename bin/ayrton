@@ -25,6 +25,7 @@ import ayrton
 import argparse
 import sys
 import os.path
+import traceback
 
 parser= argparse.ArgumentParser (prog=os.path.split (sys.argv[0])[-1], description='pythonic shell-like scripting language.')
 script_group= parser.add_mutually_exclusive_group (required=True)

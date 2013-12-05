@@ -78,7 +78,7 @@ class remote (object):
 
     def __enter__ (self):
         self.client= paramiko.SSHClient ()
-        self.client.load_host_keys (bash ('~/.ssh/known_hosts')[0])
+        self.client.load_host_keys (bash ('~/.ssh/known_hosts'))
         self.client.connect (self.hostname, *self.args, **self.kwargs)
         # get the locals from the runtime
         # we can't really export the globals: it's full of unpicklable things
