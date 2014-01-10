@@ -19,7 +19,7 @@ import os
 import sys
 import io
 from collections.abc import Iterable
-from ayrton import runner
+import ayrton
 
 encoding= sys.getdefaultencoding ()
 
@@ -161,8 +161,8 @@ class Command:
         args= self.prepare_args (cmd, args, kwargs)
         try:
             os.execvpe (cmd, args, self.options['_env'])
-        except OSError:
-            raise CommandNotFound (cmd)
+        except FileNotFoundError:
+            sys.exit (127)
 
     def prepare_args (self, cmd, args, kwargs):
         ans= [cmd]
@@ -183,13 +183,15 @@ class Command:
             if len (name)==1:
                 arg="-%s" % name
             else:
+                # TODO: longopt_prefix
+                # and/or simply subclass find(Command)
                 arg="--%s" % name
             seq.append (arg)
 
             if value!=True:
                 seq.append (str (value))
 
-    def parent (self, child_pid):
+    def parent (self, cmd, child_pid):
         reader_pipe= None
 
         if self.stdin_pipe is not None:
@@ -230,8 +232,11 @@ class Command:
             os.close (w)
             self.capture_file= open (r)
 
-        # if runner.options.get ('errexit', False) and not self:
-        #     raise CommandFailed (self)
+        if self.exit_code==127:
+            raise CommandNotFound (cmd)
+
+        if ayrton.runner.options.get ('errexit', False) and self.exit_code!=0:
+            raise CommandFailed (self)
 
     def __call__ (self, *args, **kwargs):
         self.options= self.default_options.copy ()
@@ -261,7 +266,7 @@ class Command:
         if r==0:
             self.child (self.path, *args, **kwargs)
         else:
-            self.parent (r)
+            self.parent (self.path, r)
 
         return self
 
