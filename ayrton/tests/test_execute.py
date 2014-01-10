@@ -20,6 +20,7 @@ import os
 import random
 
 from ayrton.execute import Command, Capture, o
+import ayrton
 
 echo= Command ('echo', )
 cat= Command ('cat', )
@@ -240,6 +241,12 @@ class Redirected (unittest.TestCase):
         a.close ()
 
 class CommandExecution (unittest.TestCase):
+    def setUp (self):
+        ayrton.runner= ayrton.Ayrton ()
+
+    def tearDown (self):
+        ayrton.runner= None
+
     def testFalse (self):
         a= false ()
         self.assertEqual (a.exit_code, 256)
