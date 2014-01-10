@@ -99,7 +99,7 @@ class Ayrton (object):
     def __init__ (self, script=None, file=None, tree=None, globals=None,
                   locals=None, **kwargs):
         if script is None and file is not None:
-            # it's a pity that compile() does not accept a file as input
+            # it's a pity that parse() does not accept a file as input
             # so we could avoid reading the whole file
             script= open (file).read ()
         else:
@@ -108,7 +108,7 @@ class Ayrton (object):
         self.environ= Environment (globals, locals, **kwargs)
 
 
-        if tree is None:
+        if tree is None and script is not None:
             tree= ast.parse (script)
             # ImportFrom(module='bar', names=[alias(name='baz', asname=None)], level=0)
             node= ImportFrom (module='ayrton.execute',
@@ -121,8 +121,9 @@ class Ayrton (object):
             tree= CrazyASTTransformer(self.environ).visit (tree)
 
         self.options= {}
-        # print (ast.dump (tree))
-        self.source= compile (tree, file, 'exec')
+
+        if tree is not None:
+            self.source= compile (tree, file, 'exec')
 
     def run (self):
         exec (self.source, self.environ.globals, self.environ)
