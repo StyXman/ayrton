@@ -25,6 +25,9 @@ from ayrton.expansion import bash
 import ayrton
 from ayrton.execute import CommandNotFound
 
+# create one of these
+ayrton.runner= ayrton.Ayrton ()
+
 class Bash(unittest.TestCase):
     def test_simple_string (self):
         self.assertEqual (bash ('s'), 's')

@@ -99,37 +99,34 @@ class Environment (object):
         return str ([ self.globals, self.locals, self.os_environ ])
 
 class Ayrton (object):
-    def __init__ (self, script=None, file=None, tree=None, globals=None,
-                  locals=None, **kwargs):
-        if script is None and file is not None:
-            # it's a pity that parse() does not accept a file as input
-            # so we could avoid reading the whole file
-            script= open (file).read ()
-        else:
-            file= 'arg_to_main'
-
+    def __init__ (self, globals=None, locals=None, **kwargs):
         self.environ= Environment (globals, locals, **kwargs)
-
-
-        if tree is None and script is not None:
-            tree= ast.parse (script)
-            # ImportFrom(module='bar', names=[alias(name='baz', asname=None)], level=0)
-            node= ImportFrom (module='ayrton.execute',
-                              names=[alias (name='Command', asname=None)],
-                              level=0)
-            node.lineno= 0
-            node.col_offset= 0
-            ast.fix_missing_locations (node)
-            tree.body.insert (0, node)
-            tree= CrazyASTTransformer(self.environ).visit (tree)
-
         self.options= {}
 
-        if tree is not None:
-            self.source= compile (tree, file, 'exec')
+    def run_file (self, file):
+        # it's a pity that parse() does not accept a file as input
+        # so we could avoid reading the whole file
+        self.run_script (open (file).read (), file)
 
-    def run (self):
-        exec (self.source, self.environ.globals, self.environ)
+    def run_script (self, script, file_name):
+        tree= ast.parse (script)
+        # ImportFrom(module='bar', names=[alias(name='baz', asname=None)], level=0)
+        node= ImportFrom (module='ayrton.execute',
+                          names=[alias (name='Command', asname=None)],
+                          level=0)
+        node.lineno= 0
+        node.col_offset= 0
+        ast.fix_missing_locations (node)
+        tree.body.insert (0, node)
+        tree= CrazyASTTransformer(self.environ).visit (tree)
+
+        self.run_tree (tree, file_name)
+
+    def run_tree (self, tree, file_name):
+        self.run_code (compile (tree, file_name, 'exec'))
+
+    def run_code (self, code):
+        exec (code, self.environ.globals, self.environ)
 
 def polute (d):
     # these functions will be loaded from each module and put in the globals
@@ -164,12 +161,18 @@ def polute (d):
     for std in ('stdin', 'stdout', 'stderr'):
         d[std]= getattr (sys, std).buffer
 
-def run (tree, globals, locals):
+def run_tree (tree, globals, locals):
     global runner
-    runner= Ayrton (tree=tree, globals=globals, locals=locals)
-    runner.run ()
+    runner= Ayrton (globals=globals, locals=locals)
+    runner.run_tree (tree)
 
-def main (script=None, file=None, **kwargs):
+def run_file_or_script (script=None, file=None, **kwargs):
     global runner
-    runner= Ayrton (script=script, file=file, **kwargs)
-    runner.run ()
+    runner= Ayrton (**kwargs)
+    if script is None:
+        runner.run_file (file)
+    else:
+        runner.run_script (script, 'script_from_command_line')
+
+# backwards support for unit tests
+main= run_file_or_script

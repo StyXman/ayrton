@@ -115,7 +115,7 @@ import ayrton
 ast= pickle.loads (sys.stdin.buffer.read (%d))
 g= pickle.loads (sys.stdin.buffer.read (%d))
 l= pickle.loads (sys.stdin.buffer.read (%d))
-ayrton.run (ast, g, l)"''' % (len (self.ast), len (global_env), len (local_env))
+ayrton.run_tree (ast, g, l)"''' % (len (self.ast), len (global_env), len (local_env))
         (i, o, e)= self.client.exec_command (command)
         i.write (self.ast)
         i.write (global_env)
@@ -144,8 +144,8 @@ def shift (n=1):
     return ans
 
 def source (file):
-    sub_runner= ayrton.Ayrton (file=file)
-    sub_runner.run ()
+    sub_runner= ayrton.Ayrton ()
+    sub_runner.run_file (file)
     ayrton.runner.environ.locals.update (sub_runner.environ.locals)
 
 def unset (*args):
