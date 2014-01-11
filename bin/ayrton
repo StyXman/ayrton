@@ -59,7 +59,7 @@ for i, a in enumerate (args):
 opts= parser.parse_args (ayrton_args)
 
 try:
-    ayrton.main (**vars (opts))
+    ayrton.run_file_or_script (**vars (opts))
 except Exception:
     t, e, tb= sys.exc_info ()
     # skip ayrton's stack
