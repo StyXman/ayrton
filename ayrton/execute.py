@@ -127,7 +127,7 @@ class Command:
 
             if isinstance (o, io.IOBase):
                 # this does not work with file like objects
-                # dup its fd int stdout (1)
+                # dup its fd in stdout (1)
                 os.dup2 (o.fileno (), 1)
             elif type (o)==int:
                 os.dup2 (o, 1)
@@ -135,6 +135,10 @@ class Command:
                 r, w= self.stdout_pipe
                 os.dup2 (w, 1)
                 os.close (r)
+            elif type (o) in (bytes, str):
+                f= open (o, 'w+')
+                os.dup2 (f.fileno (), 1)
+                f.close ()
 
         if '_err' in self.options:
             e= self.options['_err']
