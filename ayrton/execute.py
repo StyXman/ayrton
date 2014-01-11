@@ -273,6 +273,9 @@ class Command:
     def __bool__ (self):
         return self.exit_code==0
 
+    def __str__ (self):
+        return self.capture_file.read ()
+
     def __iter__ (self):
         if self.capture_file is not None:
             for line in self.capture_file.readlines ():
