@@ -190,6 +190,8 @@ class PipingRedirection (unittest.TestCase):
 
     def testPipe (self):
         ayrton.main ('ls () | grep ("setup")')
+        # close stdout as per the description of setUpMockStdout()
+        os.close (1)
         self.assertEqual (self.r.read (), b'setup.py\n')
 
     def testGt (self):
@@ -209,6 +211,8 @@ class PipingRedirection (unittest.TestCase):
 
         ayrton.main ('cat () < "%s"' % fn)
 
+        # close stdout as per the description of setUpMockStdout()
+        os.close (1)
         self.assertEqual (self.r.read (), b'42\n')
         os.unlink (fn)
 
