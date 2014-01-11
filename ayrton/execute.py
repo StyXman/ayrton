@@ -219,7 +219,7 @@ class Command:
 
             os.close (w)
 
-        self.exit_code= os.waitpid (child_pid, 0)[1]
+        self.exit_code= os.waitpid (child_pid, 0)[1] >> 8
 
         if self.stdout_pipe is not None:
             # this will also read stderr if both are Capture'd

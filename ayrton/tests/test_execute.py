@@ -246,7 +246,7 @@ class Redirected (unittest.TestCase):
 class CommandExecution (unittest.TestCase):
     def testFalse (self):
         a= false ()
-        self.assertEqual (a.exit_code, 256)
+        self.assertEqual (a.exit_code, 1)
 
     def testTrue (self):
         a= true ()
