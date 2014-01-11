@@ -162,7 +162,7 @@ class Command:
         try:
             os.execvpe (cmd, args, self.options['_env'])
         except FileNotFoundError:
-            sys.exit (127)
+            os._exit (127)
 
     def prepare_args (self, cmd, args, kwargs):
         ans= [cmd]
