@@ -303,8 +303,5 @@ class Command:
         self.capture_file.close ()
 
     def readlines (self):
-        if self.options['_chomp']:
-            return ( line.rstrip (os.linesep) for line in self )
-        else:
-            # ugly way toi not leak the file()
-            return ( line for line in self )
+        # ugly way to not leak the file()
+        return ( line for line in self )
