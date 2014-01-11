@@ -260,7 +260,7 @@ print (a)''', argv=['test_script.ay', '42', '27'])
         self.assertEqual (self.a.buffer.getvalue (), b"['42', '27']\n")
 
     def testSource (self):
-        ayrton.main ('''source ("ayrton/tests/source.ay");
+        ayrton.main ('''source ("ayrton/tests/data/source.ay");
 print (a)''')
         self.assertEqual (self.a.buffer.getvalue (), b'42\n')
 
