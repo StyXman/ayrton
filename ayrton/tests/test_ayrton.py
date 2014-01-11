@@ -124,6 +124,7 @@ def tearDownMockStdout (self):
     # new copy of the old stdout :)
     os.dup (self.old_stdout)
     os.close (self.old_stdout)
+    self.r.close ()
 
 class CommandExecution (unittest.TestCase):
     setUp=    setUpMockStdout
