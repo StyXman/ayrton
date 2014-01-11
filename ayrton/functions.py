@@ -61,8 +61,6 @@ def option (option, value=True):
     ayrton.runner.options[option]= value
 
 class remote (object):
-    # TODO: inherit CommandWrapper?
-    # TODO: see foo.txt
     "Uses the same arguments as paramiko.SSHClient.connect ()"
     def __init__ (self, ast, hostname, *args, **kwargs):
         # actually, it's not a proper ast, it's the pickle of such thing

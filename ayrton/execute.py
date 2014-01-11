@@ -250,6 +250,8 @@ class Command:
                 # ignore
                 pass
 
+        self.options['_env'].update (ayrton.runner.environ.os_environ)
+
         self.stdin_pipe= None
         self.stdout_pipe= None
         self.stderr_pipe= None
