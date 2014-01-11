@@ -36,6 +36,9 @@ from ayrton.execute import o, Command, Capture, CommandFailed
 __version__= '0.3'
 
 class Environment (object):
+    # this class handles not only environment variables
+    # but also locals, globasl and pytohn and ayrton builtins
+    # the latter are only other python functions that are 'promoted' to builtins
     def __init__ (self, globals=None, locals=None, **kwargs):
         super ().__init__ ()
 
