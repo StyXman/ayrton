@@ -185,15 +185,13 @@ class CrazyASTTransformer (ast.NodeTransformer):
         return node
 
     def is_executable (self, node):
-        # Call(func=Call(func=Attribute(value=Name(id='CommandWrapper', ctx=Load()), attr='_create', ctx=Load()),
+        # Call(func=Call(func=Name(id='Command', ctx=Load()),
         #                args=[Str(s='ls')], keywords=[], starargs=None, kwargs=None),
-        #      args=[], keywords=[], starargs=None, kwargs=None)
+        #      args=[Str(s='-l')], keywords=[], starargs=None, kwargs=None)
         return (type (node)==Call and
                 type (node.func)==Call and
-                type (node.func.func)==Attribute and
-                type (node.func.func.value)==Name and
-                node.func.func.value.id=='CommandWrapper' and
-                node.func.func.attr=='_create')
+                type (node.func.func)==Name and
+                node.func.func.id=='Command')
 
     def visit_BinOp (self, node):
         self.generic_visit (node)
@@ -203,18 +201,32 @@ class CrazyASTTransformer (ast.NodeTransformer):
             # pipe
             # BinOp (left, BitOr, right) -> right (left, ...)
 
-            # check the left and right; if they're calls to CommandWrapper._create
+            # check the left and right; if they're calls to Command
             # then do the magic
 
             both= self.is_executable (node.left) and self.is_executable (node.right)
 
             if both:
-                # right (left, ...)
+                # left (...) | right (...)
+
+                # r, w= os.pipe ()
+                # left (..., _out=w)
+                # os.close (w)
+                # right (..., _in=r)
+                # os.close (r)
+
+                # Assign(targets=[Tuple(elts=[Name(id='r', ctx=Store()),
+                #                             Name(id='w', ctx=Store())], ctx=Store())],
+                #        value=Call(func=Attribute(value=Name(id='os', ctx=Load()),
+                #                                  attr='pipe', ctx=Load()),
+                #                   args=[], keywords=[], starargs=None, kwargs=None)),
+                # Expr(value=Call(func=Name(id='echo', ctx=Load()), args=[Str(s='pipe!')], keywords=[keyword(arg='_out', value=Name(id='w', ctx=Load()))], starargs=None, kwargs=None)), Expr(value=Call(func=Attribute(value=Name(id='os', ctx=Load()), attr='close', ctx=Load()), args=[Name(id='w', ctx=Load())], keywords=[], starargs=None, kwargs=None)), Expr(value=Call(func=Name(id='grep', ctx=Load()), args=[Str(s='pipe')], keywords=[keyword(arg='_in', value=Name(id='r', ctx=Load()))], starargs=None, kwargs=None)), Expr(value=Call(func=Attribute(value=Name(id='os', ctx=Load()), attr='close', ctx=Load()), args=[Name(id='r', ctx=Load())], keywords=[], starargs=None, kwargs=None))
+
                 # I can't believe it's this easy
                 node.left.keywords.append (keyword (arg='_out',
                                                     value=Name (id='Capture', ctx=Load ())))
                 ast.fix_missing_locations (node.left)
-                node.right.args.insert (0, node.left)
+                node.right.keywords.append (keyword (arg='_in', value=node.left))
                 node= node.right
 
                 # Call(func=Call(func=Attribute(value=Name(id='CommandWrapper', ctx=Load()),
@@ -302,8 +314,7 @@ class CrazyASTTransformer (ast.NodeTransformer):
                     self.environ[func_name]
                 except KeyError:
                     # I guess I have no other option bu to try to execute something here...
-                    new_node= Call (func=Attribute (value=Name (id='CommandWrapper', ctx=Load ()),
-                                                    attr='_create', ctx=Load ()),
+                    new_node= Call (func=Name (id='Command', ctx=Load ()),
                                     args=[Str (s=func_name)], keywords=[],
                                     starargs=None, kwargs=None)
                     ast.copy_location (new_node, node)

@@ -18,6 +18,7 @@
 # along with ayrton.  If not, see <http://www.gnu.org/licenses/>.
 
 import ayrton
+import ayrton.execute
 import os
 import paramiko
 from ayrton.expansion import bash
@@ -46,12 +47,6 @@ option_map= dict (
     e= 'errexit',
     )
 
-class o (object):
-    def __init__ (self, **kwargs):
-        option= list (kwargs.items ())[0]
-        self.key=   option[0]
-        self.value= option[1]
-
 def option (option, value=True):
     if len (option)==2:
         if option[0]=='-':
@@ -66,8 +61,6 @@ def option (option, value=True):
     ayrton.runner.options[option]= value
 
 class remote (object):
-    # TODO: inherit CommandWrapper?
-    # TODO: see foo.txt
     "Uses the same arguments as paramiko.SSHClient.connect ()"
     def __init__ (self, ast, hostname, *args, **kwargs):
         # actually, it's not a proper ast, it's the pickle of such thing
@@ -131,7 +124,7 @@ ayrton.run_tree (ast, g, l)"''' % (len (self.ast), len (global_env), len (local_
         pass
 
 def run (path, *args, **kwargs):
-    c= ayrton.CommandWrapper._create (path)
+    c= ayrton.execute.Command (path)
     return c (*args, **kwargs)
 
 def shift (n=1):

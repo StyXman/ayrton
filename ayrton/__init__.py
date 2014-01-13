@@ -19,7 +19,6 @@
 
 import os
 import sys
-import sh
 import importlib
 import builtins
 import pickle
@@ -27,98 +26,19 @@ import ast
 from ast import fix_missing_locations, alias, ImportFrom
 import traceback
 
-from ayrton.castt import CrazyASTTransformer
-from ayrton.functions import o
-
-__version__= '0.3'
-
-class RunningCommandWrapper (sh.RunningCommand):
-    def _handle_exit_code (self, code):
-        try:
-            super ()._handle_exit_code (code)
-        except (sh.ErrorReturnCode, sh.SignalException) as e:
-            pass
-
-    def __bool__ (self):
-        # in shells, a command is true if its return code was 0
-        return self.exit_code==0
-
-# monkey patch sh
-sh.RunningCommand= RunningCommandWrapper
-
+# things that have to be defined before importing ayton.execute :(
 # singleton
 runner= None
 
-# special value to signal that the output should be captured
-# instead of going to stdout
-Capture= (42, )
+from ayrton.castt import CrazyASTTransformer
+from ayrton.execute import o, Command, Capture, CommandFailed
 
-class CommandFailed (Exception):
-    def __init__ (self, code):
-        self.code= code
-
-class CommandWrapper (sh.Command):
-    # this class changes the behaviour of sh.Command
-    # so is more shell scripting freindly
-    def __call__ (self, *args, **kwargs):
-        global runner
-
-        if ('_out' in kwargs.keys () and kwargs['_out']==Capture and
-                not '_tty_out' in kwargs.keys ()):
-            # for capturing, the default is to not simulate a tty
-            kwargs['_tty_out']= False
-
-        # if _out or _err are not provided, connect them to the original ones
-        for std, buf in [('_out', sys.stdout.buffer), ('_err', sys.stderr.buffer)]:
-            if not std in kwargs:
-                kwargs[std]= buf
-            # the following two messes sh's semantic for _std==None
-            elif kwargs[std] is None:
-                kwargs[std]= '/dev/null'
-            elif kwargs[std]==Capture:
-                kwargs[std]= None
-
-        # mess with the environ
-        kwargs['_env']= runner.environ.os_environ
-
-        # check the args for o()'s; convert to positional argumens
-        # copied almost verbatim from sh.command._aggregate_keywords()
-        processed = []
-        for index, arg in enumerate (args):
-            if isinstance (arg, o):
-                # we're passing a short arg as a kwarg, example:
-                # cut(d="\t")
-                if len(arg.key) == 1:
-                    if arg.value is not False:
-                        processed.append("-" + arg.key)
-                        if arg.value is not True:
-                            processed.append(self._format_arg(arg.balue))
-
-                # we're doing a long arg
-                else:
-                    if not kwargs.get ('_raw', False):
-                        arg.key = arg.key.replace("_", "-")
-
-                    if arg.value is True:
-                        processed.append("--" + arg.key)
-                    elif arg.value is False:
-                        pass
-                    else:
-                        processed.append("--%s%s%s" % (arg.key, sep,
-                                                       self._format_arg(arg.value)))
-            else:
-                processed.append (arg)
-
-        args= processed
-
-        ans= super ().__call__ (*args, **kwargs)
-
-        if runner.options.get ('errexit', False) and not bool (ans):
-            raise CommandFailed (ans.exit_code)
-
-        return ans
+__version__= '0.3'
 
 class Environment (object):
+    # this class handles not only environment variables
+    # but also locals, globasl and pytohn and ayrton builtins
+    # the latter are only other python functions that are 'promoted' to builtins
     def __init__ (self, globals=None, locals=None, **kwargs):
         super ().__init__ ()
 
@@ -160,7 +80,7 @@ class Environment (object):
         if strikes==5:
             # the name was not found in any of the dicts
             # create a command for it
-            # ans= CommandWrapper._create (k)
+            # ans= Command (k)
             # print (k)
             raise KeyError (k)
 
@@ -191,8 +111,8 @@ class Ayrton (object):
     def run_script (self, script, file_name):
         tree= ast.parse (script)
         # ImportFrom(module='bar', names=[alias(name='baz', asname=None)], level=0)
-        node= ImportFrom (module='ayrton',
-                          names=[alias (name='CommandWrapper', asname=None)],
+        node= ImportFrom (module='ayrton.execute',
+                          names=[alias (name='Command', asname=None)],
                           level=0)
         node.lineno= 0
         node.col_offset= 0
@@ -221,10 +141,9 @@ def polute (d):
                               '_k', '_p', '_r', '_s', '_u', '_w', '_x', '_L',
                               '_N', '_S', '_nt', '_ot' ],
         'ayrton.expansion': [ 'bash', ],
-        'ayrton.functions': [ 'cd', 'export', 'o', 'option', 'remote', 'run',
+        'ayrton.functions': [ 'cd', 'export', 'option', 'remote', 'run',
                                'shift', 'source', 'unset', ],
-        'ayrton': [ 'Capture', 'CommandFailed', ],
-        'sh': [ 'CommandNotFound', ],
+        'ayrton.execute': [ 'o', 'Capture', 'CommandFailed', 'CommandNotFound', ],
         }
 
     for module, functions in builtins.items ():
