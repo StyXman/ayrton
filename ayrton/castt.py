@@ -226,7 +226,7 @@ class CrazyASTTransformer (ast.NodeTransformer):
                 node.left.keywords.append (keyword (arg='_out',
                                                     value=Name (id='Capture', ctx=Load ())))
                 ast.fix_missing_locations (node.left)
-                node.right.args.insert (0, node.left)
+                node.right.keywords.append (keyword (arg='_in', value=node.left))
                 node= node.right
 
                 # Call(func=Call(func=Attribute(value=Name(id='CommandWrapper', ctx=Load()),
