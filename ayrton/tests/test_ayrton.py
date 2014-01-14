@@ -82,23 +82,6 @@ class Bash(unittest.TestCase):
     def test_tilde (self):
         self.assertEqual (bash ('~'), os.environ['HOME'])
 
-class HardExpansion(unittest.TestCase):
-    # test cases deemed too hard to comply and corner cases
-    # (that is, they can be ignored for a while :)
-    pass
-
-class A(object):
-    def __init__ (self, buf):
-        self.buffer= buf
-
-    # make someone happy
-    def flush (self):
-        pass
-
-    # make someone else happy
-    def write (self, o):
-        self.buffer.write (bytes (o, 'utf-8'))
-
 def setUpMockStdout (self):
     # due to the interaction between file descriptrs,
     # I better write this down before I forget
