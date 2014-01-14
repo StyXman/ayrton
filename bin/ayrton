@@ -42,7 +42,6 @@ script.''')
 script= None
 file= None
 args= sys.argv[1:]
-ayrton_args= []
 
 opts= parser.parse_args (args)
 
