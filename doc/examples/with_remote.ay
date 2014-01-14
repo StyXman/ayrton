@@ -1,4 +1,4 @@
-#! /usr/bin/env ayrton -f
+#! /usr/bin/env ayrton
 
 import random
 

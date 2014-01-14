@@ -1,4 +1,4 @@
-#! ayrton -f
+#! /usr/bin/env ayrton
 
 if make ('tests'):
     uncommited= git ('status', '--short') | grep ('^ M', _out=Capture)
