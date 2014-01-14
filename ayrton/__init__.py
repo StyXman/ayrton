@@ -33,7 +33,7 @@ runner= None
 from ayrton.castt import CrazyASTTransformer
 from ayrton.execute import o, Command, Capture, CommandFailed
 
-__version__= '0.4'
+__version__= '0.4.1'
 
 class Environment (object):
     # this class handles not only environment variables
