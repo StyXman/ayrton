@@ -11,15 +11,13 @@ if make ('tests'):
         print (str (uncommited))
         exit (1)
 
-    dch (newversion=ayrton.__version__, changelog='ChangeLog.rst',
-         _tty_in=True, _tty_out=True)
+    dch (newversion=ayrton.__version__, changelog='ChangeLog.rst')
 
     # docs
     make ('docs')
     # rsync --archive --verbose --compress --rsh ssh doc/build/html/ www.grulic.org.ar:www/projects/ayrton/
     rsync ('--archive', '--verbose', '--compress', '--rsh', 'ssh',
-           'doc/build/html/', 'www.grulic.org.ar:www/projects/ayrton/',
-           _tty_in=True)
+           'doc/build/html/', 'www.grulic.org.ar:www/projects/ayrton/')
 
     # release
     python3 ('setup.py', 'sdist', 'upload')
