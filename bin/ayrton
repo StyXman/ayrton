@@ -27,36 +27,37 @@ import sys
 import os.path
 import traceback
 
-parser= argparse.ArgumentParser (prog=os.path.split (sys.argv[0])[-1], description='pythonic shell-like scripting language.')
-script_group= parser.add_mutually_exclusive_group (required=True)
-script_group.add_argument ('-c', '--script', help='source of the script to run.')
-# script_group.add_argument ('file', required=False, help='file with the script to run.')
-# beh: TypeError: 'required' is an invalid argument for positionals
-# now I have to replace all the examples/scripts I developed to add the -f :(
-script_group.add_argument ('-f', '--file', help='file with the script to run.')
-parser.add_argument ('-V', '--version', action='version', version="%%(prog)s %s" % ayrton.__version__)
+parser= argparse.ArgumentParser (prog=os.path.split (sys.argv[0])[-1],
+                                 description='Pythonic shell-like scripting language.')
+parser.add_argument ('-c', '--script', help='''If this option is present, the
+script is read from its argument.''')
+parser.add_argument ('-v', '--version', action='version',
+                     version="%%(prog)s v%s" % ayrton.__version__)
 # parser.add_argument ('-x', '--trace', help='enable execution tracing.')
-# parser.add_argument ('-p', '--capture', help="capture the comands' output à la sh.")
-parser.add_argument ('args', nargs='*', help='arguments to be passed to the script.')
+parser.add_argument ('file', nargs='?', help='''Name of the file from which the
+script is read. If the -c/--script option is present, this argument is the argv[0].''')
+parser.add_argument ('argv', nargs='*', help='''Arguments to be passed to the
+script.''')
 
-found= -1
+script= None
+file= None
+args= sys.argv[1:]
 ayrton_args= []
-args= sys.argv[:]
-for i, a in enumerate (args):
-    if a in ('-c', '--script', '-f', '--file'):
-        found= i+1
 
-    if found==-1 or i<found:
-        ayrton_args.append (a)
-        sys.argv.pop (0)
-    elif i==found:
-        # this is the parameter which actually has to go to both
-        ayrton_args.append (sys.argv[0])
+opts= parser.parse_args (args)
 
-# anything before found is arguments for ayrton itself
-# anything else goes to the script
-
-opts= parser.parse_args (ayrton_args)
+# juggle the script and file parameters
+if opts.script is not None:
+    if opts.file is None:
+        # prepend a fake script name
+        opts.argv.insert (0, 'script_from_command_line')
+    else:
+        # prepend file as argv[0]
+        opts.argv.insert (0, opts.file)
+        del opts.file
+else:
+    # prepend file as argv[0]
+    opts.argv.insert (0, opts.file)
 
 try:
     ayrton.run_file_or_script (**vars (opts))
