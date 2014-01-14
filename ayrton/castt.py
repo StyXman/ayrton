@@ -20,7 +20,7 @@
 import ast
 from ast import Pass, Module, Bytes, copy_location, Call, Name, Load, Str, BitOr
 from ast import fix_missing_locations, Import, alias, Attribute, ImportFrom
-from ast import keyword, Gt, Lt, RShift
+from ast import keyword, Gt, Lt, GtE, RShift, Tuple
 import pickle
 from collections import defaultdict
 import ayrton
@@ -34,6 +34,18 @@ def pop_from_tuple (t, n=-1):
     l= list (t)
     l.pop (n)
     return tuple (l)
+
+def is_executable (node):
+    # Call(func=Call(func=Name(id='Command', ctx=Load()),
+    #                args=[Str(s='ls')], keywords=[], starargs=None, kwargs=None),
+    #      args=[Str(s='-l')], keywords=[], starargs=None, kwargs=None)
+    return (type (node)==Call and
+            type (node.func)==Call and
+            type (node.func.func)==Name and
+            node.func.func.id=='Command')
+
+def has_keyword (node, keyword):
+    return any ([kw.arg==keyword for kw in node.keywords])
 
 class CrazyASTTransformer (ast.NodeTransformer):
     def __init__ (self, environ):
@@ -138,9 +150,8 @@ class CrazyASTTransformer (ast.NodeTransformer):
     def visit_For (self, node):
         # For(target=Name(id='x', ctx=Store()), iter=List(elts=[], ctx=Load()),
         #     body=[Pass()], orelse=[])
-        for name in node.target:
-            self.known_names[name.id]+= 1
-            self.defined_names[self.stack].append (name.id)
+        self.known_names[node.target.id]+= 1
+        self.defined_names[self.stack].append (node.target.id)
 
         self.generic_visit (node)
 
@@ -159,12 +170,20 @@ class CrazyASTTransformer (ast.NodeTransformer):
 
         return node
 
+    def assign (self, node):
+        if type (node)==Name:
+            # Assign(targets=[Name(id='a', ctx=Store())], value=Num(n=2))
+            self.known_names[node.id]+= 1
+            self.defined_names[self.stack].append (node.id)
+        elif type (node)==Tuple:
+            # Assign(targets=[Tuple(elts=[Name(id='a', ctx=Store()), Name(id='b', ctx=Store())], ...
+            for elt in node.elts:
+                self.assign (elt)
+
     def visit_Assign (self, node):
         self.generic_visit (node)
-        # Assign(targets=[Name(id='a', ctx=Store())], value=Num(n=2))
         for target in node.targets:
-            self.known_names[target.id]+= 1
-            self.defined_names[self.stack].append (target.id)
+            self.assign (target)
 
         return node
 
@@ -177,17 +196,9 @@ class CrazyASTTransformer (ast.NodeTransformer):
 
         return node
 
-    def is_executable (self, node):
-        # Call(func=Call(func=Attribute(value=Name(id='CommandWrapper', ctx=Load()), attr='_create', ctx=Load()),
-        #                args=[Str(s='ls')], keywords=[], starargs=None, kwargs=None),
-        #      args=[], keywords=[], starargs=None, kwargs=None)
-        return (type (node)==Call and
-                type (node.func)==Call and
-                type (node.func.func)==Attribute and
-                type (node.func.func.value)==Name and
-                node.func.func.value.id=='CommandWrapper' and
-                node.func.func.attr=='_create')
-
+    # BinOp(left=BinOp(left=Name(id='a', ctx=Load()),
+    #                  op=BitOr(), right=Name(id='b', ctx=Load())),
+    #       op=BitOr(), right=Name(id='c', ctx=Load()))
     def visit_BinOp (self, node):
         self.generic_visit (node)
 
@@ -196,20 +207,36 @@ class CrazyASTTransformer (ast.NodeTransformer):
             # pipe
             # BinOp (left, BitOr, right) -> right (left, ...)
 
-            # check the left and right; if they're calls to CommandWrapper._create
+            # check the left and right; if they're calls to Command
             # then do the magic
 
-            both= True
-            for child in (node.left, node.right):
-                both= both and self.is_executable (child)
+            # NOTE: they're Commands only because the children have already been
+            # visited and transformed to such things
+
+            both= is_executable (node.left) and is_executable (node.right)
 
             if both:
-                # right (left, ...)
+                # left (...) | right (...)
+
+                # r, w= os.pipe ()
+                # left (..., _out=w)
+                # os.close (w)
+                # right (..., _in=r)
+                # os.close (r)
+
+                # Assign(targets=[Tuple(elts=[Name(id='r', ctx=Store()),
+                #                             Name(id='w', ctx=Store())], ctx=Store())],
+                #        value=Call(func=Attribute(value=Name(id='os', ctx=Load()),
+                #                                  attr='pipe', ctx=Load()),
+                #                   args=[], keywords=[], starargs=None, kwargs=None)),
+                # Expr(value=Call(func=Name(id='echo', ctx=Load()), args=[Str(s='pipe!')], keywords=[keyword(arg='_out', value=Name(id='w', ctx=Load()))], starargs=None, kwargs=None)), Expr(value=Call(func=Attribute(value=Name(id='os', ctx=Load()), attr='close', ctx=Load()), args=[Name(id='w', ctx=Load())], keywords=[], starargs=None, kwargs=None)), Expr(value=Call(func=Name(id='grep', ctx=Load()), args=[Str(s='pipe')], keywords=[keyword(arg='_in', value=Name(id='r', ctx=Load()))], starargs=None, kwargs=None)), Expr(value=Call(func=Attribute(value=Name(id='os', ctx=Load()), attr='close', ctx=Load()), args=[Name(id='r', ctx=Load())], keywords=[], starargs=None, kwargs=None))
+
                 # I can't believe it's this easy
+                # TODO: check if _err is not being captured instead
                 node.left.keywords.append (keyword (arg='_out',
                                                     value=Name (id='Capture', ctx=Load ())))
                 ast.fix_missing_locations (node.left)
-                node.right.args.insert (0, node.left)
+                node.right.keywords.append (keyword (arg='_in', value=node.left))
                 node= node.right
 
                 # Call(func=Call(func=Attribute(value=Name(id='CommandWrapper', ctx=Load()),
@@ -228,7 +255,7 @@ class CrazyASTTransformer (ast.NodeTransformer):
             # BinOp(left=Call(func=Name(id='ls', ctx=Load()), args=[], keywords=[], starargs=None, kwargs=None),
             #       op=RShift(),
             #       right=Str(s='foo.txt'))
-            if self.is_executable (node.left):
+            if is_executable (node.left):
                 node.left.keywords.append (keyword (arg='_out',
                                                     value=Call (func=Name (id='open', ctx=Load ()),
                                                                 args=[node.right, Str (s='ab')], keywords=[], starargs=None, kwargs=None)))
@@ -242,7 +269,6 @@ class CrazyASTTransformer (ast.NodeTransformer):
     #        comparators=[BinOp(left=Str(s='/etc/passwd'),
     #                           op=RShift(),
     #                           right=Str(s='/tmp/foo'))])
-
     def visit_Compare (self, node):
         self.generic_visit (node)
         ans= node
@@ -253,13 +279,20 @@ class CrazyASTTransformer (ast.NodeTransformer):
         #         ops=[Lt(), Gt()],
         #         comparators=[Str(s='bar.txt'), Str(s='foo.txt')]))
 
-        if self.is_executable (node.left):
+        if is_executable (node.left):
             # yes, they're reversed, but it makes more sense to me like this
             for comp, op in zip (node.ops, node.comparators):
                 if type (comp)==Gt:
                     # > means _out
                     node.left.keywords.append (keyword (arg='_out', value=op))
                     ans= node.left
+
+                if type (comp)==GtE:
+                    # >= means _out+_err
+                    node.left.keywords.append (keyword (arg='_out', value=op))
+                    node.left.keywords.append (keyword (arg='_err_to_out', value=op))
+                    ans= node.left
+
                 elif type (comp)==Lt:
                     # < means _in
 
@@ -281,22 +314,35 @@ class CrazyASTTransformer (ast.NodeTransformer):
         self.generic_visit (node)
         # Call(func=Name(id='b', ctx=Load()), args=[], keywords=[], starargs=None,
         #      kwargs=None)
-        if   type (node.func)==ast.Name:
+        if type (node.func)==ast.Name:
             func_name= node.func.id
             defs= self.known_names[func_name]
             if defs==0:
                 try:
-                    # fisrt check if it's not one of the builtin functions
+                    # first check if it's not one of the builtin functions
                     self.environ[func_name]
                 except KeyError:
-                    # I guess I have no other option bu to try to execute something here...
-                    new_node= Call (func=Attribute (value=Name (id='CommandWrapper', ctx=Load ()),
-                                                    attr='_create', ctx=Load ()),
+                    # I guess I have no other option but to try to execute
+                    # something here...
+                    new_node= Call (func=Name (id='Command', ctx=Load ()),
                                     args=[Str (s=func_name)], keywords=[],
                                     starargs=None, kwargs=None)
+
+                    # check if the first parameter is a Command; if so, redirect
+                    # its output, remove it from the args and put it in the _in
+                    # kwarg
+                    if len (node.args)>0:
+                        first_arg= node.args[0]
+                        if is_executable (first_arg) and not has_keyword (first_arg, '_err'):
+                            first_arg.keywords.append (
+                                keyword (arg='_out', value=Name (id='Capture', ctx=Load ()))
+                                )
+                            node.args.pop (0)
+                            node.keywords.append (keyword (arg='_in', value=first_arg))
+
                     ast.copy_location (new_node, node)
-                    ast.fix_missing_locations (new_node)
                     node.func= new_node
+                    ast.fix_missing_locations (node)
 
         return node
 
@@ -314,7 +360,8 @@ class CrazyASTTransformer (ast.NodeTransformer):
 
         # handle 'remote'
         sub_node= node.items[0].context_expr
-        if type (sub_node)==Call and sub_node.func.id=='remote':
+        if (type (sub_node)==Call and hasattr (sub_node.func, 'id') and
+            sub_node.func.id=='remote'):
             # capture the body and put it as the first argument to ssh()
             # but within a module, and already pickled;
             # otherwise we need to create an AST for the call of all the

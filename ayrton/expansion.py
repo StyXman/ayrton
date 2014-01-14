@@ -41,6 +41,9 @@ def glob_expand (s):
         # accumulate them
         ans+= a
 
+    if len(ans)==1:
+        ans= ans[0]
+
     return ans
 
 class Group (object):
@@ -199,25 +202,28 @@ def brace_expand (s):
             else:
                 ans.append (te.text)
 
+    if len(ans)==1:
+        ans= ans[0]
+
     return ans
 
 def backslash_descape (s):
     if type (s)==str:
-        l= [s]
+        ans= s.replace ('\\', '')
     else:
         # otherwise we assume it's some kind of iterable
-        l= s
+        ans= [ s1.replace ('\\', '') for s1 in s ]
 
-    return [ s.replace ('\\', '') for s in l ]
+    return ans
 
 def tilde_expand (s):
     if type (s)==str:
-        l= [ s ]
+        ans= os.path.expanduser (s)
     else:
         # otherwise we assume it's some kind of iterable
-        l= s
+        ans= [ os.path.expanduser (s1) for s1 in s ]
 
-    return [ os.path.expanduser (s) for s in l ]
+    return ans
 
 def bash (s):
     return backslash_descape (glob_expand (tilde_expand (brace_expand (s))))

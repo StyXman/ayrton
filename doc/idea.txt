@@ -498,3 +498,21 @@
 15:21 < StucKman> b) meter código que evalué un objeto, y si es un ShellCommand o similar, ejecutarlo :)
 15:21 < StucKman> Darni: gracias :)
 15:21 < StucKman> y rbistolfi, claro :)
+
+[
+    ('./bin/ayrton', 60, '<module>', 'ayrton.main (**vars (opts))'),
+    ('/home/mdione/src/projects/ayrton/ayrton/__init__.py', 259, 'main', 'runner.run ()'),
+    ('/home/mdione/src/projects/ayrton/ayrton/__init__.py', 215, 'run', 'raise e'),
+    ('/usr/lib/python3.3/bdb.py', 47, 'trace_dispatch', 'return self.dispatch_line(frame)'),
+    ('/usr/lib/python3.3/bdb.py', 65, 'dispatch_line', 'self.user_line(frame)'),
+    ('/usr/lib/python3.3/pdb.py', 266, 'user_line', 'self.interaction(frame, None)'),
+    ('/usr/lib/python3.3/pdb.py', 345, 'interaction', 'self._cmdloop()'),
+    ('/usr/lib/python3.3/pdb.py', 318, '_cmdloop', 'self.cmdloop()'),
+    ('/usr/lib/python3.3/cmd.py', 138, 'cmdloop', 'stop = self.onecmd(line)'),
+    ('/usr/lib/python3.3/pdb.py', 411, 'onecmd', 'return cmd.Cmd.onecmd(self, line)'),
+    ('/usr/lib/python3.3/cmd.py', 216, 'onecmd', 'return self.default(line)'),
+    ('/usr/lib/python3.3/pdb.py', 369, 'default', 'exec(code, globals, locals)'),
+    ('<stdin>', 1, '<module>', None)]
+
+ * shutil
+ 

@@ -18,6 +18,7 @@
 # along with ayrton.  If not, see <http://www.gnu.org/licenses/>.
 
 import ayrton
+import ayrton.execute
 import os
 import paramiko
 from ayrton.expansion import bash
@@ -60,8 +61,6 @@ def option (option, value=True):
     ayrton.runner.options[option]= value
 
 class remote (object):
-    # TODO: inherit CommandWrapper?
-    # TODO: see foo.txt
     "Uses the same arguments as paramiko.SSHClient.connect ()"
     def __init__ (self, ast, hostname, *args, **kwargs):
         # actually, it's not a proper ast, it's the pickle of such thing
@@ -77,7 +76,7 @@ class remote (object):
 
     def __enter__ (self):
         self.client= paramiko.SSHClient ()
-        self.client.load_host_keys (bash ('~/.ssh/known_hosts')[0])
+        self.client.load_host_keys (bash ('~/.ssh/known_hosts'))
         self.client.connect (self.hostname, *self.args, **self.kwargs)
         # get the locals from the runtime
         # we can't really export the globals: it's full of unpicklable things
@@ -114,7 +113,7 @@ import ayrton
 ast= pickle.loads (sys.stdin.buffer.read (%d))
 g= pickle.loads (sys.stdin.buffer.read (%d))
 l= pickle.loads (sys.stdin.buffer.read (%d))
-ayrton.run (ast, g, l)"''' % (len (self.ast), len (global_env), len (local_env))
+ayrton.run_tree (ast, g, l)"''' % (len (self.ast), len (global_env), len (local_env))
         (i, o, e)= self.client.exec_command (command)
         i.write (self.ast)
         i.write (global_env)
@@ -125,7 +124,7 @@ ayrton.run (ast, g, l)"''' % (len (self.ast), len (global_env), len (local_env))
         pass
 
 def run (path, *args, **kwargs):
-    c= ayrton.CommandWrapper._create (path)
+    c= ayrton.execute.Command (path)
     return c (*args, **kwargs)
 
 def shift (n=1):
@@ -143,8 +142,8 @@ def shift (n=1):
     return ans
 
 def source (file):
-    sub_runner= ayrton.Ayrton (file=file)
-    sub_runner.run ()
+    sub_runner= ayrton.Ayrton ()
+    sub_runner.run_file (file)
     ayrton.runner.environ.locals.update (sub_runner.environ.locals)
 
 def unset (*args):

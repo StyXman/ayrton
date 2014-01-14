@@ -40,7 +40,7 @@ Functions
 
     Apply ``bash``'s brace, tilde and pathname (also called glob) expansions (in
     that order). *list_or_str* can be a string or a list of strings. The return
-    value is always a list of strings.
+    value can be an empty list, a single string, or a list of two or more strings.
 
 .. py:function:: cd (path)
 
