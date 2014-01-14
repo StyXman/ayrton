@@ -37,7 +37,7 @@ __version__= '0.4'
 
 class Environment (object):
     # this class handles not only environment variables
-    # but also locals, globasl and pytohn and ayrton builtins
+    # but also locals, globals and python and ayrton builtins
     # the latter are only other python functions that are 'promoted' to builtins
     def __init__ (self, globals=None, locals=None, **kwargs):
         super ().__init__ ()
@@ -135,7 +135,7 @@ def polute (d):
         'os': [ ('getcwd', 'pwd'), 'uname', 'listdir', ],
         'os.path': [ 'abspath', 'basename', 'commonprefix', 'dirname',  ],
         'time': [ 'sleep', ],
-        'sys': [ 'argv', 'exit' ],
+        'sys': [ 'exit' ], # argv is poluted from the CLI options. see Environment()
 
         'ayrton.file_test': [ '_a', '_b', '_c', '_d', '_e', '_f', '_g', '_h',
                               '_k', '_p', '_r', '_s', '_u', '_w', '_x', '_L',
