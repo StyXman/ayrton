@@ -1,13 +1,20 @@
-ayrton (0.4) UNRELEASED; urgency=low
+ayrton (0.4.1) UNRELEASED; urgency=low
+
+  * Fixed the `release.ay` script that prematurely released v0.4.
+
+ -- Marcos Dione <mdione@grulic.org.ar>  Tue, 14 Jan 2014 21:40:13 +0100
+
+ayrton (0.4) unstable; urgency=low
 
   * >= can redirect stederr to stdout.
   * o(option=argument) can be used to declare keyword params among/before 
     positional ones.
   * bash() now returns a single string if there is only one result.
-  * Slightly better error reporting: don't print the part of the stacktrace
-    that belongs to `ayrton` itself.
+  * Slightly better error reporting: don't print a part of the stacktrace
+    that belongs to `ayrton` itself. There is still more to do.
+  * No longer depends on `sh`.
 
- -- Marcos Dione <mdione@diablo>  Thu, 05 Dec 2013 13:33:07 +0100
+ -- Marcos Dione <mdione@grulic.org.ar>  Tue, 14 Jan 2014 21:35:13 +0100
 
 ayrton (0.3) unstable; urgency=low
 
