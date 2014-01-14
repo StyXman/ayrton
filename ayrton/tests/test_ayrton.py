@@ -308,6 +308,13 @@ print (a)''')
         # close stdout as per the description of setUpMockStdout()
         os.close (1)
 
+    def testComposing (self):
+        # equivalent to testPipe()
+        ayrton.main ('grep (ls (), "setup")')
+        # close stdout as per the description of setUpMockStdout()
+        os.close (1)
+        self.assertEqual (self.r.read (), b'setup.py\n')
+
 # SSH_CLIENT='127.0.0.1 55524 22'
 # SSH_CONNECTION='127.0.0.1 55524 127.0.0.1 22'
 # SSH_TTY=/dev/pts/14
