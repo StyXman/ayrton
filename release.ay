@@ -5,7 +5,10 @@ import ayrton
 option ('-e')
 
 if make ('tests'):
+    option ('+e')
+    # this command might fail if it wants to
     uncommited= git ('status', '--short') | grep ('^ M', _out=Capture)
+    option ('-e')
     if uncommited:
         print ("The following files are not commited, I can't release like this")
         print (str (uncommited))
