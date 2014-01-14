@@ -35,6 +35,18 @@ def pop_from_tuple (t, n=-1):
     l.pop (n)
     return tuple (l)
 
+def is_executable (node):
+    # Call(func=Call(func=Name(id='Command', ctx=Load()),
+    #                args=[Str(s='ls')], keywords=[], starargs=None, kwargs=None),
+    #      args=[Str(s='-l')], keywords=[], starargs=None, kwargs=None)
+    return (type (node)==Call and
+            type (node.func)==Call and
+            type (node.func.func)==Name and
+            node.func.func.id=='Command')
+
+def has_keyword (node, keyword):
+    return any ([kw.arg==keyword for kw in node.keywords])
+
 class CrazyASTTransformer (ast.NodeTransformer):
     def __init__ (self, environ):
         super ().__init__ ()
@@ -158,13 +170,6 @@ class CrazyASTTransformer (ast.NodeTransformer):
 
         return node
 
-    def visit_Assign (self, node):
-        self.generic_visit (node)
-        for target in node.targets:
-            self.assign (target)
-
-        return node
-
     def assign (self, node):
         if type (node)==Name:
             # Assign(targets=[Name(id='a', ctx=Store())], value=Num(n=2))
@@ -175,6 +180,13 @@ class CrazyASTTransformer (ast.NodeTransformer):
             for elt in node.elts:
                 self.assign (elt)
 
+    def visit_Assign (self, node):
+        self.generic_visit (node)
+        for target in node.targets:
+            self.assign (target)
+
+        return node
+
     def visit_Delete (self, node):
         self.generic_visit (node)
         # Delete(targets=[Name(id='foo', ctx=Del())])
@@ -184,15 +196,9 @@ class CrazyASTTransformer (ast.NodeTransformer):
 
         return node
 
-    def is_executable (self, node):
-        # Call(func=Call(func=Name(id='Command', ctx=Load()),
-        #                args=[Str(s='ls')], keywords=[], starargs=None, kwargs=None),
-        #      args=[Str(s='-l')], keywords=[], starargs=None, kwargs=None)
-        return (type (node)==Call and
-                type (node.func)==Call and
-                type (node.func.func)==Name and
-                node.func.func.id=='Command')
-
+    # BinOp(left=BinOp(left=Name(id='a', ctx=Load()),
+    #                  op=BitOr(), right=Name(id='b', ctx=Load())),
+    #       op=BitOr(), right=Name(id='c', ctx=Load()))
     def visit_BinOp (self, node):
         self.generic_visit (node)
 
@@ -204,7 +210,10 @@ class CrazyASTTransformer (ast.NodeTransformer):
             # check the left and right; if they're calls to Command
             # then do the magic
 
-            both= self.is_executable (node.left) and self.is_executable (node.right)
+            # NOTE: they're Commands only because the children have already been
+            # visited and transformed to such things
+
+            both= is_executable (node.left) and is_executable (node.right)
 
             if both:
                 # left (...) | right (...)
@@ -223,6 +232,7 @@ class CrazyASTTransformer (ast.NodeTransformer):
                 # Expr(value=Call(func=Name(id='echo', ctx=Load()), args=[Str(s='pipe!')], keywords=[keyword(arg='_out', value=Name(id='w', ctx=Load()))], starargs=None, kwargs=None)), Expr(value=Call(func=Attribute(value=Name(id='os', ctx=Load()), attr='close', ctx=Load()), args=[Name(id='w', ctx=Load())], keywords=[], starargs=None, kwargs=None)), Expr(value=Call(func=Name(id='grep', ctx=Load()), args=[Str(s='pipe')], keywords=[keyword(arg='_in', value=Name(id='r', ctx=Load()))], starargs=None, kwargs=None)), Expr(value=Call(func=Attribute(value=Name(id='os', ctx=Load()), attr='close', ctx=Load()), args=[Name(id='r', ctx=Load())], keywords=[], starargs=None, kwargs=None))
 
                 # I can't believe it's this easy
+                # TODO: check if _err is not being captured instead
                 node.left.keywords.append (keyword (arg='_out',
                                                     value=Name (id='Capture', ctx=Load ())))
                 ast.fix_missing_locations (node.left)
@@ -245,7 +255,7 @@ class CrazyASTTransformer (ast.NodeTransformer):
             # BinOp(left=Call(func=Name(id='ls', ctx=Load()), args=[], keywords=[], starargs=None, kwargs=None),
             #       op=RShift(),
             #       right=Str(s='foo.txt'))
-            if self.is_executable (node.left):
+            if is_executable (node.left):
                 node.left.keywords.append (keyword (arg='_out',
                                                     value=Call (func=Name (id='open', ctx=Load ()),
                                                                 args=[node.right, Str (s='ab')], keywords=[], starargs=None, kwargs=None)))
@@ -259,7 +269,6 @@ class CrazyASTTransformer (ast.NodeTransformer):
     #        comparators=[BinOp(left=Str(s='/etc/passwd'),
     #                           op=RShift(),
     #                           right=Str(s='/tmp/foo'))])
-
     def visit_Compare (self, node):
         self.generic_visit (node)
         ans= node
@@ -270,7 +279,7 @@ class CrazyASTTransformer (ast.NodeTransformer):
         #         ops=[Lt(), Gt()],
         #         comparators=[Str(s='bar.txt'), Str(s='foo.txt')]))
 
-        if self.is_executable (node.left):
+        if is_executable (node.left):
             # yes, they're reversed, but it makes more sense to me like this
             for comp, op in zip (node.ops, node.comparators):
                 if type (comp)==Gt:
@@ -305,21 +314,35 @@ class CrazyASTTransformer (ast.NodeTransformer):
         self.generic_visit (node)
         # Call(func=Name(id='b', ctx=Load()), args=[], keywords=[], starargs=None,
         #      kwargs=None)
-        if   type (node.func)==ast.Name:
+        if type (node.func)==ast.Name:
             func_name= node.func.id
             defs= self.known_names[func_name]
             if defs==0:
                 try:
-                    # fisrt check if it's not one of the builtin functions
+                    # first check if it's not one of the builtin functions
                     self.environ[func_name]
                 except KeyError:
-                    # I guess I have no other option bu to try to execute something here...
+                    # I guess I have no other option but to try to execute
+                    # something here...
                     new_node= Call (func=Name (id='Command', ctx=Load ()),
                                     args=[Str (s=func_name)], keywords=[],
                                     starargs=None, kwargs=None)
+
+                    # check if the first parameter is a Command; if so, redirect
+                    # its output, remove it from the args and put it in the _in
+                    # kwarg
+                    if len (node.args)>0:
+                        first_arg= node.args[0]
+                        if is_executable (first_arg) and not has_keyword (first_arg, '_err'):
+                            first_arg.keywords.append (
+                                keyword (arg='_out', value=Name (id='Capture', ctx=Load ()))
+                                )
+                            node.args.pop (0)
+                            node.keywords.append (keyword (arg='_in', value=first_arg))
+
                     ast.copy_location (new_node, node)
-                    ast.fix_missing_locations (new_node)
                     node.func= new_node
+                    ast.fix_missing_locations (node)
 
         return node
 
