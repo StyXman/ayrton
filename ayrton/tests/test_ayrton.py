@@ -266,7 +266,7 @@ print (foo)''')
         os.close (1)
         self.assertEqual (self.r.read (), b'42\n')
 
-    def testRename (self):
+    def testCwdPwdRename (self):
         ayrton.main ('''import os.path;
 print (os.path.split (pwd ())[-1])''')
         # close stdout as per the description of setUpMockStdout()
