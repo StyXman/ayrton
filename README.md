@@ -27,11 +27,6 @@ So, in short:
 
     # apt-get install python3
 
-    # git clone https://github.com/amoffat/sh.git
-    # cd sh
-    # python3 setup.py install
-    # cd ..
-
     # apt-get install python3-crypto
     # git clone https://github.com/nischu7/paramiko.git
     # cd paramiko
