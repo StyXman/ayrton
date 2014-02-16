@@ -83,32 +83,33 @@ class Bash(unittest.TestCase):
         self.assertEqual (bash ('~'), os.environ['HOME'])
 
 def setUpMockStdout (self):
-    # due to the interaction between file descriptrs,
+    # due to the interaction between file descriptors,
     # I better write this down before I forget
 
     # I save the old stdout in a new fd
     self.old_stdout= os.dup (1)
-    # create a piep, thise gives me a read and write fd
+    # create a pipe; this gives me a read and write fd
     r, w= os.pipe ()
     # I replace the stdout with the write fd
+    # this closes 1, but the original stdout is saved in old_stdout
     os.dup2 (w, 1)
     # now I have to fds pointing to the write end of the pipe, stdout and w
     # close w
     os.close (w)
     # create me a file() from the reading fd
+    # this DOES NOT create a new fd or file
     self.r= open (r, mode='rb')
     # the test will have to close stdin after performing what's testing
     # that's because otherwise the test locks at reading from the read end
     # because there's still that fd available for writing in the pipe
-    # there was another copy of that fd, in the child side,
-    # but that was closed when the process finished
+    # there is another copy of that fd, in the child side,
+    # but that is closed when the process finished
     # there is still a tricky part to do on tearDownMockStdout()
 
 def tearDownMockStdout (self):
     # restore sanity
-    # we closed stdout in the test, so this dup() will use that fd (1) for the
-    # new copy of the old stdout :)
-    os.dup (self.old_stdout)
+    # original stdout into 1, even if we're leaking fd's
+    os.dup2 (self.old_stdout, 1)
     os.close (self.old_stdout)
     self.r.close ()
 
@@ -179,6 +180,12 @@ class PipingRedirection (unittest.TestCase):
         # close stdout as per the description of setUpMockStdout()
         os.close (1)
         self.assertEqual (self.r.read (), b'setup.py\n')
+
+    def testLongPipe (self):
+        ayrton.main ('ls () | grep ("setup") | wc (l=True)')
+        # close stdout as per the description of setUpMockStdout()
+        os.close (1)
+        self.assertEqual (self.r.read (), b'1\n')
 
     def testGt (self):
         fn= tempfile.mkstemp ()[1]
