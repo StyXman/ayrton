@@ -216,20 +216,20 @@ class Redirected (unittest.TestCase):
         f.close ()
 
         f= open (file_path, 'rb')
-        self.assertEqual (f.read (), bytes ('ls: cannot access stderr_to_file: %d: No such file or directory\n' % r, 'ascii'))
+        self.assertEqual (f.read (), bytes ('/bin/ls: cannot access stderr_to_file: %d: No such file or directory\n' % r, 'ascii'))
         f.close ()
         os.unlink (file_path)
 
     def testErrCapture (self):
         a= ls ('_err=Capture', _err=Capture)
         for i in a:
-            self.assertEqual (i, 'ls: cannot access _err=Capture: No such file or directory')
+            self.assertEqual (i, '/bin/ls: cannot access _err=Capture: No such file or directory')
 
     def testOutErrCaptured (self):
         a= ls ('Makefile', '_err=Capture', _out=Capture, _err=Capture)
         # list() exercises __iter__()
         l= list (a)
-        self.assertEqual (l[0], 'ls: cannot access _err=Capture: No such file or directory')
+        self.assertEqual (l[0], '/bin/ls: cannot access _err=Capture: No such file or directory')
         self.assertEqual (l[1], 'Makefile')
 
     def testPipe (self):
