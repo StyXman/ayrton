@@ -41,6 +41,41 @@ class CommandNotFound (Exception):
     def __init__ (self, path):
         self.path= path
 
+def which(program):
+    def is_exe(fpath):
+        return os.path.exists(fpath) and os.access(fpath, os.X_OK)
+
+    fpath, fname = os.path.split(program)
+    if fpath:
+        if is_exe(program):
+            return program
+
+    else:
+        if "PATH" not in os.environ:
+            return None
+
+        for path in os.environ["PATH"].split(os.pathsep):
+            exe_file = os.path.join(path, program)
+            if is_exe(exe_file):
+                return exe_file
+
+    return None
+
+def resolve_program(program):
+    path = which(program)
+    if not path:
+        # our actual command might have a dash in it, but we can't call
+        # that from python (we have to use underscores), so we'll check
+        # if a dash version of our underscore command exists and use that
+        # if it does
+        if "_" in program:
+            path = which(program.replace("_", "-"))
+
+        if not path:
+            return None
+
+    return path
+
 class Command:
     default_options= dict (
         _in_tty= False,
@@ -56,6 +91,7 @@ class Command:
 
     def __init__ (self, path):
         self.path= path
+        self.exe= resolve_program (path)
 
         self.stdin_pipe= None
         self.stdout_pipe= None
@@ -243,6 +279,9 @@ class Command:
             raise CommandFailed (self)
 
     def __call__ (self, *args, **kwargs):
+        if self.exe is None:
+            raise CommandNotFound (self.path)
+        
         self.options= self.default_options.copy ()
         for option in self.supported_options:
             try:
@@ -270,7 +309,7 @@ class Command:
 
         r= os.fork ()
         if r==0:
-            self.child (self.path, *args, **kwargs)
+            self.child (self.exe, *args, **kwargs)
         else:
             self.parent (self.path, r)
 
