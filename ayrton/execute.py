@@ -196,9 +196,8 @@ class Command:
 
             if e==Capture:
                 if '_out' in self.options and self.options['_out']==Capture:
-                    # send it to the same pipe as stdout
-                    r, w= self.stdout_pipe
-                    os.dup2 (w, 2)
+                    # send it to stdout
+                    os.dup2 (1, 2)
                 else:
                     r, w= self.stderr_pipe
                     os.dup2 (w, 2)
