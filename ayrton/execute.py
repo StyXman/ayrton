@@ -87,7 +87,7 @@ class Command:
         )
 
     supported_options= ('_in', '_out', '_err', '_end', '_chomp', '_encoding',
-                        '_env',)
+                        '_env', '_bg')
 
     def __init__ (self, path):
         self.path= path
@@ -148,11 +148,15 @@ class Command:
                 # this does not work with file like objects
                 # dup its fd int stdin (0)
                 os.dup2 (i.fileno (), 0)
+                i.close ()
             elif type (i)==int:
                 os.dup2 (i, 0)
+                os.close (i)
             else:
+                # use the pipe prepared by prepare_fds()
                 r, w= self.stdin_pipe
                 os.dup2 (r, 0)
+                os.close (r)
                 os.close (w)
 
         if '_out' in self.options:
@@ -165,11 +169,14 @@ class Command:
                 # this does not work with file like objects
                 # dup its fd in stdout (1)
                 os.dup2 (o.fileno (), 1)
+                o.close ()
             elif type (o)==int:
                 os.dup2 (o, 1)
+                os.close (o)
             elif o==Capture:
                 r, w= self.stdout_pipe
                 os.dup2 (w, 1)
+                os.close (w)
                 os.close (r)
             elif type (o) in (bytes, str):
                 f= open (o, 'w+')
@@ -281,7 +288,7 @@ class Command:
     def __call__ (self, *args, **kwargs):
         if self.exe is None:
             raise CommandNotFound (self.path)
-        
+
         self.options= self.default_options.copy ()
         for option in self.supported_options:
             try:
