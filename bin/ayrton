@@ -63,6 +63,6 @@ try:
 except Exception:
     t, e, tb= sys.exc_info ()
     # skip ayrton's stack
-    for i in range (5):
+    for i in range (6):
         tb= tb.tb_next
     traceback.print_exception (t, e, tb)
