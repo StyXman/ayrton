@@ -260,12 +260,21 @@ class CommandExecution (unittest.TestCase):
         if false ():
             self.fail ()
 
-    def testEchoGrep (self):
-        a= echo (_in=['grap not found', 'grep found', 'grip not found, fell'],
+    def testCatGrep (self):
+        a= cat (_in=['grap not found', 'grep found', 'grip not found, fell'],
                  _out=Capture)
         b= grep ('grep', _in=a.readlines (), _out=Capture)
+        self.assertEqual (b.readline (), 'grep found')
         for i in b:
-            self.assertEqual (i, 'grep found')
+            raise ValueError ("too many lines")
+
+    def testCatGrep2 (self):
+        a= cat (_in=['grap not found', 'grep found', 'grip not found, fell'],
+                 _out=Capture)
+        b= grep ('grep', _in=a, _out=Capture)
+        self.assertEqual (b.readline (), 'grep found')
+        for i in b:
+            raise ValueError ("too many lines")
 
     def foo (self):
         # ssh always opens the tty for reading the passphrase, so I'm not sure
