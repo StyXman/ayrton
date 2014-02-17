@@ -217,7 +217,7 @@ class Command:
             if type (arg)==o:
                 self.prepare_arg (ans, arg.key, arg.value)
             else:
-                ans.append (arg)
+                ans.append (str (arg))
 
         for k, v in kwargs.items ():
             self.prepare_arg (ans, k, v)
