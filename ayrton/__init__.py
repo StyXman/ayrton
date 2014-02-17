@@ -102,6 +102,7 @@ class Ayrton (object):
     def __init__ (self, globals=None, locals=None, **kwargs):
         self.environ= Environment (globals, locals, **kwargs)
         self.options= {}
+        self.pending_children= []
 
     def run_file (self, file):
         # it's a pity that parse() does not accept a file as input
@@ -127,6 +128,12 @@ class Ayrton (object):
 
     def run_code (self, code):
         exec (code, self.environ.globals, self.environ)
+
+    def wait_for_pending_children (self):
+        for i in range (len (self.pending_children)):
+            child= self.pending_children.pop (0)
+            child.wait ()
+
 
 def polute (d):
     # these functions will be loaded from each module and put in the globals
