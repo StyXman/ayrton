@@ -84,6 +84,7 @@ class Command:
         _end= os.linesep.encode (encoding),
         _chomp= True,
         _encoding= encoding,
+        _bg= False,
         )
 
     supported_options= ('_in', '_out', '_err', '_end', '_chomp', '_encoding',
@@ -97,8 +98,10 @@ class Command:
         self.stdout_pipe= None
         self.stderr_pipe= None
 
-        self.exit_code= None
+        self._exit_code= None
         self.capture_file= None
+
+        self.child_pid= None
 
     def prepare_fds (self):
         if '_in' in self.options:
@@ -237,9 +240,7 @@ class Command:
             if value!=True:
                 seq.append (str (value))
 
-    def parent (self, cmd, child_pid):
-        reader_pipe= None
-
+    def parent (self):
         if self.stdin_pipe is not None:
             # str -> write into the fd
             # list -> write each
@@ -265,7 +266,24 @@ class Command:
 
             os.close (w)
 
-        self.exit_code= os.waitpid (child_pid, 0)[1] >> 8
+        # TODO: The return status of a pipeline is the exit status of the last
+        # command, unless the pipefail option is enabled.  If pipefail is enabled,
+        # the pipeline's return status  is  the value  of the last (rightmost)
+        # command to exit with a non-zero status, or zero if all commands exit
+        # successfully.
+        if not self.options['_bg']:
+            logging.debug ("waiting, %s", self.options['_bg'])
+            self.wait ()
+            ayrton.runner.wait_for_pending_children ()
+        else:
+            logging.debug ("not waiting, %s", self.options['_bg'])
+            ayrton.runner.pending_children.append (self)
+
+    def wait (self):
+        logging.debug ('wait!')
+        self._exit_code= os.waitpid (self.child_pid, 0)[1] >> 8
+
+        reader_pipe= None
 
         if self.stdout_pipe is not None:
             # this will also read stderr if both are Capture'd
@@ -278,11 +296,16 @@ class Command:
             os.close (w)
             self.capture_file= open (r)
 
-        if self.exit_code==127:
-            raise CommandNotFound (cmd)
+        if self._exit_code==127:
+            raise CommandNotFound (self.path)
 
-        if ayrton.runner.options.get ('errexit', False) and self.exit_code!=0:
+        if ayrton.runner.options.get ('errexit', False) and self._exit_code!=0:
             raise CommandFailed (self)
+
+    def exit_code (self):
+        if self._exit_code is None:
+            self.wait ()
+        return self._exit_code
 
     def __call__ (self, *args, **kwargs):
         if self.exe is None:
@@ -305,7 +328,7 @@ class Command:
         self.stdout_pipe= None
         self.stderr_pipe= None
 
-        self.exit_code= None
+        self._exit_code= None
         self.capture_file= None
 
         self.prepare_fds ()
@@ -317,17 +340,24 @@ class Command:
         if r==0:
             self.child (self.exe, *args, **kwargs)
         else:
-            self.parent (self.path, r)
+            self.child_pid= r
+            self.parent ()
 
         return self
 
     def __bool__ (self):
-        return self.exit_code==0
+        if self._exit_code is None:
+            self.wait ()
+        return self._exit_code==0
 
     def __str__ (self):
+        if self._exit_code is None:
+            self.wait ()
         return self.capture_file.read ()
 
     def __iter__ (self):
+        if self._exit_code is None:
+            self.wait ()
         if self.capture_file is not None:
             for line in self.capture_file.readlines ():
                 if self.options['_chomp']:
@@ -344,6 +374,8 @@ class Command:
     # BUG this method is leaking an opend file()
     # self.capture_file
     def readline (self):
+        if self._exit_code is None:
+            self.wait ()
         line= self.capture_file.readline ()
         if self.options['_chomp']:
             line= line.rstrip (os.linesep)
@@ -351,8 +383,17 @@ class Command:
         return line
 
     def close (self):
+        if self._exit_code is None:
+            self.wait ()
         self.capture_file.close ()
 
     def readlines (self):
+        if self._exit_code is None:
+            self.wait ()
         # ugly way to not leak the file()
         return ( line for line in self )
+
+    def __del__ (self):
+        # finish it
+        if self._exit_code is None and self.child_pid is not None:
+            self.wait ()

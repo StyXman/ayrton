@@ -112,6 +112,7 @@ def tearDownMockStdout (self):
     os.dup2 (self.old_stdout, 1)
     os.close (self.old_stdout)
     self.r.close ()
+    ayrton.runner.wait_for_pending_children ()
 
 class CommandExecution (unittest.TestCase):
     setUp=    setUpMockStdout
@@ -318,9 +319,17 @@ print (a)''')
     def testComposing (self):
         # equivalent to testPipe()
         ayrton.main ('grep (ls (), "setup")')
-        # close stdout as per the description of setUpMockStdout()
         os.close (1)
         self.assertEqual (self.r.read (), b'setup.py\n')
+
+    def testBg (self):
+        ayrton.main ('''a= find ("/usr", _bg=True, _out=None);
+echo ("yes!");
+echo (a.exit_code ())''')
+        # close stdout as per the description of setUpMockStdout()
+        os.close (1)
+        self.assertEqual (self.r.read (), b'yes!\n0\n')
+        # ayrton.runner.wait_for_pending_children ()
 
 # SSH_CLIENT='127.0.0.1 55524 22'
 # SSH_CONNECTION='127.0.0.1 55524 127.0.0.1 22'
