@@ -19,6 +19,7 @@ import os
 import sys
 import io
 from collections.abc import Iterable
+
 import ayrton
 
 encoding= sys.getdefaultencoding ()
@@ -272,15 +273,12 @@ class Command:
         # command to exit with a non-zero status, or zero if all commands exit
         # successfully.
         if not self.options['_bg']:
-            logging.debug ("waiting, %s", self.options['_bg'])
             self.wait ()
             ayrton.runner.wait_for_pending_children ()
         else:
-            logging.debug ("not waiting, %s", self.options['_bg'])
             ayrton.runner.pending_children.append (self)
 
     def wait (self):
-        logging.debug ('wait!')
         self._exit_code= os.waitpid (self.child_pid, 0)[1] >> 8
 
         reader_pipe= None
