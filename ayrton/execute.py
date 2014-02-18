@@ -26,7 +26,8 @@ encoding= sys.getdefaultencoding ()
 
 # special value to signal that the output should be captured
 # instead of going to stdout
-Capture= (42, )
+class Capture:
+    pass
 
 class o (object):
     def __init__ (self, **kwargs):
