@@ -68,7 +68,7 @@ Functions
 
     This function is better used as a context manager::
 
-        with ssh ():
+        with remote ():
             ...
 
     The function accepts the same arguments as ``paramiko``'s
@@ -76,7 +76,7 @@ Functions
     method. The body of the construct is executed in the remote machine.
 
     The function returns 3 streams that represent ``stdin``, ``stdout`` and
-    ``sterr``. These streams have ``write()``, ``read(n)``, ``readline()`` and
+    ``stderr``. These streams have ``write()``, ``read(n)``, ``readline()`` and
     ``readlines()`` methods that can be used to interact with the remote. They
     only accept or return ``bytes``, not ``strings``. For more information
     about them, see ``paramiko``'s
@@ -240,10 +240,10 @@ these function most probably hide an executable of the same name.
 
     For more details, see http://docs.python.org/3/library/os.html#os.uname .
 
-More function might be already exported as builtins, but are not yet documented.
+More functions might be already exported as builtins, but are not yet documented.
 Please check ``ayton/__init__.py``'s ``polute()`` function for more details.
 
-There are some Python function that would seem to also make sense to include here.
+There are some Python functions that would seem to also make sense to include here.
 Most of them are C-based functions that have the same name as a more powerful
 executable, like ``chmod``, ``mkdir``, etc. If you think we oversaw an useful
 function,  drop us a line.
