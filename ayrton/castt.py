@@ -23,6 +23,7 @@ from ast import fix_missing_locations, Import, alias, Attribute, ImportFrom
 from ast import keyword, Gt, Lt, GtE, RShift, Tuple
 import pickle
 from collections import defaultdict
+
 import ayrton
 
 def append_to_tuple (t, o):
@@ -233,8 +234,12 @@ class CrazyASTTransformer (ast.NodeTransformer):
 
                 # I can't believe it's this easy
                 # TODO: check if _err is not being captured instead
-                node.left.keywords.append (keyword (arg='_out',
-                                                    value=Name (id='Capture', ctx=Load ())))
+                node.left.keywords.append (
+                    keyword (arg='_out', value=Name (id='Pipe', ctx=Load ()))
+                    )
+                node.left.keywords.append (
+                    keyword (arg='_bg',  value=Name (id='True', ctx=Load ()))
+                    )
                 ast.fix_missing_locations (node.left)
                 node.right.keywords.append (keyword (arg='_in', value=node.left))
                 node= node.right
@@ -335,7 +340,10 @@ class CrazyASTTransformer (ast.NodeTransformer):
                         first_arg= node.args[0]
                         if is_executable (first_arg) and not has_keyword (first_arg, '_err'):
                             first_arg.keywords.append (
-                                keyword (arg='_out', value=Name (id='Capture', ctx=Load ()))
+                                keyword (arg='_out', value=Name (id='Pipe', ctx=Load ()))
+                                )
+                            first_arg.keywords.append (
+                                keyword (arg='_bg', value=Name (id='True', ctx=Load ()))
                                 )
                             node.args.pop (0)
                             node.keywords.append (keyword (arg='_in', value=first_arg))

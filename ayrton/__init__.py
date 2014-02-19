@@ -25,6 +25,9 @@ import pickle
 import ast
 from ast import fix_missing_locations, alias, ImportFrom
 import traceback
+# import logging
+
+# logging.basicConfig(filename='tmp/bar.log',level=logging.DEBUG)
 
 # things that have to be defined before importing ayton.execute :(
 # singleton
@@ -124,6 +127,7 @@ class Ayrton (object):
         self.run_tree (tree, file_name)
 
     def run_tree (self, tree, file_name):
+        logging.debug (ast.dump (tree))
         self.run_code (compile (tree, file_name, 'exec'))
 
     def run_code (self, code):
@@ -133,7 +137,6 @@ class Ayrton (object):
         for i in range (len (self.pending_children)):
             child= self.pending_children.pop (0)
             child.wait ()
-
 
 def polute (d):
     # these functions will be loaded from each module and put in the globals
@@ -150,7 +153,8 @@ def polute (d):
         'ayrton.expansion': [ 'bash', ],
         'ayrton.functions': [ 'cd', 'export', 'option', 'remote', 'run',
                                'shift', 'source', 'unset', ],
-        'ayrton.execute': [ 'o', 'Capture', 'CommandFailed', 'CommandNotFound', ],
+        'ayrton.execute': [ 'o', 'Capture', 'CommandFailed', 'CommandNotFound',
+                            'Pipe', ],
         }
 
     for module, functions in builtins.items ():

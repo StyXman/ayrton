@@ -20,6 +20,10 @@ import sys
 import io
 from collections.abc import Iterable
 
+# import logging
+
+# logging.basicConfig(filename='tmp/bar.log',level=logging.DEBUG)
+
 import ayrton
 
 encoding= sys.getdefaultencoding ()
@@ -27,6 +31,10 @@ encoding= sys.getdefaultencoding ()
 # special value to signal that the output should be captured
 # instead of going to stdout
 class Capture:
+    pass
+
+# same, but for a pipe
+class Pipe:
     pass
 
 class o (object):
@@ -108,7 +116,10 @@ class Command:
     def prepare_fds (self):
         if '_in' in self.options:
             i= self.options['_in']
-            if not isinstance (i, io.IOBase) and type (i)!=int and i is not None:
+            if ( not isinstance (i, io.IOBase) and
+                 type (i)!=int and
+                 i is not None and
+                 not isinstance (i, Command) ):
                 if self.options['_in_tty']:
                     # TODO: no support yet for input from file when _in_tty
                     # NOTE: os.openpty() returns (master, slave)
@@ -116,30 +127,52 @@ class Command:
                     (master, slave)= os.openpty ()
                     self.stdin_pipe= (slave, master)
                 else:
+                    # logging.debug ("prepare_fds: _in::%s creates a pipe()", type (i))
                     self.stdin_pipe= os.pipe ()
-
-        if '_out' in self.options and self.options['_out']==Capture:
-            if self.options['_out_tty']:
-                if self.options['_in_tty']:
-                    # we use a copy of the pty created for the stdin
-                    self.stdout_pipe= (os.dup (self.stdin_pipe[1]),
-                                       os.dup (self.stdin_pipe[0]))
+            elif isinstance (i, Command):
+                if i.options.get ('_out', None)==Capture:
+                    # if it's a captured command, create a pipe to feed the data
+                    # logging.debug ("prepare_fds: _in::Command, _in._out==Capture creates a pipe()")
+                    self.stdin_pipe= os.pipe ()
                 else:
-                    # this time the order is right
-                    (master, slave)= os.openpty ()
-                    self.stdout_pipe= (master, slave)
-            else:
+                    # if it's a piped command, use its pipe and hope it runs in the bg
+                    # logging.debug ("prepare_fds: _in::Command uses the stdout_pipe")
+                    self.stdin_pipe= i.stdout_pipe
+
+        if '_out' in self.options:
+            if self.options['_out']==Capture:
+                if self.options['_out_tty']:
+                    if self.options['_in_tty']:
+                        # we use a copy of the pty created for the stdin
+                        self.stdout_pipe= (os.dup (self.stdin_pipe[1]),
+                                           os.dup (self.stdin_pipe[0]))
+                    else:
+                        # this time the order is right
+                        (master, slave)= os.openpty ()
+                        self.stdout_pipe= (master, slave)
+                else:
+                    # logging.debug ("prepare_fds: _out==Capture creates a pipe()")
+                    self.stdout_pipe= os.pipe ()
+            elif self.options['_out']==Pipe:
+                # this pipe should be picked up by the outer Command
+                # logging.debug ("prepare_fds: _out==Pipe creates a pipe()")
                 self.stdout_pipe= os.pipe ()
 
-        if '_err' in self.options and self.options['_err']==Capture:
-            # if stdout is also Capture'd, then use the same pipe
-            if not '_out' in self.options or self.options['_out']!=Capture:
-                # if stdout is a tty, hook to that one
-                if self.options['_out_tty']:
-                    self.stderr_pipe= (os.dup (self.stdout_pipe[0]),
-                                       os.dup (self.stdout_pipe[1]))
-                else:
-                    self.stderr_pipe= os.pipe ()
+        if '_err' in self.options:
+            if self.options['_err']==Capture:
+                # if stdout is also Capture'd, then use the same pipe
+                if not '_out' in self.options or self.options['_out']!=Capture:
+                    # if stdout is a tty, hook to that one
+                    if self.options['_out_tty']:
+                        self.stderr_pipe= (os.dup (self.stdout_pipe[0]),
+                                           os.dup (self.stdout_pipe[1]))
+                    else:
+                        # logging.debug ("prepare_fds: _err==Capture creates a pipe()")
+                        self.stderr_pipe= os.pipe ()
+            elif self.options['_err']==Pipe:
+                # this pipe should be picked up by the outer Command
+                # logging.debug ("prepare_fds: _err==Pipe creates a pipe()")
+                self.stderr_pipe= os.pipe ()
 
     def child (self, cmd, *args, **kwargs):
         if '_in' in self.options:
@@ -152,16 +185,24 @@ class Command:
             if isinstance (i, io.IOBase):
                 # this does not work with file like objects
                 # dup its fd int stdin (0)
+                # logging.debug ("child: _in::IOBase redirects file to stdin")
                 os.dup2 (i.fileno (), 0)
                 i.close ()
             elif type (i)==int:
+                # logging.debug ("child: _in::int redirects fd to stdin")
                 os.dup2 (i, 0)
                 os.close (i)
             else:
                 # use the pipe prepared by prepare_fds()
+                # including the case where _in::Command
+                # logging.debug ("child: _in::%s, redirect stdin_pipe from prepare_fds() to stdin", type (i))
                 r, w= self.stdin_pipe
                 os.dup2 (r, 0)
                 os.close (r)
+                # the write fd can already be closed in this case:
+                # a= cat (..., _out=capture)
+                # b= grep (..., _in= a)
+                # once a's lines have been read, t
                 os.close (w)
 
         if '_out' in self.options:
@@ -173,17 +214,22 @@ class Command:
             if isinstance (o, io.IOBase):
                 # this does not work with file like objects
                 # dup its fd in stdout (1)
+                # logging.debug ("child: _out::IOBase, redirects stout to file")
                 os.dup2 (o.fileno (), 1)
                 o.close ()
             elif type (o)==int:
+                # logging.debug ("child: _out::int, redirects stdout to fd")
                 os.dup2 (o, 1)
                 os.close (o)
-            elif o==Capture:
+            elif o==Capture or o==Pipe:
+                # logging.debug ("child: _out::(Capture or Pipe), stdout -> stdout_pipe")
                 r, w= self.stdout_pipe
                 os.dup2 (w, 1)
                 os.close (w)
                 os.close (r)
             elif type (o) in (bytes, str):
+                # BUG: this is inconsistent with _in::str
+                # logging.debug ("child: _out::str, open file and redirect ")
                 f= open (o, 'w+')
                 os.dup2 (f.fileno (), 1)
                 f.close ()
@@ -258,11 +304,13 @@ class Command:
             elif type (i)==bytes:
                 os.write (w, i)
                 os.write (w, self.options['_end'])
-            elif isinstance (i, Iterable):
+            elif isinstance (i, Iterable) and (not isinstance (i, Command) or
+                                               i.options.get ('_out', None)==Capture):
+                # this includes file-like's and Capture'd Commands
                 for e in i:
                     os.write (w, str (e).encode (encoding))
                     os.write (w, self.options['_end'])
-            else:
+            elif not isinstance (i, Command):
                 os.write (w, str (i).encode (encoding))
                 os.write (w, self.options['_end'])
 
@@ -290,7 +338,7 @@ class Command:
         if self.stderr_pipe is not None:
             reader_pipe= self.stderr_pipe
 
-        if reader_pipe is not None:
+        if reader_pipe is not None and self.options.get ('_out', None)!=Pipe:
             r, w= reader_pipe
             os.close (w)
             self.capture_file= open (r)
