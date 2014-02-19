@@ -137,13 +137,13 @@ class MockedStdOut (unittest.TestCase):
         self.mock_stdout.close ()
 
 def setUpMockStdErr (self):
-    # this is a trick to (hopefulliy) save the original stdout fd
+    # save the original stderr fd
     self.save_stderr= os.dup (1)
 
     self.pipe= os.pipe ()
     r, w= self.pipe
 
-    # point stdout to w
+    # point stderr to w
     os.dup2 (w, 2)
     os.close (w)
 
@@ -246,11 +246,11 @@ class Redirected (unittest.TestCase):
 class CommandExecution (unittest.TestCase):
     def testFalse (self):
         a= false ()
-        self.assertEqual (a.exit_code, 1)
+        self.assertEqual (a.exit_code (), 1)
 
     def testTrue (self):
         a= true ()
-        self.assertEqual (a.exit_code, 0)
+        self.assertEqual (a.exit_code (), 0)
 
     def testIfTrue (self):
         if not true ():
