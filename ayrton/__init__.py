@@ -127,7 +127,7 @@ class Ayrton (object):
         self.run_tree (tree, file_name)
 
     def run_tree (self, tree, file_name):
-        logging.debug (ast.dump (tree))
+        # logging.debug (ast.dump (tree))
         self.run_code (compile (tree, file_name, 'exec'))
 
     def run_code (self, code):
