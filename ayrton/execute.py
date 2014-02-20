@@ -134,7 +134,7 @@ class Command:
                     # if it's a captured command, create a pipe to feed the data
                     # logging.debug ("prepare_fds: _in::Command, _in._out==Capture creates a pipe()")
                     self.stdin_pipe= os.pipe ()
-                else:
+                elif i.options.get ('_out', None)==Pipe:
                     # if it's a piped command, use its pipe and hope it runs in the bg
                     # logging.debug ("prepare_fds: _in::Command uses the stdout_pipe")
                     self.stdin_pipe= i.stdout_pipe
