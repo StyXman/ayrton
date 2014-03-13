@@ -35,7 +35,7 @@ parser.add_argument ('-v', '--version', action='version',
                      version="%%(prog)s v%s" % ayrton.__version__)
 # parser.add_argument ('-x', '--trace', help='enable execution tracing.')
 parser.add_argument ('file', nargs='?', help='''Name of the file from which the
-script is read. If the -c/--script option is present, this argument is the argv[0].''')
+script is read.''')
 parser.add_argument ('argv', nargs='*', help='''Arguments to be passed to the
 script.''')
 
@@ -47,12 +47,13 @@ opts= parser.parse_args (args)
 
 # juggle the script and file parameters
 if opts.script is not None:
-    if opts.file is None:
-        # prepend a fake script name
-        opts.argv.insert (0, 'script_from_command_line')
-    else:
-        # prepend file as argv[0]
-        opts.argv.insert (0, opts.file)
+    # prepend a fake script name
+    opts.argv.insert (0, '<script_from_command_line>')
+    if opts.file is not None:
+        # argparse gets confused with the script/file alternative
+        # and thinks the first argument for the script is actually a file
+        # so we readd it as the first argument
+        opts.argv.insert (1, opts.file)
         del opts.file
 else:
     # prepend file as argv[0]
@@ -63,6 +64,11 @@ try:
 except Exception:
     t, e, tb= sys.exc_info ()
     # skip ayrton's stack
-    for i in range (6):
-        tb= tb.tb_next
+    # TODO: if the script has a syntax error, the stack is shorter
+    if opts.script is not None:
+        for i in range (5):
+            tb= tb.tb_next
+    else:
+        for i in range (6):
+            tb= tb.tb_next
     traceback.print_exception (t, e, tb)
