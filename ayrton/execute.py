@@ -95,10 +95,11 @@ class Command:
         _chomp= True,
         _encoding= encoding,
         _bg= False,
+        _fails= False,
         )
 
     supported_options= ('_in', '_out', '_err', '_end', '_chomp', '_encoding',
-                        '_env', '_bg')
+                        '_env', '_bg', '_fails')
 
     def __init__ (self, path):
         self.path= path
@@ -346,7 +347,10 @@ class Command:
         if self._exit_code==127:
             raise CommandNotFound (self.path)
 
-        if ayrton.runner.options.get ('errexit', False) and self._exit_code!=0:
+        if (ayrton.runner.options.get ('errexit', False) and
+            self._exit_code!=0 and
+            not self.options.get ('_fails', False)):
+
             raise CommandFailed (self)
 
     def exit_code (self):

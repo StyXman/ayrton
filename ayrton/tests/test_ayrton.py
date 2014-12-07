@@ -172,6 +172,15 @@ false ()''')
         ayrton.main ('''option ('+e')
 false ()''')
 
+    #def testOptionETrue (self):
+        #self.assertRaises (ayrton.CommandFailed,
+                           #ayrton.main, '''option (e=True)
+#false ()''')
+
+    def testFails (self):
+        ayrton.main ('''option ('-e')
+false (_fails=True)''')
+
 class PipingRedirection (unittest.TestCase):
     setUp=    setUpMockStdout
     tearDown= tearDownMockStdout
