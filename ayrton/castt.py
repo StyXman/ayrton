@@ -48,6 +48,19 @@ def is_executable (node):
 def has_keyword (node, keyword):
     return any ([kw.arg==keyword for kw in node.keywords])
 
+def update_keyword (node, keyword):
+    found= False
+    for i in range (len (node.keywords)):
+        if node.keywords[i].arg==keyword.arg:
+            # TODO: warn
+            node.keywords[i]= keyword
+            found= True
+            # there can't be two
+            break
+
+    if not found:
+        node.keywords.append (keyword)
+
 class CrazyASTTransformer (ast.NodeTransformer):
     def __init__ (self, environ):
         super ().__init__ ()
@@ -234,14 +247,12 @@ class CrazyASTTransformer (ast.NodeTransformer):
 
                 # I can't believe it's this easy
                 # TODO: check if _err is not being captured instead
-                node.left.keywords.append (
-                    keyword (arg='_out', value=Name (id='Pipe', ctx=Load ()))
-                    )
-                node.left.keywords.append (
-                    keyword (arg='_bg',  value=Name (id='True', ctx=Load ()))
-                    )
+                update_keyword (node.left,
+                                keyword (arg='_out', value=Name (id='Pipe', ctx=Load ())))
+                update_keyword (node.left,
+                                keyword (arg='_bg',  value=Name (id='True', ctx=Load ())))
                 ast.fix_missing_locations (node.left)
-                node.right.keywords.append (keyword (arg='_in', value=node.left))
+                update_keyword (node.right, keyword (arg='_in', value=node.left))
                 node= node.right
 
                 # Call(func=Call(func=Attribute(value=Name(id='CommandWrapper', ctx=Load()),
@@ -261,9 +272,12 @@ class CrazyASTTransformer (ast.NodeTransformer):
             #       op=RShift(),
             #       right=Str(s='foo.txt'))
             if is_executable (node.left):
-                node.left.keywords.append (keyword (arg='_out',
-                                                    value=Call (func=Name (id='open', ctx=Load ()),
-                                                                args=[node.right, Str (s='ab')], keywords=[], starargs=None, kwargs=None)))
+                update_keyword (node.left,
+                                keyword (arg='_out',
+                                         value=Call (func=Name (id='open', ctx=Load ()),
+                                                     args=[node.right, Str (s='ab')],
+                                                     keywords=[], starargs=None,
+                                                     kwargs=None)))
                 ast.fix_missing_locations (node.left)
                 node= node.left
 
@@ -289,13 +303,13 @@ class CrazyASTTransformer (ast.NodeTransformer):
             for comp, op in zip (node.ops, node.comparators):
                 if type (comp)==Gt:
                     # > means _out
-                    node.left.keywords.append (keyword (arg='_out', value=op))
+                    update_keyword (node.left, keyword (arg='_out', value=op))
                     ans= node.left
 
                 if type (comp)==GtE:
                     # >= means _out+_err
-                    node.left.keywords.append (keyword (arg='_out', value=op))
-                    node.left.keywords.append (keyword (arg='_err_to_out', value=op))
+                    update_keyword (node.left, keyword (arg='_out', value=op))
+                    update_keyword (node.left, keyword (arg='_err_to_out', value=op))
                     ans= node.left
 
                 elif type (comp)==Lt:
@@ -309,7 +323,7 @@ class CrazyASTTransformer (ast.NodeTransformer):
                         op= Call (func=Name (id='open', ctx=Load ()), args=[op],
                                   keywords=[], starargs=None, kwargs=None)
 
-                    node.left.keywords.append (keyword (arg='_in', value=op))
+                    update_keyword (node.left, keyword (arg='_in', value=op))
                     ast.fix_missing_locations (node.left)
                     ans= node.left
 
@@ -339,14 +353,12 @@ class CrazyASTTransformer (ast.NodeTransformer):
                     if len (node.args)>0:
                         first_arg= node.args[0]
                         if is_executable (first_arg) and not has_keyword (first_arg, '_err'):
-                            first_arg.keywords.append (
-                                keyword (arg='_out', value=Name (id='Pipe', ctx=Load ()))
-                                )
-                            first_arg.keywords.append (
-                                keyword (arg='_bg', value=Name (id='True', ctx=Load ()))
-                                )
+                            update_keyword (first_arg,
+                                            keyword (arg='_out', value=Name (id='Pipe', ctx=Load ())))
+                            update_keyword (first_arg,
+                                            keyword (arg='_bg', value=Name (id='True', ctx=Load ())))
                             node.args.pop (0)
-                            node.keywords.append (keyword (arg='_in', value=first_arg))
+                            update_keyword (node, keyword (arg='_in', value=first_arg))
 
                     ast.copy_location (new_node, node)
                     node.func= new_node
