@@ -410,6 +410,12 @@ def foo ():
     false= lambda: True
     false ()''')
 
+    def testInstantiateClass (self):
+        ayrton.main ('''class Foo ():
+    pass
+
+foo= Foo ()''')
+
 class ParsingErrors (unittest.TestCase):
 
     def testTupleAssign (self):

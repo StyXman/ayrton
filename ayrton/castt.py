@@ -129,6 +129,9 @@ class CrazyASTTransformer (ast.NodeTransformer):
     def visit_ClassDef (self, node):
         # ClassDef(name='foo', bases=[], keywords=[], starargs=None, kwargs=None,
         #          body=[Pass()], decorator_list=[])
+        self.known_names[node.name]+= 1
+        self.defined_names[self.stack].append (node.name)
+
         self.stack= append_to_tuple (self.stack, node.name)
         self.generic_visit (node)
 
