@@ -64,9 +64,16 @@ def update_keyword (node, keyword):
 class CrazyASTTransformer (ast.NodeTransformer):
     def __init__ (self, environ):
         super ().__init__ ()
+        # the whole ayrton environmen; see ayrton.Environ.
         self.environ= environ
+        # names defined in the global namespace
         self.known_names= defaultdict (lambda: 0)
+        # holds the names in the stack so far
+        # NOTE: it must be a tuple so it can be hashable
         self.stack= ()
+        # holds the temporary namespaces in function and class definitions
+        # key: the stack so far
+        # value: list of names
         self.defined_names= defaultdict (lambda: [])
 
     # The following constructs bind names:
