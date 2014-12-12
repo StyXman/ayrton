@@ -101,6 +101,13 @@ class Environment (object):
     def __str__ (self):
         return str ([ self.globals, self.locals, self.os_environ ])
 
+    def __contains__ (self, key):
+        try:
+            self[key]
+            return True
+        except KeyError:
+            return False
+
 class Ayrton (object):
     def __init__ (self, globals=None, locals=None, **kwargs):
         self.environ= Environment (globals, locals, **kwargs)

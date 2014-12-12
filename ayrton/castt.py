@@ -337,10 +337,8 @@ class CrazyASTTransformer (ast.NodeTransformer):
             func_name= node.func.id
             defs= self.known_names[func_name]
             if defs==0:
-                try:
-                    # first check if it's not one of the builtin functions
-                    self.environ[func_name]
-                except KeyError:
+                if not func_name in self.environ:
+                    # it's not one of the builtin functions
                     # I guess I have no other option but to try to execute
                     # something here...
                     new_node= Call (func=Name (id='Command', ctx=Load ()),
