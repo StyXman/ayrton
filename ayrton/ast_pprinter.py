@@ -17,7 +17,10 @@ def pprint_seq (seq, sep=', '):
     for i, e in enumerate (seq):
         pprint (e)
         if i<len (seq)-1:
-            print (sep, end='')
+            if type (sep)==str:
+                print (sep, end='')
+            else:
+                pprint (sep)
 
 def pprint_orelse (orelse, level):
     if len (orelse)>0:
@@ -191,11 +194,7 @@ def pprint (node, level=0):
         print (' is ', end='')
 
     elif t==BoolOp:
-        # pprint_seq (node.values,
-        for i, v in enumerate (node.values):
-            pprint (v)
-            if i<len (node.values)-1:
-                pprint (node.op)
+        pprint_seq (node.values, node.op)
 
     elif t==And:
         print (' and ', end='')
