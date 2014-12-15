@@ -5,8 +5,10 @@ from ast import Subscript, Index, Tuple, Lt, Sub, Global, Return, AugAssign
 from ast import While, UnaryOp, Not, ClassDef, Mod, Yield, NotEq, Try, Pass
 from ast import ExceptHandler, Break, Slice, USub, ListComp, In, Lambda, BitAnd
 from ast import BitOr, Or, Delete, Bytes, Raise, NotIn, RShift, GeneratorExp
+from ast import Assert, Set, SetComp, LtE, IfExp, FloorDiv, GtE, With, Continue
+from ast import YieldFrom, UAdd
 from _ast import arguments, arg as arg_type, keyword as keyword_type
-from _ast import alias as alias_type, comprehension
+from _ast import alias as alias_type, comprehension, withitem
 
 def pprint_body (body, level):
     for statement in body:
@@ -232,7 +234,8 @@ def pprint (node, level=0):
 
     elif t==Return:
         print ('return ', end='')
-        pprint (node.value)
+        if node.value is not None:
+            pprint (node.value)
 
     elif t==AugAssign:
         # AugAssign(target=Name(id='ans', ctx=Store()), op=Add(), value=Name(id='a', ctx=Load()))
@@ -404,6 +407,65 @@ def pprint (node, level=0):
         # TODO: more
         pprint (node.generators[0])
         print (' )', end='')
+
+    elif t==Assert:
+        # Assert(test=..., msg=None)
+        print ('assert ', end='')
+        pprint (node.test)
+        # TODO: msg
+
+    elif t==Set:
+        print ('{ ', end='')
+        pprint_seq (node.elts)
+        print (' }', end='')
+
+    elif t==SetComp:
+        # SetComp(elt=Name(id='name', ctx=Load()), generators=[...])
+        print ('{ ', end='')
+        pprint (node.elt)
+        print (' for ', end='')
+        # TODO: more
+        pprint (node.generators[0])
+
+    elif t==LtE:
+        print ('<=', end='')
+
+    elif t==GtE:
+        print ('>=', end='')
+
+    elif t==IfExp:
+        # IfExp(test=..., body=Str(s=''), orelse=Str(s='s'))
+        pprint (node.body)
+        print (' if ', end='')
+        pprint (node.test)
+        print (' else ', end='')
+        pprint (node.orelse)
+
+    elif t==FloorDiv:
+        print ('\\\\', end='')
+
+    elif t==With:
+        print ('with ', end='')
+        pprint_seq (node.items)
+        print (':', end='')
+        pprint_body (node.body, level+1)
+
+    elif t==withitem:
+        # withitem(context_expr=..., optional_vars=Name(id='f', ctx=Store()))
+        pprint (node.context_expr)
+        if node.optional_vars is not None:
+            print (' as ', end='')
+            pprint (node.optional_vars)
+
+    elif t==Continue:
+        print ('continue', end='')
+
+    elif t==YieldFrom:
+        print ('yield from ', end='')
+        pprint (node.value)
+
+    elif t==UAdd:
+        print ('+', end='')
 
     else:
         print ()
