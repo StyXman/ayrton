@@ -3,7 +3,8 @@ from ast import dump, If, Compare, Eq, For, Attribute, Gt, Num, IsNot, BinOp
 from ast import NameConstant, Mult, Add, Import, List, Dict, Is, BoolOp, And
 from ast import Subscript, Index, Tuple, Lt, Sub, Global, Return, AugAssign
 from ast import While, UnaryOp, Not, ClassDef, Mod, Yield, NotEq, Try, Pass
-from ast import ExceptHandler, Break, Slice, USub, ListComp
+from ast import ExceptHandler, Break, Slice, USub, ListComp, In, Lambda, BitAnd
+from ast import BitOr, Or
 from _ast import arguments, arg as arg_type, keyword as keyword_type
 from _ast import alias as alias_type, comprehension
 
@@ -349,6 +350,25 @@ def pprint (node, level=0):
             # TODO: more
             print (' if ', end='')
             pprint (node.ifs[0])
+
+    elif t==In:
+        print (' in ', end='')
+
+    elif t==Lambda:
+        # Lambda(args=arguments(args=[], vararg=None, kwonlyargs=[], kw_defaults=[], kwarg=None, defaults=[]), body=Num(n=0))
+        print ('lambda ', end='')
+        pprint (node.args)
+        print (': ', end='')
+        pprint (node.body)
+
+    elif t==BitAnd:
+        print (' & ', end='')
+
+    elif t==BitOr:
+        print ('|', end='')
+
+    elif t==Or:
+        print (' or ', end='')
 
     else:
         print ()
