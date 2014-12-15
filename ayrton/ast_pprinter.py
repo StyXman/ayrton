@@ -4,7 +4,7 @@ from ast import NameConstant, Mult, Add, Import, List, Dict, Is, BoolOp, And
 from ast import Subscript, Index, Tuple, Lt, Sub, Global, Return, AugAssign
 from ast import While, UnaryOp, Not, ClassDef, Mod, Yield, NotEq, Try, Pass
 from ast import ExceptHandler, Break, Slice, USub, ListComp, In, Lambda, BitAnd
-from ast import BitOr, Or
+from ast import BitOr, Or, Delete, Bytes, Raise, NotIn, RShift, GeneratorExp
 from _ast import arguments, arg as arg_type, keyword as keyword_type
 from _ast import alias as alias_type, comprehension
 
@@ -16,7 +16,11 @@ def pprint_body (body, level):
 
 def pprint_seq (seq, sep=', '):
     for i, e in enumerate (seq):
-        pprint (e)
+        if type (e)==str:
+            print (e, end='')
+        else:
+            pprint (e)
+
         if i<len (seq)-1:
             if type (sep)==str:
                 print (sep, end='')
@@ -183,7 +187,7 @@ def pprint (node, level=0):
         print (' ]', end='')
 
     elif t==Dict:
-        print ('{', end='')
+        print ('{ ', end='')
         for k, v in zip (node.keys, node.values):
             pprint (k)
             print ('=', end='')
@@ -369,6 +373,37 @@ def pprint (node, level=0):
 
     elif t==Or:
         print (' or ', end='')
+
+    elif t==Delete:
+        print ('delete ', end='')
+        pprint_seq (node.targets)
+
+    elif t==Bytes:
+        print (repr (node.s), end='')
+
+    elif t==Raise:
+        # Raise(exc=Call(func=Name(id='ValueError', ctx=Load()),
+        #                args=[Str(s='too many lines')], keywords=[],
+        #                starargs=None, kwargs=None),
+        #       cause=None)
+        print ('raise ', end='')
+        pprint (node.exc)
+        # TODO: cause?
+
+    elif t==NotIn:
+        print (' not in ', end='')
+
+    elif t==RShift:
+        print ('>>', end='')
+
+    elif t==GeneratorExp:
+        # GeneratorExp(elt=Name(id='line', ctx=Load()), generators=[...])
+        print ('( ', end='')
+        pprint (node.elt)
+        print (' for ', end='')
+        # TODO: more
+        pprint (node.generators[0])
+        print (' )', end='')
 
     else:
         print ()
