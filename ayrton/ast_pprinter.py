@@ -300,11 +300,11 @@ def pprint (node, level=0):
     elif t==ExceptHandler:
         # ExceptHandler(type=Name(id='KeyError', ctx=Load()), name=None, body=[Pass()])
         print ('    '*level+'except ', end='')
-        pprint (node.type)
-
-        if node.name is not None:
-            print (' as ', end='')
-            print (node.name, end='')
+        if node.type is not None:
+            pprint (node.type)
+            if node.name is not None:
+                print (' as ', end='')
+                print (node.name, end='')
 
         print (':')
         pprint_body (node.body, level+1)
@@ -390,7 +390,8 @@ def pprint (node, level=0):
         #                starargs=None, kwargs=None),
         #       cause=None)
         print ('raise ', end='')
-        pprint (node.exc)
+        if node.exc is not None:
+            pprint (node.exc)
         # TODO: cause?
 
     elif t==NotIn:
