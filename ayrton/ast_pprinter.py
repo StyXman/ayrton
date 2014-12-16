@@ -34,6 +34,21 @@ def pprint_orelse (orelse, level):
         print ('    '*level+'else:')
         pprint_body (orelse, level+1)
 
+def pprint_args (args, defaults):
+    # TODO: anotations
+    # args=[arg(arg='a', annotation=None), arg(arg='b', annotation=None)]
+    # defaults=[Num(n=1)]
+    d_index= len (args)-len (defaults)
+    for index, arg in enumerate (args):
+        print (arg.arg, end='')
+
+        if index>=d_index:
+            print ('=', end='')
+            pprint (defaults[index-d_index])
+
+        if index<len (args)-1:
+            print (', ', end='')
+
 def pprint (node, level=0):
     # move down to the lineno
     # for lineno in range (line, node.lineno):
@@ -69,13 +84,35 @@ def pprint (node, level=0):
 
     elif t==Call:
         # Call(func=Name(id='foo', ctx=Load()), args=[], keywords=[], starargs=None, kwargs=None)
+        # TODO: annotations
         pprint (node.func)
         print (' (', end='')
         pprint_seq (node.args)
-        if len (node.args)>0 and len (node.keywords)>0:
+
+        if len (node.args)>0 and (len (node.keywords)>0 or
+                                  node.starargs is not None or
+                                  node.kwargs is not None):
             print (', ', end='')
+
         pprint_seq (node.keywords)
-        # TODO: more
+
+        if ((len (node.args)>0 or len (node.keywords)>0) and
+            (node.starargs is not None or node.kwargs is not None)):
+            print (', ', end='')
+
+        if node.starargs is not None:
+            print ('*', end='')
+            pprint (node.starargs)
+
+        if ((len (node.args)>0 or
+             len (node.keywords)>0 or
+             (node.starargs is not None) and node.kwargs is not None)):
+            print (', ', end='')
+
+        if node.kwargs is not None:
+            print ('**', end='')
+            pprint (node.kwargs)
+
         print (')', end='')
 
     elif t==Name:
@@ -86,14 +123,56 @@ def pprint (node, level=0):
         # TODO: decorator_list
         # TODO: returns
         print ('def ', node.name, ' (', end='')
-        pprint (node.args, False)
+        pprint (node.args)
         print ('):')
         pprint_body (node.body, level+1)
 
     elif t==arguments:
-        # arguments(args=[], vararg=None, kwonlyargs=[], kw_defaults=[], kwarg=None, defaults=[])
-        pprint_seq (node.args)
-        # TODO: more
+        # arguments(args=[arg(arg='a', annotation=None), arg(arg='b', annotation=None)],
+        #           vararg=arg(arg='more', annotation=None), kwonlyargs=[], kw_defaults=[],
+        #           kwarg=arg(arg='kmore', annotation=None), defaults=[Num(n=1)])
+
+        # this is tricky
+
+        # first there are five, not four, types of arguments
+        # positional, positional with default value, extra positional, keywords
+        # and extra keywords
+
+        # positional arguments are in args, and the default values in defaults
+        # but you have to calculate to which args they belong
+
+        # extra positional is in vararg
+
+        # keyword arguments are in kwonlyargs and the defaults in kw_defaults
+
+        # extra keywords is in kwarg
+
+        pprint_args (node.args, node.defaults)
+
+        if len (node.args)>0 and (node.vararg is not None or
+                                  len (node.kwonlyargs)>0 or
+                                  node.kwarg is not None):
+            print (', ', end='')
+
+        if node.vararg is not None:
+            print ('*', end='')
+            pprint (node.vararg)
+
+        if ((len (node.args)>0 or node.vararg is not None) and
+            (len (node.kwonlyargs)>0 or node.kwarg is not None)):
+
+            print (', ', end='')
+
+        pprint_args (node.kwonlyargs, node.kw_defaults)
+
+        if ((len (node.args)>0 or
+             node.vararg is not None or
+             len (node.kwonlyargs)>0) and node.kwarg is not None):
+            print (', ', end='')
+
+        if node.kwarg is not None:
+            print ('**', end='')
+            pprint (node.kwarg)
 
     elif t==Assign:
         # Assign(targets=[Name(id='c', ctx=Store())],
@@ -108,6 +187,7 @@ def pprint (node, level=0):
 
     elif t==arg_type:
         # arg(arg='node', annotation=None)
+        # TODO: annotation
         print (node.arg, end='')
 
     elif t==If:
