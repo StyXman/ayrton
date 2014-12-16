@@ -6,7 +6,7 @@ from ast import While, UnaryOp, Not, ClassDef, Mod, Yield, NotEq, Try, Pass
 from ast import ExceptHandler, Break, Slice, USub, ListComp, In, Lambda, BitAnd
 from ast import BitOr, Or, Delete, Bytes, Raise, NotIn, RShift, GeneratorExp
 from ast import Assert, Set, SetComp, LtE, IfExp, FloorDiv, GtE, With, Continue
-from ast import YieldFrom, UAdd
+from ast import YieldFrom, UAdd, LShift, DictComp, Div, Starred
 from _ast import arguments, arg as arg_type, keyword as keyword_type
 from _ast import alias as alias_type, comprehension, withitem
 
@@ -466,6 +466,23 @@ def pprint (node, level=0):
 
     elif t==UAdd:
         print ('+', end='')
+
+    elif t==LShift:
+        print ('<<', end='')
+
+    elif t==DictComp:
+        # DictComp(key=Name(id='v', ctx=Load()), value=Name(id='k', ctx=Load()), generators=[comprehension(target=Tuple(elts=[Name(id='k', ctx=Store()), Name(id='v', ctx=Store())], ctx=Store()), iter=Call(func=Name(id='enumerate', ctx=Load()), args=[Name(id='_b32alphabet', ctx=Load())], keywords=[], starargs=None, kwargs=None), ifs=[])])
+        print ('{ ', end='')
+        pprint (node.key)
+        print (': ', end='')
+        pprint (node.value)
+        print (' for ', end='')
+        # TODO: more
+        pprint (node.generators[0])
+        print (' }', end='')
+
+    elif t==Div:
+        print ('/', end='')
 
     else:
         print ()
