@@ -36,79 +36,19 @@ from ayrton.execute import o, Command, Capture, CommandFailed
 
 __version__= '0.4.1'
 
-class Environment (object):
-    # this class handles not only environment variables
-    # but also locals, globals and python and ayrton builtins
-    # the latter are only other python functions that are 'promoted' to builtins
+class Ayrton (object):
     def __init__ (self, globals=None, locals=None, **kwargs):
-        super ().__init__ ()
-
         if globals is None:
             self.globals= {}
         else:
             self.globals= globals
+        polute (self.globals, kwargs)
 
         if locals is None:
             self.locals= {}
         else:
             self.locals= locals
 
-        self.python_builtins= builtins.__dict__.copy ()
-        self.ayrton_builtins= {}
-        polute (self.ayrton_builtins)
-        self.os_environ= os.environ.copy ()
-
-        # now polute the locals with kwargs
-        for k, v in kwargs.items ():
-            # BUG: this sucks
-            if k=='argv':
-                self.ayrton_builtins['argv']= v
-            else:
-                self.locals[k]= v
-
-    def __getitem__ (self, k):
-        strikes= 0
-        for d in (self.locals, self.globals, self.os_environ,
-                  self.python_builtins, self.ayrton_builtins):
-            try:
-                ans= d[k]
-                # found, don't search anymore (just in case you could find it
-                # somewhere else)
-                break
-            except KeyError:
-                strikes+= 1
-
-        if strikes==5:
-            # the name was not found in any of the dicts
-            # create a command for it
-            # ans= Command (k)
-            # print (k)
-            raise KeyError (k)
-
-        return ans
-
-    def __setitem__ (self, k, v):
-        self.locals[k]= v
-
-    def __delitem__ (self, k):
-        del self.locals[k]
-
-    def __iter__ (self):
-        return self.locals.__iter__ ()
-
-    def __str__ (self):
-        return str ([ self.globals, self.locals, self.os_environ ])
-
-    def __contains__ (self, key):
-        try:
-            self[key]
-            return True
-        except KeyError:
-            return False
-
-class Ayrton (object):
-    def __init__ (self, globals=None, locals=None, **kwargs):
-        self.environ= Environment (globals, locals, **kwargs)
         self.options= {}
         self.pending_children= []
 
@@ -128,21 +68,25 @@ class Ayrton (object):
         self.run_code (compile (tree, file_name, 'exec'))
 
     def run_code (self, code):
-        exec (code, self.environ.globals, self.environ)
+        exec (code, self.globals, self.locals)
+        # exec (code, {})
 
     def wait_for_pending_children (self):
         for i in range (len (self.pending_children)):
             child= self.pending_children.pop (0)
             child.wait ()
 
-def polute (d):
+def polute (d, more):
+    d.update (__builtins__)
+    d.update (os.environ)
+
     # these functions will be loaded from each module and put in the globals
     # tuples (src, dst) renames function src to dst
     builtins= {
         'os': [ ('getcwd', 'pwd'), 'uname', 'listdir', ],
         'os.path': [ 'abspath', 'basename', 'commonprefix', 'dirname',  ],
         'time': [ 'sleep', ],
-        'sys': [ 'exit' ], # argv is poluted from the CLI options. see Environment()
+        'sys': [ 'exit', 'argv' ],
 
         'ayrton.file_test': [ '_a', '_b', '_c', '_d', '_e', '_f', '_g', '_h',
                               '_k', '_p', '_r', '_s', '_u', '_w', '_x', '_L',
@@ -168,6 +112,8 @@ def polute (d):
     # now the IO files
     for std in ('stdin', 'stdout', 'stderr'):
         d[std]= getattr (sys, std).buffer
+
+    d.update (more)
 
 def run_tree (tree, globals, locals):
     global runner

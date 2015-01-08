@@ -373,7 +373,7 @@ class Command:
                 # ignore
                 pass
 
-        self.options['_env'].update (ayrton.runner.environ.os_environ)
+        self.options['_env'].update (os.environ)
 
         self.stdin_pipe= None
         self.stdout_pipe= None

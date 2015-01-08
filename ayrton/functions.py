@@ -40,8 +40,8 @@ class cd (object):
 
 def export (**kwargs):
     for k, v in kwargs.items ():
-        ayrton.runner.environ.globals[k]= str (v)
-        ayrton.runner.environ.os_environ[k]= str (v)
+        ayrton.runner.globals[k]= str (v)
+        os.environ[k]= str (v)
 
 option_map= dict (
     e= 'errexit',
@@ -88,10 +88,10 @@ class remote (object):
         # the imports and hold them in another ayrton.Environment attribute
         # or we just weed them out here. so far this is the simpler option
         # but forces the user to reimport what's going to be used in the remote
-        l= dict ([ (k, v) for (k, v) in ayrton.runner.environ.locals.items ()
+        l= dict ([ (k, v) for (k, v) in ayrton.runner.locals.items ()
                    if type (v)!=types.ModuleType ])
         # special treatment for argv
-        l['argv']= ayrton.runner.environ.ayrton_builtins['argv']
+        l['argv']= ayrton.runner.globals['argv']
         local_env= pickle.dumps (l)
 
         if self.python_only:
@@ -131,9 +131,9 @@ def shift (n=1):
     # we start at 1 becasuse 0 is the script's path
     # this closely follows bash's behavior
     if n==1:
-        ans= ayrton.runner.environ.ayrton_builtins['argv'].pop (1)
+        ans= ayrton.runner.globals['argv'].pop (1)
     elif n>1:
-        ans= [ ayrton.runner.environ.ayrton_builtins['argv'].pop (1)
+        ans= [ ayrton.runner.globals['argv'].pop (1)
                for i in range (n) ]
     else:
         # TODO
@@ -144,11 +144,11 @@ def shift (n=1):
 def source (file):
     sub_runner= ayrton.Ayrton ()
     sub_runner.run_file (file)
-    ayrton.runner.environ.locals.update (sub_runner.environ.locals)
+    ayrton.runner.locals.update (sub_runner.locals)
 
 def unset (*args):
     for k in args:
-        if k in ayrton.runner.environ.globals.keys ():
+        if k in ayrton.runner.globals.keys ():
             # found, remove it
-            del ayrton.runner.environ.globals[k]
-            del ayrton.runner.environ.os_environ[k]
+            del ayrton.runner.globals[k]
+            del os.environ[k]
