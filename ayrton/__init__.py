@@ -23,8 +23,6 @@ import importlib
 import builtins
 import pickle
 import ast
-from ast import fix_missing_locations, alias, ImportFrom
-import traceback
 # import logging
 
 # logging.basicConfig(filename='tmp/bar.log',level=logging.DEBUG)
@@ -121,15 +119,7 @@ class Ayrton (object):
 
     def run_script (self, script, file_name):
         tree= ast.parse (script)
-        # ImportFrom(module='bar', names=[alias(name='baz', asname=None)], level=0)
-        node= ImportFrom (module='ayrton.execute',
-                          names=[alias (name='Command', asname=None)],
-                          level=0)
-        node.lineno= 0
-        node.col_offset= 0
-        ast.fix_missing_locations (node)
-        tree.body.insert (0, node)
-        tree= CrazyASTTransformer(self.environ).visit (tree)
+        tree= CrazyASTTransformer (self.globals).visit (tree)
 
         self.run_tree (tree, file_name)
 
@@ -161,7 +151,7 @@ def polute (d):
         'ayrton.functions': [ 'cd', ('cd', 'chdir'), 'export', 'option', 'remote', 'run',
                                'shift', 'source', 'unset', ],
         'ayrton.execute': [ 'o', 'Capture', 'CommandFailed', 'CommandNotFound',
-                            'Pipe', ],
+                            'Pipe', 'Command'],
         }
 
     for module, functions in builtins.items ():
