@@ -6,7 +6,7 @@ from ast import While, UnaryOp, Not, ClassDef, Mod, Yield, NotEq, Try, Pass
 from ast import ExceptHandler, Break, Slice, USub, ListComp, In, Lambda, BitAnd
 from ast import BitOr, Or, Delete, Bytes, Raise, NotIn, RShift, GeneratorExp
 from ast import Assert, Set, SetComp, LtE, IfExp, FloorDiv, GtE, With, Continue
-from ast import YieldFrom, UAdd, LShift, DictComp, Div, Starred
+from ast import YieldFrom, UAdd, LShift, DictComp, Div, Starred, BitXor, Pow
 from _ast import arguments, arg as arg_type, keyword as keyword_type
 from _ast import alias as alias_type, comprehension, withitem
 
@@ -89,6 +89,10 @@ def pprint (node, level=0):
         pprint (node.value)
 
     elif t==BinOp:
+        # BUG:
+        # m= ast.parse ('5*(3+4)')
+        # ayrton.ast_pprinter.pprint (m)
+        # 5*3+4
         pprint (node.left)
         pprint (node.op)
         pprint (node.right)
@@ -98,6 +102,9 @@ def pprint (node, level=0):
 
     elif t==BitOr:
         print ('|', end='')
+
+    elif t==BitXor:
+        print ('^', end='')
 
     elif t==BoolOp:
         pprint_seq (node.values, node.op)
@@ -367,6 +374,9 @@ def pprint (node, level=0):
 
     elif t==Pass:
         print ('pass')
+
+    elif t==Pow:
+        print ('**', end='')
 
     elif t==RShift:
         print ('>>', end='')
