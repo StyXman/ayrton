@@ -153,6 +153,11 @@ class CrazyASTTransformer (ast.NodeTransformer):
         #                            kwargannotation=None, defaults=[Num(n=1)],
         #                            kw_defaults=[]),
         #             body=[Pass()], decorator_list=[], returns=None)
+
+        # add the name as local name
+        self.known_names[node.name]+= 1
+        self.defined_names[self.stack].append (node.name)
+
         self.stack= append_to_tuple (self.stack, node.name)
 
         # add the arguments as local names
