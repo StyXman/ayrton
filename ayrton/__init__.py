@@ -62,12 +62,10 @@ class Ayrton (object):
         self.run_tree (tree, file_name)
 
     def run_tree (self, tree, file_name):
-        # logging.debug (ast.dump (tree))
         self.run_code (compile (tree, file_name, 'exec'))
 
     def run_code (self, code):
         exec (code, self.globals, self.locals)
-        # exec (code, {})
 
     def wait_for_pending_children (self):
         for i in range (len (self.pending_children)):
