@@ -410,6 +410,16 @@ def foo ():
     false= lambda: True
     false ()''')
 
+    def testCallFun (self):
+        ayrton.main ('''def func ():
+    true ()
+
+func ()''')
+
+    def testCommanIsPresent (self):
+        ayrton.main ('''c= Command ('ls')
+c ()''')
+
     def testInstantiateClass (self):
         ayrton.main ('''class Foo ():
     pass
