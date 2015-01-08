@@ -28,7 +28,7 @@ import os.path
 import traceback
 
 parser= argparse.ArgumentParser (prog=os.path.split (sys.argv[0])[-1],
-                                 description='Pythonic shell-like scripting language.')
+                                 description='Python-based shell-like scripting language.')
 parser.add_argument ('-c', '--script', help='''If this option is present, the
 script is read from its argument.''')
 parser.add_argument ('-v', '--version', action='version',
