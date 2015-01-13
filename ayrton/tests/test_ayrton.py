@@ -432,16 +432,10 @@ math.floor (1.1)''')
 
     def testImportCallFromFunc (self):
         ayrton.main ('''import math
-
-g= set (globals ().keys ())
-
 def foo ():
     math.floor (1.1)
-    return set (globals ().keys ())
 
-f= foo ()
-
-print (g-f)''')
+foo ()''')
 
     def testImportFrom (self):
         ayrton.main ('''from math import floor
