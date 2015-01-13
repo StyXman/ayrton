@@ -426,6 +426,34 @@ c ()''')
 
 foo= Foo ()''')
 
+    def testImport (self):
+        ayrton.main ('''import math
+math.floor (1.1)''')
+
+    def testImportCallFromFunc (self):
+        ayrton.main ('''import math
+
+g= set (globals ().keys ())
+
+def foo ():
+    math.floor (1.1)
+    return set (globals ().keys ())
+
+f= foo ()
+
+print (g-f)''')
+
+    def testImportFrom (self):
+        ayrton.main ('''from math import floor
+floor (1.1)''')
+
+    def testImportFromCallFromFunc (self):
+        ayrton.main ('''from math import floor
+def foo ():
+    floor (1.1)
+
+foo ()''')
+
 class ParsingErrors (unittest.TestCase):
 
     def testTupleAssign (self):

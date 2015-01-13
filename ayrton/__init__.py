@@ -43,7 +43,7 @@ class Ayrton (object):
         polute (self.globals, kwargs)
 
         if locals is None:
-            self.locals= {}
+            self.locals= None
         else:
             self.locals= locals
 
@@ -73,6 +73,7 @@ class Ayrton (object):
             child.wait ()
 
 def polute (d, more):
+    # TODO: weed out some stuff (copyright, etc)
     d.update (__builtins__)
     d.update (os.environ)
 

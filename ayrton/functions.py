@@ -142,9 +142,10 @@ def shift (n=1):
     return ans
 
 def source (file):
+    # TODO: decide if source makes any sense
     sub_runner= ayrton.Ayrton ()
     sub_runner.run_file (file)
-    ayrton.runner.locals.update (sub_runner.locals)
+    ayrton.runner.globals.update (sub_runner.globals)
 
 def unset (*args):
     for k in args:
