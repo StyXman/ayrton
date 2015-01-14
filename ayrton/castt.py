@@ -23,6 +23,7 @@ from ast import fix_missing_locations, Import, alias, Attribute, ImportFrom
 from ast import keyword, Gt, Lt, GtE, RShift, Tuple
 import pickle
 from collections import defaultdict
+
 import ayrton
 
 def append_to_tuple (t, o):
@@ -47,12 +48,32 @@ def is_executable (node):
 def has_keyword (node, keyword):
     return any ([kw.arg==keyword for kw in node.keywords])
 
+def update_keyword (node, keyword):
+    found= False
+    for i in range (len (node.keywords)):
+        if node.keywords[i].arg==keyword.arg:
+            # TODO: warn
+            node.keywords[i]= keyword
+            found= True
+            # there can't be two
+            break
+
+    if not found:
+        node.keywords.append (keyword)
+
 class CrazyASTTransformer (ast.NodeTransformer):
     def __init__ (self, environ):
         super ().__init__ ()
+        # the whole ayrton environmen; see ayrton.Environ.
         self.environ= environ
+        # names defined in the global namespace
         self.known_names= defaultdict (lambda: 0)
+        # holds the names in the stack so far
+        # NOTE: it must be a tuple so it can be hashable
         self.stack= ()
+        # holds the temporary namespaces in function and class definitions
+        # key: the stack so far
+        # value: list of names
         self.defined_names= defaultdict (lambda: [])
 
     # The following constructs bind names:
@@ -108,6 +129,9 @@ class CrazyASTTransformer (ast.NodeTransformer):
     def visit_ClassDef (self, node):
         # ClassDef(name='foo', bases=[], keywords=[], starargs=None, kwargs=None,
         #          body=[Pass()], decorator_list=[])
+        self.known_names[node.name]+= 1
+        self.defined_names[self.stack].append (node.name)
+
         self.stack= append_to_tuple (self.stack, node.name)
         self.generic_visit (node)
 
@@ -129,6 +153,11 @@ class CrazyASTTransformer (ast.NodeTransformer):
         #                            kwargannotation=None, defaults=[Num(n=1)],
         #                            kw_defaults=[]),
         #             body=[Pass()], decorator_list=[], returns=None)
+
+        # add the name as local name
+        self.known_names[node.name]+= 1
+        self.defined_names[self.stack].append (node.name)
+
         self.stack= append_to_tuple (self.stack, node.name)
 
         # add the arguments as local names
@@ -233,10 +262,12 @@ class CrazyASTTransformer (ast.NodeTransformer):
 
                 # I can't believe it's this easy
                 # TODO: check if _err is not being captured instead
-                node.left.keywords.append (keyword (arg='_out',
-                                                    value=Name (id='Capture', ctx=Load ())))
+                update_keyword (node.left,
+                                keyword (arg='_out', value=Name (id='Pipe', ctx=Load ())))
+                update_keyword (node.left,
+                                keyword (arg='_bg',  value=Name (id='True', ctx=Load ())))
                 ast.fix_missing_locations (node.left)
-                node.right.keywords.append (keyword (arg='_in', value=node.left))
+                update_keyword (node.right, keyword (arg='_in', value=node.left))
                 node= node.right
 
                 # Call(func=Call(func=Attribute(value=Name(id='CommandWrapper', ctx=Load()),
@@ -256,9 +287,12 @@ class CrazyASTTransformer (ast.NodeTransformer):
             #       op=RShift(),
             #       right=Str(s='foo.txt'))
             if is_executable (node.left):
-                node.left.keywords.append (keyword (arg='_out',
-                                                    value=Call (func=Name (id='open', ctx=Load ()),
-                                                                args=[node.right, Str (s='ab')], keywords=[], starargs=None, kwargs=None)))
+                update_keyword (node.left,
+                                keyword (arg='_out',
+                                         value=Call (func=Name (id='open', ctx=Load ()),
+                                                     args=[node.right, Str (s='ab')],
+                                                     keywords=[], starargs=None,
+                                                     kwargs=None)))
                 ast.fix_missing_locations (node.left)
                 node= node.left
 
@@ -284,13 +318,13 @@ class CrazyASTTransformer (ast.NodeTransformer):
             for comp, op in zip (node.ops, node.comparators):
                 if type (comp)==Gt:
                     # > means _out
-                    node.left.keywords.append (keyword (arg='_out', value=op))
+                    update_keyword (node.left, keyword (arg='_out', value=op))
                     ans= node.left
 
                 if type (comp)==GtE:
                     # >= means _out+_err
-                    node.left.keywords.append (keyword (arg='_out', value=op))
-                    node.left.keywords.append (keyword (arg='_err_to_out', value=op))
+                    update_keyword (node.left, keyword (arg='_out', value=op))
+                    update_keyword (node.left, keyword (arg='_err_to_out', value=op))
                     ans= node.left
 
                 elif type (comp)==Lt:
@@ -304,7 +338,7 @@ class CrazyASTTransformer (ast.NodeTransformer):
                         op= Call (func=Name (id='open', ctx=Load ()), args=[op],
                                   keywords=[], starargs=None, kwargs=None)
 
-                    node.left.keywords.append (keyword (arg='_in', value=op))
+                    update_keyword (node.left, keyword (arg='_in', value=op))
                     ast.fix_missing_locations (node.left)
                     ans= node.left
 
@@ -318,10 +352,8 @@ class CrazyASTTransformer (ast.NodeTransformer):
             func_name= node.func.id
             defs= self.known_names[func_name]
             if defs==0:
-                try:
-                    # first check if it's not one of the builtin functions
-                    self.environ[func_name]
-                except KeyError:
+                if not func_name in self.environ:
+                    # it's not one of the builtin functions
                     # I guess I have no other option but to try to execute
                     # something here...
                     new_node= Call (func=Name (id='Command', ctx=Load ()),
@@ -334,11 +366,12 @@ class CrazyASTTransformer (ast.NodeTransformer):
                     if len (node.args)>0:
                         first_arg= node.args[0]
                         if is_executable (first_arg) and not has_keyword (first_arg, '_err'):
-                            first_arg.keywords.append (
-                                keyword (arg='_out', value=Name (id='Capture', ctx=Load ()))
-                                )
+                            update_keyword (first_arg,
+                                            keyword (arg='_out', value=Name (id='Pipe', ctx=Load ())))
+                            update_keyword (first_arg,
+                                            keyword (arg='_bg', value=Name (id='True', ctx=Load ())))
                             node.args.pop (0)
-                            node.keywords.append (keyword (arg='_in', value=first_arg))
+                            update_keyword (node, keyword (arg='_in', value=first_arg))
 
                     ast.copy_location (new_node, node)
                     node.func= new_node

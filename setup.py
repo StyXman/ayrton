@@ -10,7 +10,7 @@ import ayrton
 setup (
     name='ayrton',
     version= ayrton.__version__,
-    description= 'a shell-like scripting language on top of Python and python-sh.',
+    description= 'a shell-like scripting language based on Python3.',
     author= 'Marcos Dione',
     author_email= 'mdione@grulic.org.ar',
     url= 'https://github.com/StyXman/ayrton',

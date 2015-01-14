@@ -137,13 +137,13 @@ class MockedStdOut (unittest.TestCase):
         self.mock_stdout.close ()
 
 def setUpMockStdErr (self):
-    # this is a trick to (hopefulliy) save the original stdout fd
+    # save the original stderr fd
     self.save_stderr= os.dup (1)
 
     self.pipe= os.pipe ()
     r, w= self.pipe
 
-    # point stdout to w
+    # point stderr to w
     os.dup2 (w, 2)
     os.close (w)
 
@@ -216,20 +216,20 @@ class Redirected (unittest.TestCase):
         f.close ()
 
         f= open (file_path, 'rb')
-        self.assertEqual (f.read (), bytes ('ls: cannot access stderr_to_file: %d: No such file or directory\n' % r, 'ascii'))
+        self.assertEqual (f.read (), bytes ('/bin/ls: cannot access stderr_to_file: %d: No such file or directory\n' % r, 'ascii'))
         f.close ()
         os.unlink (file_path)
 
     def testErrCapture (self):
         a= ls ('_err=Capture', _err=Capture)
         for i in a:
-            self.assertEqual (i, 'ls: cannot access _err=Capture: No such file or directory')
+            self.assertEqual (i, '/bin/ls: cannot access _err=Capture: No such file or directory')
 
     def testOutErrCaptured (self):
         a= ls ('Makefile', '_err=Capture', _out=Capture, _err=Capture)
         # list() exercises __iter__()
         l= list (a)
-        self.assertEqual (l[0], 'ls: cannot access _err=Capture: No such file or directory')
+        self.assertEqual (l[0], '/bin/ls: cannot access _err=Capture: No such file or directory')
         self.assertEqual (l[1], 'Makefile')
 
     def testPipe (self):
@@ -246,11 +246,11 @@ class Redirected (unittest.TestCase):
 class CommandExecution (unittest.TestCase):
     def testFalse (self):
         a= false ()
-        self.assertEqual (a.exit_code, 1)
+        self.assertEqual (a.exit_code (), 1)
 
     def testTrue (self):
         a= true ()
-        self.assertEqual (a.exit_code, 0)
+        self.assertEqual (a.exit_code (), 0)
 
     def testIfTrue (self):
         if not true ():
@@ -260,12 +260,21 @@ class CommandExecution (unittest.TestCase):
         if false ():
             self.fail ()
 
-    def testEchoGrep (self):
-        a= echo (_in=['grap not found', 'grep found', 'grip not found, fell'],
+    def testCatGrep (self):
+        a= cat (_in=['grap not found', 'grep found', 'grip not found, fell'],
                  _out=Capture)
         b= grep ('grep', _in=a.readlines (), _out=Capture)
+        self.assertEqual (b.readline (), 'grep found')
         for i in b:
-            self.assertEqual (i, 'grep found')
+            raise ValueError ("too many lines")
+
+    def testCatGrep2 (self):
+        a= cat (_in=['grap not found', 'grep found', 'grip not found, fell'],
+                 _out=Capture)
+        b= grep ('grep', _in=a, _out=Capture)
+        self.assertEqual (b.readline (), 'grep found')
+        for i in b:
+            raise ValueError ("too many lines")
 
     def foo (self):
         # ssh always opens the tty for reading the passphrase, so I'm not sure
