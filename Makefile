@@ -6,7 +6,7 @@ tests:
 	python3 -m unittest discover -v ayrton
 
 docs:
-	make -C doc html
+	PYTHONPATH=${PWD} make -C doc html
 
 install: tests
 	python3 setup.py install --prefix=$(INSTALL_DIR)
