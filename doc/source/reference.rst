@@ -26,7 +26,7 @@ Exceptions
 
     Raised when an executable cannot be found in :py:data:`path`. Unluckily,
     currently it is raised sometimes you refer to an unknow variable too. We're
-    working to minimize that, but here might be still more cases were it does so.
+    working to minimize that, but there might be still more cases were it does so.
 
 .. py:exception:: CommandFailed
 
@@ -102,14 +102,15 @@ Functions
 
 .. py:function:: shift (n=1)
 
-    Pops the first *n* elemnets from :py:data:`argv` and return them. If *n* is
+    Pops the first *n* elements from :py:data:`argv` and return them. If *n* is
     1, the value returned is just the first element; if it's bigger than 1, it
     returns a list with those *n* elements.
 
 .. py:function:: source (file)
 
     Executes *file* in a subprocess. Any local variable will be incorporated in
-    the current process' local namespace.
+    the current process' local namespace. As this could be better achieved with
+    importing modules, this might disappear in future versions.
 
 .. py:function:: unset (*args)
 
@@ -132,7 +133,7 @@ Functions
 
 .. py:attribute:: _in
 
-    Stablishes what or where does the contents of *stdin* come from, depending
+    Establishes what or where does the contents of *stdin* come from, depending
     on its value or type:
 
         * If it's `None`, it's connected to `/dev/null`.
@@ -295,4 +296,4 @@ Please check ``ayton/__init__.py``'s ``polute()`` function for more details.
 There are some Python functions that would seem to also make sense to include here.
 Most of them are C-based functions that have the same name as a more powerful
 executable, like ``chmod``, ``mkdir``, etc. If you think we oversaw an useful
-function,  drop us a line.
+function, drop us a line.
