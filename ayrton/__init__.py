@@ -32,7 +32,7 @@ runner= None
 from ayrton.castt import CrazyASTTransformer
 from ayrton.execute import o, Command, Capture, CommandFailed
 
-__version__= '0.4.1'
+__version__= '0.4.2'
 
 class Ayrton (object):
     def __init__ (self, globals=None, locals=None, **kwargs):
