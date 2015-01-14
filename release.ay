@@ -6,7 +6,7 @@ option ('-e')
 
 if make ('tests'):
     # this command might fail if it wants to
-    uncommited= git ('status', '--short') | grep ('^ M', _out=Capture, _fail=True)
+    uncommited= git ('status', '--short') | grep ('^ M', _out=Capture, _fails=True)
     if uncommited:
         print ("The following files are not commited, I can't release like this")
         print (str (uncommited))
