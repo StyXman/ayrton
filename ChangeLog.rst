@@ -1,8 +1,19 @@
-ayrton (0.4.1) UNRELEASED; urgency=low
+ayrton (0.4.2) unstable; urgency=low
 
-  * Fixed the `release.ay` script that prematurely released v0.4.
+  * _bg allows running a command in the background.
+  * _fails allows a Command to fail even when option('-e') is on. 
+  * Try program_name as program-name if the first failed the path lookup.
+  * Convert all arguments to commands to str().
+  * chdir() is an alias of cd().
+  * Capture is a class, not an arbitrary value.
+  * Updated doc.
+  * Fixed globals and local passed to the execution of the script.
+  * Fixed some fd leakage.
+  * Fixed redirection when _out and _err where Capture.
+  * Fixed keyword handling while doing our black magic.
+  * More, better unit tests!
 
- -- Marcos Dione <mdione@grulic.org.ar>  Tue, 14 Jan 2014 21:40:13 +0100
+ -- Marcos Dione <mdione@grulic.org.ar>  Wed, 14 Jan 2015 21:58:28 +0100
 
 ayrton (0.4) unstable; urgency=low
 
