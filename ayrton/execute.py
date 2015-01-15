@@ -44,8 +44,11 @@ class o (object):
         self.value= option[1]
 
 class CommandFailed (Exception):
-    def __init__ (self, code):
-        self.code= code
+    def __init__ (self, command):
+        self.command= command
+
+    def __str__ (self):
+        return "%s: %d" % (' '.join (self.command.args), self.command._exit_code)
 
 class CommandNotFound (Exception):
     def __init__ (self, path):
@@ -104,6 +107,7 @@ class Command:
     def __init__ (self, path):
         self.path= path
         self.exe= resolve_program (path)
+        self.command= None
 
         self.stdin_pipe= None
         self.stdout_pipe= None
@@ -175,7 +179,7 @@ class Command:
                 # logging.debug ("prepare_fds: _err==Pipe creates a pipe()")
                 self.stderr_pipe= os.pipe ()
 
-    def child (self, cmd, *args, **kwargs):
+    def child (self):
         if '_in' in self.options:
             i= self.options['_in']
             if i is None:
@@ -255,10 +259,8 @@ class Command:
                     os.dup2 (w, 2)
                     os.close (r)
 
-        # args is a tuple
-        args= self.prepare_args (cmd, args, kwargs)
         try:
-            os.execvpe (cmd, args, self.options['_env'])
+            os.execvpe (self.exe, self.args, self.options['_env'])
         except FileNotFoundError:
             os._exit (127)
 
@@ -374,6 +376,7 @@ class Command:
                 pass
 
         self.options['_env'].update (os.environ)
+        self.args= self.prepare_args (self.exe, args, kwargs)
 
         self.stdin_pipe= None
         self.stdout_pipe= None
@@ -389,7 +392,7 @@ class Command:
 
         r= os.fork ()
         if r==0:
-            self.child (self.exe, *args, **kwargs)
+            self.child ()
         else:
             self.child_pid= r
             self.parent ()
