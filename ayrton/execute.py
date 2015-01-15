@@ -48,7 +48,7 @@ class CommandFailed (Exception):
         self.command= command
 
     def __str__ (self):
-        return "%s: %d" % (' '.join (self.command.args), self.command._exit_code)
+        return "%s: %d" % (' '.join ([ repr (arg) for arg in self.command.args]), self.command._exit_code)
 
 class CommandNotFound (Exception):
     def __init__ (self, path):
