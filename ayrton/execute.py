@@ -261,7 +261,7 @@ class Command:
                     os.close (r)
 
         # restore some signals
-        for i in (signal.SIGPIPE, ):
+        for i in (signal.SIGPIPE, signal.SIGINT):
             signal.signal (i, signal.SIG_DFL)
 
         try:
