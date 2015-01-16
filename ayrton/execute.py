@@ -19,6 +19,7 @@ import os
 import sys
 import io
 from collections.abc import Iterable
+import signal
 
 # import logging
 
@@ -258,6 +259,10 @@ class Command:
                     r, w= self.stderr_pipe
                     os.dup2 (w, 2)
                     os.close (r)
+
+        # restore some signals
+        for i in (signal.SIGPIPE, ):
+            signal.signal (i, signal.SIG_DFL)
 
         try:
             os.execvpe (self.exe, self.args, self.options['_env'])
