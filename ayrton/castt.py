@@ -184,6 +184,19 @@ class CrazyASTTransformer (ast.NodeTransformer):
 
         self.generic_visit (node)
 
+        # if iter is Command, _out=Capture
+        # so this works as expected:
+        # for line in ls(): ...
+
+        # For(target=Name(id='line', ctx=Store()),
+        #     iter=Call(func=Call(func=Name(id='Command', ctx=Load()), ...
+        if (type (node.iter)==Call and type (node.iter.func)==Call and
+            type (node.iter.func.func)==Name and node.iter.func.func.id=='Command'):
+
+            update_keyword (node.iter,
+                            keyword (arg='_out', value=Name (id='Capture', ctx=Load ())))
+            ast.fix_missing_locations (node.iter)
+
         return node
 
     def visit_ExceptHandler (self, node):

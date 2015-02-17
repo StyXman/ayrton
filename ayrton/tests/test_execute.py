@@ -136,6 +136,22 @@ class MockedStdOut (unittest.TestCase):
         self.assertEqual (self.mock_stdout.read (), 'environments works: yes\n')
         self.mock_stdout.close ()
 
+    def testIterable (self):
+        self.maxDiff= None
+        ayrton.main ('''lines_read= 0
+
+for line in echo ('yes'):
+    if line=='yes':
+        print ('yes!')
+    else:
+        print (repr (line))
+
+    lines_read+= 1
+
+print (lines_read)''')
+        tearDownMockStdOut (self)
+        self.assertEqual (self.mock_stdout.read (), 'yes!\n1\n')
+
 def setUpMockStdErr (self):
     # save the original stderr fd
     self.save_stderr= os.dup (1)
