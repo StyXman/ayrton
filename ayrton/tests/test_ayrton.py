@@ -340,6 +340,10 @@ echo (a.exit_code ())''')
         self.assertEqual (self.r.read (), b'yes!\n0\n')
         # ayrton.runner.wait_for_pending_children ()
 
+class RemoteTests (unittest.TestCase):
+    setUp=    setUpMockStdout
+    tearDown= tearDownMockStdout
+
 # SSH_CLIENT='127.0.0.1 55524 22'
 # SSH_CONNECTION='127.0.0.1 55524 127.0.0.1 22'
 # SSH_TTY=/dev/pts/14
