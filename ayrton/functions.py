@@ -24,6 +24,7 @@ import paramiko
 from ayrton.expansion import bash
 import pickle
 import types
+from socket import socket
 
 # NOTE: all this code is excuted in the script's environment
 
@@ -80,10 +81,6 @@ class remote (object):
         self.kwargs= kwargs
 
     def __enter__ (self):
-        self.client= paramiko.SSHClient ()
-        self.client.load_host_keys (bash ('~/.ssh/known_hosts'))
-        self.client.connect (self.hostname, *self.args, **self.kwargs)
-
         # get the globals from the runtime
 
         # for solving the import problem:
@@ -115,8 +112,26 @@ import sys
 import ayrton
 ast= pickle.loads (sys.stdin.buffer.read (%d))
 g= pickle.loads (sys.stdin.buffer.read (%d))
-ayrton.run_tree (ast, g, {})"''' % (len (self.ast), len (global_env))
-        (i, o, e)= self.client.exec_command (command)
+ayrton.run_tree (ast, g)"''' % (len (self.ast), len (global_env))
+
+        if not self._debug:
+            self.client= paramiko.SSHClient ()
+            # self.client.load_host_keys (bash ('~/.ssh/known_hosts'))
+            # self.client.set_missing_host_key_policy (ShutUpPolicy ())
+            self.client.set_missing_host_key_policy (paramiko.WarningPolicy ())
+            self.client.connect (self.hostname, *self.args, **self.kwargs)
+
+            (i, o, e)= self.client.exec_command (command)
+        else:
+            self.client= socket ()
+            self.client.connect ((self.hostname, 2233))
+            i= open (self.client.fileno (), 'wb')
+            o= open (self.client.fileno (), 'rb')
+            e= open (self.client.fileno (), 'rb')
+
+            i.write (command.encode ())
+            i.write (b'\n')
+
         i.write (self.ast)
         i.write (global_env)
         # TODO: setup threads with sendfile() to fix i,o,e API
