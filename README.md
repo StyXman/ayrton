@@ -36,22 +36,11 @@ developed in its version 3.3. Python 3.2 is not enough, sorry. On the other hand
 as Python3 has not completely caught yet, most probably even less
 in stable server environments, in the future we plan to support at least Python2.7.
 
-The second dependency is [`paramiko`](https://github.com/paramiko/paramiko), but
-it Python3 port is coming slowly: on Apr 9, 2014
-[Python3.2 support was added](https://github.com/paramiko/paramiko/issues/16#ref-issue-24975074),
-but some stuff if still broken in Python3.3 and higher.
-We used an [unofficial port](http://github.com/nischu7/paramiko) that works pretty
-well so far.
+The second dependency is [`paramiko`](https://github.com/paramiko/paramiko).
 
 So, in short:
 
-    # apt-get install python3
-
-    # apt-get install python3-crypto
-    # git clone https://github.com/nischu7/paramiko.git
-    # cd paramiko
-    # python3 setup.py install
-    # cd ..
+    # apt-get install python3-paramiko # this also brings deps and python3 :)
 
     # git clone https://github.com/StyXman/ayrton.git
     # cd ayrton
