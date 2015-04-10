@@ -63,15 +63,20 @@ def option (option, value=True):
 class remote (object):
     "Uses the same arguments as paramiko.SSHClient.connect ()"
     def __init__ (self, ast, hostname, *args, **kwargs):
+        def param (p, d, v=False):
+            if p in d:
+                v= d[p]
+                del d[p]
+            setattr (self, p, v)
+
         # actually, it's not a proper ast, it's the pickle of such thing
         self.ast= ast
         self.hostname= hostname
         self.args= args
         self.python_only= False
-        if '_python_only' in kwargs:
-            self.python_only= kwargs['_python_only']
-            del kwargs['_python_only']
 
+        param ('_python_only', kwargs)
+        param ('_debug', kwargs)
         self.kwargs= kwargs
 
     def __enter__ (self):
@@ -93,7 +98,7 @@ class remote (object):
         g['argv']= ayrton.runner.globals['argv']
         global_env= pickle.dumps (g)
 
-        if self.python_only:
+        if self._python_only:
             command= '''python3 -c "import pickle
 # names needed for unpickling
 from ast import Module, Assign, Name, Store, Call, Load, Expr
