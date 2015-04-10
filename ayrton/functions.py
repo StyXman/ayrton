@@ -61,6 +61,10 @@ def option (option, value=True):
 
     ayrton.runner.options[option]= value
 
+class ShutUpPolicy (paramiko.MissingHostKeyPolicy):
+    def missing_host_key (self, *args, **kwargs):
+        pass
+
 class remote (object):
     "Uses the same arguments as paramiko.SSHClient.connect ()"
     def __init__ (self, ast, hostname, *args, **kwargs):
