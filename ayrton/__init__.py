@@ -35,17 +35,12 @@ from ayrton.execute import o, Command, Capture, CommandFailed
 __version__= '0.4.2'
 
 class Ayrton (object):
-    def __init__ (self, globals=None, locals=None, **kwargs):
+    def __init__ (self, globals=None, **kwargs):
         if globals is None:
             self.globals= {}
         else:
             self.globals= globals
         polute (self.globals, kwargs)
-
-        if locals is None:
-            self.locals= None
-        else:
-            self.locals= locals
 
         self.options= {}
         self.pending_children= []
@@ -65,7 +60,7 @@ class Ayrton (object):
         self.run_code (compile (tree, file_name, 'exec'))
 
     def run_code (self, code):
-        exec (code, self.globals, self.locals)
+        exec (code, self.globals)
 
     def wait_for_pending_children (self):
         for i in range (len (self.pending_children)):
@@ -112,9 +107,9 @@ def polute (d, more):
 
     d.update (more)
 
-def run_tree (tree, globals, locals):
+def run_tree (tree, globals):
     global runner
-    runner= Ayrton (globals=globals, locals=locals)
+    runner= Ayrton (globals=globals)
     runner.run_tree (tree)
 
 def run_file_or_script (script=None, file=None, **kwargs):

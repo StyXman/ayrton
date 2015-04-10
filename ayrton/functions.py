@@ -78,21 +78,20 @@ class remote (object):
         self.client= paramiko.SSHClient ()
         self.client.load_host_keys (bash ('~/.ssh/known_hosts'))
         self.client.connect (self.hostname, *self.args, **self.kwargs)
-        # get the locals from the runtime
-        # we can't really export the globals: it's full of unpicklable things
-        # so send an empty environment
-        global_env= pickle.dumps ({})
+
+        # get the globals from the runtime
+
         # for solving the import problem:
         # _pickle.PicklingError: Can't pickle <class 'module'>: attribute lookup builtins.module failed
         # there are two solutions. either we setup a complex system that intercepts
         # the imports and hold them in another ayrton.Environment attribute
         # or we just weed them out here. so far this is the simpler option
         # but forces the user to reimport what's going to be used in the remote
-        l= dict ([ (k, v) for (k, v) in ayrton.runner.locals.items ()
-                   if type (v)!=types.ModuleType ])
+        g= dict ([ (k, v) for (k, v) in ayrton.runner.globals.items ()
+                   if type (v)!=types.ModuleType and k not in ('stdin', 'stdout', 'stderr') ])
         # special treatment for argv
-        l['argv']= ayrton.runner.globals['argv']
-        local_env= pickle.dumps (l)
+        g['argv']= ayrton.runner.globals['argv']
+        global_env= pickle.dumps (g)
 
         if self.python_only:
             command= '''python3 -c "import pickle
@@ -102,8 +101,7 @@ import sys
 ast= pickle.loads (sys.stdin.buffer.read (%d))
 code= compile (ast, 'remote', 'exec')
 g= pickle.loads (sys.stdin.buffer.read (%d))
-l= pickle.loads (sys.stdin.buffer.read (%d))
-exec (code, g, l)"''' % (len (self.ast), len (global_env), len (local_env))
+exec (code, g, {})"''' % (len (self.ast), len (global_env))
         else:
             command= '''python3 -c "import pickle
 # names needed for unpickling
@@ -112,12 +110,11 @@ import sys
 import ayrton
 ast= pickle.loads (sys.stdin.buffer.read (%d))
 g= pickle.loads (sys.stdin.buffer.read (%d))
-l= pickle.loads (sys.stdin.buffer.read (%d))
-ayrton.run_tree (ast, g, l)"''' % (len (self.ast), len (global_env), len (local_env))
+ayrton.run_tree (ast, g, {})"''' % (len (self.ast), len (global_env))
         (i, o, e)= self.client.exec_command (command)
         i.write (self.ast)
         i.write (global_env)
-        i.write (local_env)
+        # TODO: setup threads with sendfile() to fix i,o,e API
         return (i, o, e)
 
     def __exit__ (self, *args):
