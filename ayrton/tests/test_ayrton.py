@@ -361,6 +361,29 @@ s[2].close ()''')
         output= self.r.read ()
         self.assertEqual ( output, ("""['%s\\n']\n""" % os.environ['USER']).encode () )
 
+# SSH_CLIENT='127.0.0.1 55524 22'
+# SSH_CONNECTION='127.0.0.1 55524 127.0.0.1 22'
+# SSH_TTY=/dev/pts/14
+
+    def testRemoteEnv (self):
+        """This test only succeeds if you you have password/passphrase-less access
+        to localhost"""
+        ayrton.main ('''with remote ('127.0.0.1', allow_agent=False) as s:
+    print (SSH_CLIENT)
+print (s[1].readlines ())
+# close the fd's, otherwise the test does not finish because the paramiko.Client() is waiting
+# this means even more that the current remote() API sucks
+s[0].close ()
+s[1].close ()
+s[2].close ()''')
+        expected1= b'''['127.0.0.1 '''
+        expected2= b''' 22\\n']\n'''
+        # close stdout as per the description of setUpMockStdout()
+        os.close (1)
+        output= self.r.read ()
+        self.assertEqual (output[:len (expected1)], expected1)
+        self.assertEqual (output[-len (expected2):], expected2)
+
 class CommandDetection (unittest.TestCase):
 
     def testSimpleCase (self):
