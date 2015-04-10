@@ -110,7 +110,7 @@ def polute (d, more):
 def run_tree (tree, globals):
     global runner
     runner= Ayrton (globals=globals)
-    runner.run_tree (tree)
+    runner.run_tree (tree, 'unknown_tree')
 
 def run_file_or_script (script=None, file=None, **kwargs):
     global runner
