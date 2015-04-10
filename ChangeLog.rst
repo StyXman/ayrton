@@ -1,3 +1,12 @@
+ayrton (0.4.3) unstable; urgency=medium
+
+  * Let commands handle SIGPIE and SIGINT. Python does funky things to them.
+  * for line in foo(): ... forces Capture'ing the output.
+  * Fix remote() a little. The API stills sucks.
+  * Fix remote() tests.
+
+ -- Marcos Dione <mdione@grulic.org.ar>  Fri, 10 Apr 2015 22:09:40 +0200
+
 ayrton (0.4.2) unstable; urgency=low
 
   * _bg allows running a command in the background.
