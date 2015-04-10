@@ -344,14 +344,11 @@ class RemoteTests (unittest.TestCase):
     setUp=    setUpMockStdout
     tearDown= tearDownMockStdout
 
-# SSH_CLIENT='127.0.0.1 55524 22'
-# SSH_CONNECTION='127.0.0.1 55524 127.0.0.1 22'
-# SSH_TTY=/dev/pts/14
 
     def testRemote (self):
         """This test only succeeds if you you have password/passphrase-less access
         to localhost"""
-        ayrton.main ('''with remote ('localhost', allow_agent=False) as s:
+        ayrton.main ('''with remote ('127.0.0.1', allow_agent=False) as s:
     print (USER)
 print (s[1].readlines ())
 # close the fd's, otherwise the test does not finish because the paramiko.Client() is waiting
