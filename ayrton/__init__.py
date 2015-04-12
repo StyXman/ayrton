@@ -21,9 +21,10 @@ import os
 import sys
 import importlib
 import ast
-# import logging
+import logging
 
-# logging.basicConfig(filename='tmp/bar.log',level=logging.DEBUG)
+logging.basicConfig(filename='ayrton.log',level=logging.DEBUG)
+logger= logging.getLogger ('ayton')
 
 # things that have to be defined before importing ayton.execute :(
 # singleton
