@@ -53,7 +53,7 @@ class Ayrton (object):
 
     def run_script (self, script, file_name):
         tree= ast.parse (script)
-        tree= CrazyASTTransformer (self.globals).visit (tree)
+        tree= CrazyASTTransformer (self.globals).modify (tree)
 
         self.run_tree (tree, file_name)
 

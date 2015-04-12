@@ -20,7 +20,8 @@
 import ast
 from ast import Pass, Module, Bytes, copy_location, Call, Name, Load, Str, BitOr
 from ast import fix_missing_locations, Import, alias, Attribute, ImportFrom
-from ast import keyword, Gt, Lt, GtE, RShift, Tuple
+from ast import keyword, Gt, Lt, GtE, RShift, Tuple, FunctionDef, arguments
+from ast import Store, Assign
 import pickle
 from collections import defaultdict
 
@@ -75,6 +76,30 @@ class CrazyASTTransformer (ast.NodeTransformer):
         # key: the stack so far
         # value: list of names
         self.defined_names= defaultdict (lambda: [])
+
+    def modify (self, tree):
+        m= self.visit (tree)
+
+        # convert Module(body=[...]) into
+        # def ayrton_main ():
+        #    [...]
+        # ayrton_return_value= ayrton_main ()
+
+        f= FunctionDef (name='ayrton_main', body=m.body,
+                        args=arguments (args=[], vararg=None, varargannotation=None,
+                                        kwonlyargs=[], kwargs=None, kwargannotation=None,
+                                        defaults=[], kw_defaults=[]),
+                        decorator_list=[], returns=None)
+
+        c= Call (func=Name (id='ayrton_main', ctx=Load ()),
+                 args=[], keywords=[], starargs=None, kwargs=None)
+
+        t= [Name (id='ayrton_return_value', ctx=Store ())]
+
+        m= Module (body= [ f, Assign (targets=t, value=c) ])
+        ast.fix_missing_locations (m)
+
+        return m
 
     # The following constructs bind names:
     # [x] formal parameters to functions,
