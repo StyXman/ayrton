@@ -518,3 +518,6 @@ class ReturnValues (unittest.TestCase):
 
     def testSimpleReturn (self):
         self.assertEqual (ayrton.main ('''return 42'''), 42)
+
+    def testException (self):
+        self.assertRaises (SystemError, ayrton.main, '''raise SystemError''')
