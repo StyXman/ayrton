@@ -23,6 +23,6 @@ if make ('tests'):
     # release
     python3 ('setup.py', 'sdist', 'upload')
     nvie ('release', ayrton.__version__)
-    git ('push', 'github')
+    git ('push')
     # TODO: does github have an API for making a release?
     # no they don't yet
