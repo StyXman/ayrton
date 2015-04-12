@@ -341,48 +341,85 @@ echo (a.exit_code ())''')
         # ayrton.runner.wait_for_pending_children ()
 
 class RemoteTests (unittest.TestCase):
-    setUp=    setUpMockStdout
-    tearDown= tearDownMockStdout
-
-
     def testRemote (self):
         """This test only succeeds if you you have password/passphrase-less access
         to localhost"""
-        ayrton.main ('''with remote ('127.0.0.1', allow_agent=False) as s:
+        output= ayrton.main ('''with remote ('127.0.0.1', allow_agent=False) as s:
     print (USER)
-print (s[1].readlines ())
+
+value= s[1].readlines ()
+
 # close the fd's, otherwise the test does not finish because the paramiko.Client() is waiting
 # this means even more that the current remote() API sucks
 s[0].close ()
 s[1].close ()
-s[2].close ()''')
-        # close stdout as per the description of setUpMockStdout()
-        os.close (1)
-        output= self.r.read ()
-        self.assertEqual ( output, ("""['%s\\n']\n""" % os.environ['USER']).encode () )
+s[2].close ()
+
+return value''')
+
+        self.assertEqual ( output, [ ('%s\n' % os.environ['USER']) ] )
 
 # SSH_CLIENT='127.0.0.1 55524 22'
 # SSH_CONNECTION='127.0.0.1 55524 127.0.0.1 22'
 # SSH_TTY=/dev/pts/14
-
     def testRemoteEnv (self):
         """This test only succeeds if you you have password/passphrase-less access
         to localhost"""
-        ayrton.main ('''with remote ('127.0.0.1', allow_agent=False) as s:
+        output= ayrton.main ('''with remote ('127.0.0.1', allow_agent=False) as s:
     print (SSH_CLIENT)
-print (s[1].readlines ())
+
+value= s[1].readlines ()
+
 # close the fd's, otherwise the test does not finish because the paramiko.Client() is waiting
 # this means even more that the current remote() API sucks
 s[0].close ()
 s[1].close ()
-s[2].close ()''')
-        expected1= b'''['127.0.0.1 '''
-        expected2= b''' 22\\n']\n'''
-        # close stdout as per the description of setUpMockStdout()
-        os.close (1)
-        output= self.r.read ()
-        self.assertEqual (output[:len (expected1)], expected1)
-        self.assertEqual (output[-len (expected2):], expected2)
+s[2].close ()
+
+return value''')
+
+        expected1= '''127.0.0.1 '''
+        expected2= ''' 22\n'''
+        self.assertEqual (output[0][:len (expected1)], expected1)
+        self.assertEqual (output[0][-len (expected2):], expected2)
+
+    def testRemoteVar (self):
+        """This test only succeeds if you you have password/passphrase-less access
+        to localhost"""
+        output= ayrton.main ('''with remote ('127.0.0.1', allow_agent=False, _debug=True) as s:
+    foo= 42
+
+# close the fd's, otherwise the test does not finish because the paramiko.Client() is waiting
+# this means even more that the current remote() API sucks
+s[0].close ()
+s[1].close ()
+s[2].close ()
+
+try:
+    return foo
+except Exception as e:
+    return e''')
+
+        self.assertEqual (output, '''42\n''')
+
+    def __testRemoteReturn (self):
+        """This test only succeeds if you you have password/passphrase-less access
+        to localhost"""
+        output= ayrton.main ('''with remote ('127.0.0.1', allow_agent=False, _debug=True) as s:
+    return 42
+
+# close the fd's, otherwise the test does not finish because the paramiko.Client() is waiting
+# this means even more that the current remote() API sucks
+s[0].close ()
+s[1].close ()
+#s[2].close ()
+
+try:
+    return foo
+except Exception as e:
+    return e''')
+
+        self.assertEqual (output, '''42\n''')
 
 class CommandDetection (unittest.TestCase):
 
