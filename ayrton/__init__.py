@@ -49,19 +49,23 @@ class Ayrton (object):
     def run_file (self, file):
         # it's a pity that parse() does not accept a file as input
         # so we could avoid reading the whole file
-        self.run_script (open (file).read (), file)
+        return self.run_script (open (file).read (), file)
 
     def run_script (self, script, file_name):
         tree= ast.parse (script)
         tree= CrazyASTTransformer (self.globals).modify (tree)
 
-        self.run_tree (tree, file_name)
+        return self.run_tree (tree, file_name)
 
     def run_tree (self, tree, file_name):
-        self.run_code (compile (tree, file_name, 'exec'))
+        logger.debug (ast.dump (tree))
+        return self.run_code (compile (tree, file_name, 'exec'))
 
     def run_code (self, code):
-        exec (code, self.globals)
+        locals= {}
+        exec (code, self.globals, locals)
+
+        return locals['ayrton_return_value']
 
     def wait_for_pending_children (self):
         for i in range (len (self.pending_children)):
@@ -117,9 +121,11 @@ def run_file_or_script (script=None, file=None, **kwargs):
     global runner
     runner= Ayrton (**kwargs)
     if script is None:
-        runner.run_file (file)
+        v= runner.run_file (file)
     else:
-        runner.run_script (script, 'script_from_command_line')
+        v= runner.run_script (script, 'script_from_command_line')
+
+    return v
 
 # backwards support for unit tests
 main= run_file_or_script

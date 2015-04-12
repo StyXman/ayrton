@@ -483,3 +483,8 @@ class ParsingErrors (unittest.TestCase):
 
     def testSimpleFor (self):
         ayrton.main ('''for a in (1, 2): pass''')
+
+class ReturnValues (unittest.TestCase):
+
+    def testSimpleReturn (self):
+        self.assertEqual (ayrton.main ('''return 42'''), 42)
