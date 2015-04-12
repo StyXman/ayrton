@@ -106,12 +106,6 @@ Functions
     1, the value returned is just the first element; if it's bigger than 1, it
     returns a list with those *n* elements.
 
-.. py:function:: source (file)
-
-    Executes *file* in a subprocess. Any local variable will be incorporated in
-    the current process' local namespace. As this could be better achieved with
-    importing modules, this might disappear in future versions.
-
 .. py:function:: unset (*args)
 
     For each variable name in *\*args*, unset the variable and remove it from

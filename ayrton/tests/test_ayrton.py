@@ -312,13 +312,6 @@ print (a)''', argv=['test_script.ay', '42', '27'])
         os.close (1)
         self.assertEqual (self.r.read (), b"['42', '27']\n")
 
-    def testSource (self):
-        ayrton.main ('''source ("ayrton/tests/data/source.ay");
-print (a)''')
-        # close stdout as per the description of setUpMockStdout()
-        os.close (1)
-        self.assertEqual (self.r.read (), b'42\n')
-
     def testO (self):
         # this should not explode
         ayrton.main ('''ls (o (full_time=True))''')
