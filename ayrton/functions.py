@@ -25,6 +25,8 @@ from ayrton.expansion import bash
 import pickle
 import types
 from socket import socket
+from threading import Thread
+import sys
 
 # NOTE: all this code is excuted in the script's environment
 
@@ -64,6 +66,28 @@ def option (option, value=True):
 class ShutUpPolicy (paramiko.MissingHostKeyPolicy):
     def missing_host_key (self, *args, **kwargs):
         pass
+
+class CopyThread (Thread):
+    def __init__ (self, src, dst):
+        super ().__init__ ()
+        # so I can close them at will
+        self.src= open (os.dup (src.fileno ()), 'rb')
+        self.dst= open (os.dup (dst.fileno ()), 'wb')
+
+    def run (self):
+        # NOTE: OSError: [Errno 22] Invalid argument
+        # os.sendfile (self.dst, self.src, None, 0)
+        # and splice() is not available
+        # so, copy by hand
+        while True:
+            data= self.src.read (10240)
+            if len (data)==0:
+                break
+            else:
+                self.dst.write (data)
+
+        self.src.close ()
+        self.dst.close ()
 
 class remote (object):
     "Uses the same arguments as paramiko.SSHClient.connect ()"
