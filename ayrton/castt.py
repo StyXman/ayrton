@@ -76,6 +76,8 @@ class CrazyASTTransformer (ast.NodeTransformer):
         # key: the stack so far
         # value: list of names
         self.defined_names= defaultdict (lambda: [])
+        # for testing
+        self.seen_names= set ()
 
     def modify (self, tree):
         m= self.visit (tree)
@@ -243,6 +245,8 @@ class CrazyASTTransformer (ast.NodeTransformer):
             # Name(id='a', ctx=Store())
             self.known_names[node.id]+= 1
             self.defined_names[self.stack].append (node.id)
+            self.seen_names.add (node.id)
+
         elif type (node)==Tuple:
             # Tuple(elts=[Name(id='a', ctx=Store()), Name(id='b', ctx=Store())])
             for elt in node.elts:
