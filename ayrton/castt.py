@@ -248,12 +248,15 @@ class CrazyASTTransformer (ast.NodeTransformer):
             for elt in node.elts:
                 self.assign (elt)
 
+        elif type (node)==list:
+            for e in node:
+                self.assign (e)
+
     def visit_Assign (self, node):
         # Assign(targets=[Tuple(elts=[Name(id='a', ctx=Store()), Name(id='b', ctx=Store())], ctx=Store())],
         #        value=Tuple(elts=[Num(n=4), Num(n=2)], ctx=Load()))
         self.generic_visit (node)
-        for target in node.targets:
-            self.assign (target)
+        self.assign (node.targets)
 
         return node
 
