@@ -204,10 +204,11 @@ class CrazyASTTransformer (ast.NodeTransformer):
     def visit_For (self, node):
         # For(target=Name(id='x', ctx=Store()), iter=List(elts=[], ctx=Load()),
         #     body=[Pass()], orelse=[])
-        self.known_names[node.target.id]+= 1
-        self.defined_names[self.stack].append (node.target.id)
-
+        # For(target=Tuple(elts=[Name(id='band', ctx=Store()), Name(id='color', ctx=Store())], ctx=Store()),
+        #     iter=Tuple(elts=[...], ctx=Load()),
+        #     body=[Pass()], orelse=[])
         self.generic_visit (node)
+        self.assign (node.target)
 
         # if iter is Command, _out=Capture
         # so this works as expected:
@@ -239,15 +240,17 @@ class CrazyASTTransformer (ast.NodeTransformer):
 
     def assign (self, node):
         if type (node)==Name:
-            # Assign(targets=[Name(id='a', ctx=Store())], value=Num(n=2))
+            # Name(id='a', ctx=Store())
             self.known_names[node.id]+= 1
             self.defined_names[self.stack].append (node.id)
         elif type (node)==Tuple:
-            # Assign(targets=[Tuple(elts=[Name(id='a', ctx=Store()), Name(id='b', ctx=Store())], ...
+            # Tuple(elts=[Name(id='a', ctx=Store()), Name(id='b', ctx=Store())])
             for elt in node.elts:
                 self.assign (elt)
 
     def visit_Assign (self, node):
+        # Assign(targets=[Tuple(elts=[Name(id='a', ctx=Store()), Name(id='b', ctx=Store())], ctx=Store())],
+        #        value=Tuple(elts=[Num(n=4), Num(n=2)], ctx=Load()))
         self.generic_visit (node)
         for target in node.targets:
             self.assign (target)
