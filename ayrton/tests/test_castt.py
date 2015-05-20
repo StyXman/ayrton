@@ -17,6 +17,7 @@
 
 import unittest
 import ast
+from ast import Attribute, Name, Load
 
 from ayrton import castt
 
@@ -34,3 +35,22 @@ class TestBinding (unittest.TestCase):
         t= c.modify (t)
         self.assertTrue ('x'  in c.seen_names)
         self.assertTrue ('y'  in c.seen_names)
+
+class TestHelperFunctions (unittest.TestCase):
+
+    def testName (self):
+        name= castt.func_name2dotted_exec (Name(id='test', ctx=Load ()))
+        self.assertEqual (name, 'test')
+
+    def testDottedName (self):
+        name= castt.func_name2dotted_exec (Attribute (value=Name(id='test', ctx=Load ()),
+                                                      attr='py', ctx=Load ()))
+        self.assertEqual (name, 'test.py')
+
+    def testDottedDottedName (self):
+        # NOTE: yes, indentation sucks here
+        name= castt.func_name2dotted_exec (
+            Attribute (value=Attribute (value=Name(id='test', ctx=Load ()),
+                                        attr='me', ctx=Load ()),
+                       attr='py', ctx=Load ()))
+        self.assertEqual (name, 'test.me.py')

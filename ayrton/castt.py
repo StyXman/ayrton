@@ -24,6 +24,9 @@ from ast import keyword, Gt, Lt, GtE, RShift, Tuple, FunctionDef, arguments
 from ast import Store, Assign
 import pickle
 from collections import defaultdict
+import logging
+
+logger= logging.getLogger ('ayton.castt')
 
 import ayrton
 
@@ -61,6 +64,19 @@ def update_keyword (node, keyword):
 
     if not found:
         node.keywords.append (keyword)
+
+def func_name2dotted_exec (name):
+    logger.debug (ast.dump (name))
+
+    if type (name)==Name:
+        # Name(id='test', ...)
+        return name.id
+
+    if type (name)==Attribute:
+        # left assoc
+        # 1st iter: Attribute(value=Attribute(value=Name(id='test', ...), attr='me', ...), attr='py', ...)
+        # 2nd iter: Attribute(value=Name(id='test', ...), attr='me', ...)
+        return func_name2dotted_exec (name.value)+'.'+name.attr
 
 class CrazyASTTransformer (ast.NodeTransformer):
     def __init__ (self, environ):
