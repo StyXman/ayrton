@@ -23,8 +23,9 @@ import importlib
 import ast
 import logging
 
-logging.basicConfig(filename='ayrton.log',level=logging.DEBUG)
-logger= logging.getLogger ('ayton')
+# logging.basicConfig(filename='ayrton.%d.log' % os.getpid (),level=logging.DEBUG)
+# logging.basicConfig(filename='ayrton.log',level=logging.DEBUG)
+logger= logging.getLogger ('ayrton')
 
 # things that have to be defined before importing ayton.execute :(
 # singleton
@@ -33,7 +34,7 @@ runner= None
 from ayrton.castt import CrazyASTTransformer
 from ayrton.execute import o, Command, Capture, CommandFailed
 
-__version__= '0.4.3'
+__version__= '0.4.4'
 
 class Ayrton (object):
     def __init__ (self, globals=None, **kwargs):
