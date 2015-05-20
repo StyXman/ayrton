@@ -42,7 +42,7 @@ class Bash(unittest.TestCase):
         self.assertEqual (sorted (bash ('s{a,*.py}')), [ 'sa', 'setup.py' ])
 
     def test_glob_brace2 (self):
-        self.assertEqual (sorted (bash ('ayrton/tests/data/{a,*.py}')), [ 'ayrton/tests/data/a', 'ayrton/tests/data/test.py' ])
+        self.assertEqual (sorted (bash ('ayrton/tests/data/{a,*.py}')), [ 'ayrton/tests/data/a', 'ayrton/tests/data/test.me.py' ])
 
     def test_simple1_brace (self):
         self.assertEqual (bash ('{acde,b}'), [ 'acde', 'b' ])
