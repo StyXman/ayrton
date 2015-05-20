@@ -39,18 +39,25 @@ class TestBinding (unittest.TestCase):
 class TestHelperFunctions (unittest.TestCase):
 
     def testName (self):
-        name= castt.func_name2dotted_exec (Name(id='test', ctx=Load ()))
-        self.assertEqual (name, 'test')
+        single, combined= castt.func_name2dotted_exec (Name(id='test', ctx=Load ()))
+
+        self.assertEqual (single, 'test')
+        self.assertEqual (combined, 'test')
 
     def testDottedName (self):
-        name= castt.func_name2dotted_exec (Attribute (value=Name(id='test', ctx=Load ()),
-                                                      attr='py', ctx=Load ()))
-        self.assertEqual (name, 'test.py')
+        single, combined= castt.func_name2dotted_exec (
+            Attribute (value=Name(id='test', ctx=Load ()),
+                       attr='py', ctx=Load ()))
+
+        self.assertEqual (single, 'test')
+        self.assertEqual (combined, 'test.py')
 
     def testDottedDottedName (self):
         # NOTE: yes, indentation sucks here
-        name= castt.func_name2dotted_exec (
+        single, combined= castt.func_name2dotted_exec (
             Attribute (value=Attribute (value=Name(id='test', ctx=Load ()),
                                         attr='me', ctx=Load ()),
                        attr='py', ctx=Load ()))
-        self.assertEqual (name, 'test.me.py')
+
+        self.assertEqual (single, 'test')
+        self.assertEqual (combined, 'test.me.py')

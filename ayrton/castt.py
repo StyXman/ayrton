@@ -78,7 +78,7 @@ def func_name2dotted_exec (name):
     # Name(id='test', ...)
     names.insert (0, name.id)
 
-    return '.'.join (names)
+    return (name.id, '.'.join (names))
 
 class CrazyASTTransformer (ast.NodeTransformer):
     def __init__ (self, environ):
