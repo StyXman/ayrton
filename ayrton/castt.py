@@ -162,7 +162,10 @@ class CrazyASTTransformer (ast.NodeTransformer):
             if name.asname is not None:
                 n= name.asname
             else:
-                n= name.name
+                # 'import os.path' -> only save 'os'
+                n= name.name.split ('.')[0]
+
+            logger.debug (n)
             self.known_names[n]+=1
             self.defined_names[self.stack].append (n)
 
