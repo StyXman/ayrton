@@ -417,34 +417,50 @@ class CrazyASTTransformer (ast.NodeTransformer):
         self.generic_visit (node)
         # Call(func=Name(id='b', ctx=Load()), args=[], keywords=[], starargs=None,
         #      kwargs=None)
-        if type (node.func)==ast.Name:
-            func_name= node.func.id
+        # Call(func=Attribute(value=Name(id='test', ctx=Load()), attr='py', ctx=Load()), ...)
+        # NOTE: what other things can be the func part?
+        name= None
+        unknown= False
+
+        if type (node.func)==Name:
+            name= func_name= node.func.id
             defs= self.known_names[func_name]
             if defs==0:
-                if not func_name in self.environ:
-                    # it's not one of the builtin functions
-                    # I guess I have no other option but to try to execute
-                    # something here...
-                    new_node= Call (func=Name (id='Command', ctx=Load ()),
-                                    args=[Str (s=func_name)], keywords=[],
-                                    starargs=None, kwargs=None)
+                unknown= True
 
-                    # check if the first parameter is a Command; if so, redirect
-                    # its output, remove it from the args and put it in the _in
-                    # kwarg
-                    if len (node.args)>0:
-                        first_arg= node.args[0]
-                        if is_executable (first_arg) and not has_keyword (first_arg, '_err'):
-                            update_keyword (first_arg,
-                                            keyword (arg='_out', value=Name (id='Pipe', ctx=Load ())))
-                            update_keyword (first_arg,
-                                            keyword (arg='_bg', value=Name (id='True', ctx=Load ())))
-                            node.args.pop (0)
-                            update_keyword (node, keyword (arg='_in', value=first_arg))
+        elif type (node.func)==Attribute:
+            name, func_name= func_name2dotted_exec (node.func)
+            defs= self.known_names[name]
+            if defs==0:
+                unknown= True
 
-                    ast.copy_location (new_node, node)
-                    node.func= new_node
-                    ast.fix_missing_locations (node)
+        logger.debug ("%s: %s", name, unknown)
+
+        if unknown:
+            if not name in self.environ:
+                # it's not one of the builtin functions
+                # I guess I have no other option but to try to execute
+                # something here...
+                new_node= Call (func=Name (id='Command', ctx=Load ()),
+                                args=[Str (s=func_name)], keywords=[],
+                                starargs=None, kwargs=None)
+
+                # check if the first parameter is a Command; if so, redirect
+                # its output, remove it from the args and put it in the _in
+                # kwarg
+                if len (node.args)>0:
+                    first_arg= node.args[0]
+                    if is_executable (first_arg) and not has_keyword (first_arg, '_err'):
+                        out= keyword (arg='_out', value=Name (id='Pipe', ctx=Load ()))
+                        update_keyword (first_arg, out)
+                        bg= keyword (arg='_bg', value=Name (id='True', ctx=Load ()))
+                        update_keyword (first_arg, bg)
+                        node.args.pop (0)
+                        update_keyword (node, keyword (arg='_in', value=first_arg))
+
+                ast.copy_location (new_node, node)
+                node.func= new_node
+                ast.fix_missing_locations (node)
 
         return node
 

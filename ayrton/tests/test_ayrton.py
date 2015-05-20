@@ -20,10 +20,15 @@ import sys
 import io
 import os
 import tempfile
+import os.path
 
 from ayrton.expansion import bash
 import ayrton
 from ayrton.execute import CommandNotFound
+
+import logging
+
+logger= logging.getLogger ('ayton.tests.ayrton')
 
 # create one of these
 ayrton.runner= ayrton.Ayrton ()
@@ -181,6 +186,12 @@ false ()''')
         ayrton.main ('''option ('-e')
 false (_fails=True)''')
 
+    def testDotInExecutables (self):
+        # add ayrton/tests/data to $PATH
+        os.environ['PATH']+= os.pathsep+os.path.join (os.getcwd (), 'ayrton/tests/data')
+        logger.debug (os.environ['PATH'])
+        ayrton.main ('''test.me.py ()''')
+
 class PipingRedirection (unittest.TestCase):
     setUp=    setUpMockStdout
     tearDown= tearDownMockStdout
@@ -321,6 +332,7 @@ print (a)''', argv=['test_script.ay', '42', '27'])
     def testComposing (self):
         # equivalent to testPipe()
         ayrton.main ('grep (ls (), "setup")')
+        # close stdout as per the description of setUpMockStdout()
         os.close (1)
         self.assertEqual (self.r.read (), b'setup.py\n')
 

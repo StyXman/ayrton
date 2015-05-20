@@ -32,7 +32,7 @@ shell too cumbersome.
 One of the ideas that triggered the development of `ayrton` is that shell
 languages have very rudimentary data handling mechanisms: most data are strings;
 these strings can be treated as integers in some circumstances; there is no concept
-of floats; and a few of them have arrays, even associative ones. For any other
+of floats; and only a few of them have arrays, even associative ones. For any other
 data manipulation, developers have to use tools like `awk`, `sed`, `grep`, `cut`, even
 Perl from time to time. In some cases this means that scripts, once they start
 to grow a little, become cumbersome and/or unmaintainable.
@@ -75,6 +75,9 @@ Commands do not raise Exceptions
     ``stderr`` attributes. You can also use commands as booleans in conditions
     to ``if``, ``while``, etc: ``if ls(): then echo ("yes!")``.
 
+Commands with dots are supported
+    You can call `foo.py()`, no extra work needed.
+
 ``ayrton`` for Shell Scripters
 ==============================
 
@@ -89,7 +92,10 @@ enough that the benefits will overweight this.
 * You don't call ``[``, see the reference.
 * Redirection is better accomplished with _out, _err, etc.
 * Currently, absolute and relative paths do not work directly, you have to use ``run()``.
-* Expansions are not done automatically; variables can be expanded with %,
+* Expansions are not done automatically; variables can be expanded with %;
   brace, tilde and glob expansions can be done with ``bash()``,
   command substitution is yet to come. Also, expansions can return either one string,
   an empty list, or a list with two or more elements.
+* If you name a variable with the same name as an executable, you can't execute it until
+  you're out of that scope. This is exactly the same thing that happens when you
+  eclipse a Python variable from an outer scope.
