@@ -346,7 +346,7 @@ echo (a.exit_code ())''')
         # ayrton.runner.wait_for_pending_children ()
 
 class RemoteTests (unittest.TestCase):
-    def testRemote (self):
+    def __testRemote (self):
         """This test only succeeds if you you have password/passphrase-less access
         to localhost"""
         output= ayrton.main ('''with remote ('127.0.0.1', allow_agent=False) as s:
@@ -367,7 +367,7 @@ return value''')
 # SSH_CLIENT='127.0.0.1 55524 22'
 # SSH_CONNECTION='127.0.0.1 55524 127.0.0.1 22'
 # SSH_TTY=/dev/pts/14
-    def testRemoteEnv (self):
+    def __testRemoteEnv (self):
         """This test only succeeds if you you have password/passphrase-less access
         to localhost"""
         output= ayrton.main ('''with remote ('127.0.0.1', allow_agent=False) as s:
@@ -388,7 +388,7 @@ return value''')
         self.assertEqual (output[0][:len (expected1)], expected1)
         self.assertEqual (output[0][-len (expected2):], expected2)
 
-    def testRemoteVar (self):
+    def __testRemoteVar (self):
         """This test only succeeds if you you have password/passphrase-less access
         to localhost"""
         output= ayrton.main ('''with remote ('127.0.0.1', allow_agent=False, _debug=True) as s:
