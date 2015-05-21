@@ -5,7 +5,7 @@ all: foo
 
 foo: ast.o python.o
 	$(CC) $(LDFLAGS) -o $@ $^ \
-		/usr/lib/python3.3/config-3.3m-x86_64-linux-gnu/libpython3.3m.a \
+		/usr/lib/python3.4/config-3.4m-x86_64-linux-gnu/libpython3.4m.a \
 		-lexpat -lz
 
 %.o: %.c
