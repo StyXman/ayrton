@@ -26,7 +26,7 @@ Exceptions
 
     Raised when an executable cannot be found in :py:data:`path`. Unluckily,
     currently it is raised sometimes you refer to an unknow variable too. We're
-    working to minimize that, but here might be still more cases were it does so.
+    working to minimize that, but there might be still more cases were it does so.
 
 .. py:exception:: CommandFailed
 
@@ -54,6 +54,11 @@ Functions
     representation of *value*, and register the variable as to be exported to
     subproceses.
 
+.. py:function:: o (name=value)
+
+    Creates a positional option that will be expanded as an option/value when
+    running a command. See :py:func:`foo`.
+
 .. py:function:: option (opt, value=True)
 
     Works more or less like `bash`'s `set` builtin command. *opt* can be in its
@@ -68,7 +73,7 @@ Functions
 
     This function is better used as a context manager::
 
-        with ssh ():
+        with remote ():
             ...
 
     The function accepts the same arguments as ``paramiko``'s
@@ -76,7 +81,7 @@ Functions
     method. The body of the construct is executed in the remote machine.
 
     The function returns 3 streams that represent ``stdin``, ``stdout`` and
-    ``sterr``. These streams have ``write()``, ``read(n)``, ``readline()`` and
+    ``stderr``. These streams have ``write()``, ``read(n)``, ``readline()`` and
     ``readlines()`` methods that can be used to interact with the remote. They
     only accept or return ``bytes``, not ``strings``. For more information
     about them, see ``paramiko``'s
@@ -97,14 +102,9 @@ Functions
 
 .. py:function:: shift (n=1)
 
-    Pops the first *n* elemnets from :py:data:`argv` and return them. If *n* is
+    Pops the first *n* elements from :py:data:`argv` and return them. If *n* is
     1, the value returned is just the first element; if it's bigger than 1, it
     returns a list with those *n* elements.
-
-.. py:function:: source (file)
-
-    Executes *file* in a subprocess. Any local variable will be incorporated in
-    the current process' local namespace.
 
 .. py:function:: unset (*args)
 
@@ -115,9 +115,53 @@ Functions
 
 .. py:function:: foo ([*args, [**kwars]])
 
-    Executes the binary *foo*, searching the binary using :py:data:`path`. For
-    more information about the parameters, see http://amoffat.github.io/sh/#command-execution
-    and http://amoffat.github.io/sh/special_arguments.html#special-arguments .
+    Executes the binary *foo*, searching the binary using :py:data:`path`.
+    Arguments in *\*args* are used as positional arguments for the command. This
+    returns a :py:class:`Command`.
+    If one is an :py:func:`o(k=v)`, it's replaced by two positional arguments,
+    `-k` (or `--k` if `k` is longer than one character) and a second one `v`.
+    The rest of the *\*\*kwargs* are added in the same way as :py:func:`o`,
+    but in an arbitrary order, except for the following items, which are not
+    passed but drive how the command is executed and where does input come from
+    and output goes to:
+
+.. py:attribute:: _in
+
+    Establishes what or where does the contents of *stdin* come from, depending
+    on its value or type:
+
+        * If it's `None`, it's connected to `/dev/null`.
+        * If it's a file object [#file_objects]_, it uses its contents.
+        * If its type is ``int``, it's considered a file descriptor from where
+          the input is read.
+        * If its type is ``str`` or ``bytes``, it's passed as it is [#undecided]_.
+        * if it's an iterable, then it's the `str()` of each elements.
+        * Else, it's the `str()` of it.
+
+.. py:attribute:: _out
+
+    Defines where the *stdout* goes to, depending on its value or type:
+
+        * If it's `None`, it goes to `/dev/null`.
+        * If it's `Capture`, the output is read by the object.
+        * If it's a file object [#file_objects]_, the output is written on it.
+        * If its type is ``int``, it's considered a file descriptor to where
+          the output is written.
+        * It its type is ``str`` or ``bytes``, it's the filename where the output
+          goes.
+        *
+
+.. [#file_objects] For the moment it only includes ``io.IOBase`` instances and
+    its ``fileno()`` is used; this does not include objects that duck-type a file.
+
+.. [#undecided] This is inconsistent on what happens in :py:attr:`_out` and
+    :py:attr:`_err`. This might be deprecated in the future.
+
+Special types
+-------------
+
+.. py:class:: Command
+
 
 Tests
 -----
@@ -240,10 +284,10 @@ these function most probably hide an executable of the same name.
 
     For more details, see http://docs.python.org/3/library/os.html#os.uname .
 
-More function might be already exported as builtins, but are not yet documented.
+More functions might be already exported as builtins, but are not yet documented.
 Please check ``ayton/__init__.py``'s ``polute()`` function for more details.
 
-There are some Python function that would seem to also make sense to include here.
+There are some Python functions that would seem to also make sense to include here.
 Most of them are C-based functions that have the same name as a more powerful
 executable, like ``chmod``, ``mkdir``, etc. If you think we oversaw an useful
-function,  drop us a line.
+function, drop us a line.

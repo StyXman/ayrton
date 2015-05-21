@@ -1,8 +1,9 @@
+#! /usr/bin/env ayrton
 # this example is a simple script to control an audacious instance
 # running in another machine
 
 # you run it as:
-# ayrton -f arc.ay <what> <where>
+# arc.ay <what> <where>
 
 # for the moment it assumes you have password/passphrase-less ssh access into
 # <where>, the remote machine

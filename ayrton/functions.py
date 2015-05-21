@@ -18,11 +18,15 @@
 # along with ayrton.  If not, see <http://www.gnu.org/licenses/>.
 
 import ayrton
+import ayrton.execute
 import os
 import paramiko
 from ayrton.expansion import bash
 import pickle
 import types
+from socket import socket
+from threading import Thread
+import sys
 
 # NOTE: all this code is excuted in the script's environment
 
@@ -39,18 +43,12 @@ class cd (object):
 
 def export (**kwargs):
     for k, v in kwargs.items ():
-        ayrton.runner.environ.globals[k]= str (v)
-        ayrton.runner.environ.os_environ[k]= str (v)
+        ayrton.runner.globals[k]= str (v)
+        os.environ[k]= str (v)
 
 option_map= dict (
     e= 'errexit',
     )
-
-class o (object):
-    def __init__ (self, **kwargs):
-        option= list (kwargs.items ())[0]
-        self.key=   option[0]
-        self.value= option[1]
 
 def option (option, value=True):
     if len (option)==2:
@@ -65,43 +63,67 @@ def option (option, value=True):
 
     ayrton.runner.options[option]= value
 
+class ShutUpPolicy (paramiko.MissingHostKeyPolicy):
+    def missing_host_key (self, *args, **kwargs):
+        pass
+
+class CopyThread (Thread):
+    def __init__ (self, src, dst):
+        super ().__init__ ()
+        # so I can close them at will
+        self.src= open (os.dup (src.fileno ()), 'rb')
+        self.dst= open (os.dup (dst.fileno ()), 'wb')
+
+    def run (self):
+        # NOTE: OSError: [Errno 22] Invalid argument
+        # os.sendfile (self.dst, self.src, None, 0)
+        # and splice() is not available
+        # so, copy by hand
+        while True:
+            data= self.src.read (10240)
+            if len (data)==0:
+                break
+            else:
+                self.dst.write (data)
+
+        self.src.close ()
+        self.dst.close ()
+
 class remote (object):
-    # TODO: inherit CommandWrapper?
-    # TODO: see foo.txt
     "Uses the same arguments as paramiko.SSHClient.connect ()"
     def __init__ (self, ast, hostname, *args, **kwargs):
+        def param (p, d, v=False):
+            if p in d:
+                v= d[p]
+                del d[p]
+            setattr (self, p, v)
+
         # actually, it's not a proper ast, it's the pickle of such thing
         self.ast= ast
         self.hostname= hostname
         self.args= args
         self.python_only= False
-        if '_python_only' in kwargs:
-            self.python_only= kwargs['_python_only']
-            del kwargs['_python_only']
 
+        param ('_python_only', kwargs)
+        param ('_debug', kwargs)
         self.kwargs= kwargs
 
     def __enter__ (self):
-        self.client= paramiko.SSHClient ()
-        self.client.load_host_keys (bash ('~/.ssh/known_hosts')[0])
-        self.client.connect (self.hostname, *self.args, **self.kwargs)
-        # get the locals from the runtime
-        # we can't really export the globals: it's full of unpicklable things
-        # so send an empty environment
-        global_env= pickle.dumps ({})
+        # get the globals from the runtime
+
         # for solving the import problem:
         # _pickle.PicklingError: Can't pickle <class 'module'>: attribute lookup builtins.module failed
         # there are two solutions. either we setup a complex system that intercepts
         # the imports and hold them in another ayrton.Environment attribute
         # or we just weed them out here. so far this is the simpler option
         # but forces the user to reimport what's going to be used in the remote
-        l= dict ([ (k, v) for (k, v) in ayrton.runner.environ.locals.items ()
-                   if type (v)!=types.ModuleType ])
+        g= dict ([ (k, v) for (k, v) in ayrton.runner.globals.items ()
+                   if type (v)!=types.ModuleType and k not in ('stdin', 'stdout', 'stderr') ])
         # special treatment for argv
-        l['argv']= ayrton.runner.environ.ayrton_builtins['argv']
-        local_env= pickle.dumps (l)
+        g['argv']= ayrton.runner.globals['argv']
+        global_env= pickle.dumps (g)
 
-        if self.python_only:
+        if self._python_only:
             command= '''python3 -c "import pickle
 # names needed for unpickling
 from ast import Module, Assign, Name, Store, Call, Load, Expr
@@ -109,8 +131,7 @@ import sys
 ast= pickle.loads (sys.stdin.buffer.read (%d))
 code= compile (ast, 'remote', 'exec')
 g= pickle.loads (sys.stdin.buffer.read (%d))
-l= pickle.loads (sys.stdin.buffer.read (%d))
-exec (code, g, l)"''' % (len (self.ast), len (global_env), len (local_env))
+exec (code, g, {})"''' % (len (self.ast), len (global_env))
         else:
             command= '''python3 -c "import pickle
 # names needed for unpickling
@@ -119,28 +140,45 @@ import sys
 import ayrton
 ast= pickle.loads (sys.stdin.buffer.read (%d))
 g= pickle.loads (sys.stdin.buffer.read (%d))
-l= pickle.loads (sys.stdin.buffer.read (%d))
-ayrton.run (ast, g, l)"''' % (len (self.ast), len (global_env), len (local_env))
-        (i, o, e)= self.client.exec_command (command)
+ayrton.run_tree (ast, g)"''' % (len (self.ast), len (global_env))
+
+        if not self._debug:
+            self.client= paramiko.SSHClient ()
+            # self.client.load_host_keys (bash ('~/.ssh/known_hosts'))
+            # self.client.set_missing_host_key_policy (ShutUpPolicy ())
+            self.client.set_missing_host_key_policy (paramiko.WarningPolicy ())
+            self.client.connect (self.hostname, *self.args, **self.kwargs)
+
+            (i, o, e)= self.client.exec_command (command)
+        else:
+            self.client= socket ()
+            self.client.connect ((self.hostname, 2233))
+            i= open (self.client.fileno (), 'wb')
+            o= open (self.client.fileno (), 'rb')
+            e= open (self.client.fileno (), 'rb')
+
+            i.write (command.encode ())
+            i.write (b'\n')
+
         i.write (self.ast)
         i.write (global_env)
-        i.write (local_env)
+        # TODO: setup threads with sendfile() to fix i,o,e API
         return (i, o, e)
 
     def __exit__ (self, *args):
         pass
 
 def run (path, *args, **kwargs):
-    c= ayrton.CommandWrapper._create (path)
+    c= ayrton.execute.Command (path)
     return c (*args, **kwargs)
 
 def shift (n=1):
     # we start at 1 becasuse 0 is the script's path
     # this closely follows bash's behavior
     if n==1:
-        ans= ayrton.runner.environ.ayrton_builtins['argv'].pop (1)
+        ans= ayrton.runner.globals['argv'].pop (1)
     elif n>1:
-        ans= [ ayrton.runner.environ.ayrton_builtins['argv'].pop (1)
+        ans= [ ayrton.runner.globals['argv'].pop (1)
                for i in range (n) ]
     else:
         # TODO
@@ -148,14 +186,9 @@ def shift (n=1):
 
     return ans
 
-def source (file):
-    sub_runner= ayrton.Ayrton (file=file)
-    sub_runner.run ()
-    ayrton.runner.environ.locals.update (sub_runner.environ.locals)
-
 def unset (*args):
     for k in args:
-        if k in ayrton.runner.environ.globals.keys ():
+        if k in ayrton.runner.globals.keys ():
             # found, remove it
-            del ayrton.runner.environ.globals[k]
-            del ayrton.runner.environ.os_environ[k]
+            del ayrton.runner.globals[k]
+            del os.environ[k]

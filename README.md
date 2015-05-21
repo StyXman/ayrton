@@ -1,54 +1,9 @@
-`ayrton` - a shell like language with the power of python.
+`ayrton` - a shell-like scripting language based on Python3.
 
 `ayrton` is an extension of the Python language that tries to make it look more
 like a shell programming language. It takes ideas already present in `sh`, adds
 a few functions for better emulating envvars, and provides a mechanism for (semi)
 transparent remote execution via `ssh`.
-
-This code is released under the [GPLv3](http://www.gnu.org/licenses/gpl-3.0.html).
-If you're unsure on how this apply to your interpreted programs, check
-[this entry in their FAQ](https://www.gnu.org/licenses/gpl-faq.html#IfInterpreterIsGPL).
-
-Currently `ayrton` is under heavy development, so if you're following it and
-clone it (there are no releases yet), use the branch `develop`.
-
-# Instalation
-
-`ayrton` depends on three pieces of code. Python is the most obvious; it has been
-developed in its version 3.3. Python 3.2 is not enough, sorry. Next is [`sh`](http://amoffat.github.io/sh/), version
-1.08. The last item is more complicated. It uses
-[`paramiko`](https://github.com/paramiko/paramiko), but as this project tries to
-be compatible with lower versions of Python2, there's no official port for Python3.
-We used an [unofficial port](http://github.com/nischu7/paramiko) that works pretty
-well so far. As Python3 has not completely caught yet, most probably even less
-in stable server environments, we plan to support at least Python2.7.
-
-So, in short:
-
-    # apt-get install python3
-
-    # git clone https://github.com/amoffat/sh.git
-    # cd sh
-    # python3 setup.py install
-    # cd ..
-
-    # apt-get install python3-crypto
-    # git clone https://github.com/nischu7/paramiko.git
-    # cd paramiko
-    # python3 setup.py install
-    # cd ..
-
-    # git clone https://github.com/StyXman/ayrton.git
-    # cd ayrton
-    # make tests
-    # python3 setup.py install
-    or edit Makefile and
-    # make install
-
-    To generate the docs:
-    # make docs
-
-# First steps: execution, output
 
 `ayrton` syntax is Python3's with some things changed. Here's the unavoidable
 'Hello world' example:
@@ -67,7 +22,40 @@ executed `/bin/echo`?:
     [...]
     [pid   404] execve("/bin/echo", ["/bin/echo", "Hello, World!"], [/* 40 vars */]) = 0
 
-With `sh` you could `from sh import echo` and it will create a callable that will
+This code is released under the [GPLv3](http://www.gnu.org/licenses/gpl-3.0.html).
+If you're unsure on how this apply to your interpreted programs, check
+[this entry in their FAQ](https://www.gnu.org/licenses/gpl-faq.html#IfInterpreterIsGPL).
+
+Currently `ayrton` is under heavy development, so if you're following it and
+clone it, use the branch `develop`.
+
+# Instalation
+
+`ayrton` depends on two pieces of code. Python is the most obvious; it has been
+developed in its version 3.3. Python 3.2 is not enough, sorry. On the other hand,
+as Python3 has not completely caught yet, most probably even less
+in stable server environments, in the future we plan to support at least Python2.7.
+
+The second dependency is [`paramiko`](https://github.com/paramiko/paramiko).
+
+So, in short:
+
+    # apt-get install python3-paramiko # this also brings deps and python3 :)
+
+    # git clone https://github.com/StyXman/ayrton.git
+    # cd ayrton
+    # make tests
+    # python3 setup.py install
+    or edit Makefile and
+    # make install
+
+    To generate the docs:
+    # make docs
+
+# First steps: execution, output
+
+To mimic the second example in the introduction,
+with `sh` you could `from sh import echo` and it will create a callable that will
 transparently run `/bin/echo` for you; `ayrton` takes a step further and creates
 the callable on the fly, so you don't have to pre-declare it. Another difference
 is that under `sh`, `echo`'s output gets captured by default, which means that
@@ -122,8 +110,8 @@ Do I have you attention? Let's go for your interest. Something also useful is a
 behavior similar to `pushd`/`popd`:
 
     with cd ('bin'):
-        print (pwd ())
-    print (pwd ())
+        print (pwd ()) # prints $PWD/bin
+    print (pwd ())     # prints $PWD
 
 If you were in `ayrton`'s source directory, you would get something in the lines
 of:
@@ -141,7 +129,7 @@ of:
     >>> bash ("Elevation/{legend*,Elevation.dgml,preview.png,Makefile}")
     ['Elevation/legend.html', 'Elevation/legend', 'Elevation/Elevation.dgml', 'Elevation/preview.png', 'Elevation/Makefile']
 
-Notice that `bash()` always returns a list.
+Notice that `bash()` always returns a list, which might be empty or has one or more elements.
 
 Parameter expansion can be achieved with the `str` operator `%` or the `format()`
 method. Arithmetic expansion can be achieved with normal arithmetic operators.

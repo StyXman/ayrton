@@ -1,3 +1,48 @@
+ayrton (0.4.4) UNRELEASED; urgency=medium
+
+  * source() is out. use python's import system.
+  * Support executing foo.py().
+
+ -- Marcos Dione <mdione@grulic.org.ar>  Wed, 20 May 2015 23:38:23 +0200
+
+ayrton (0.4.3) unstable; urgency=medium
+
+  * Let commands handle SIGPIE and SIGINT. Python does funky things to them.
+  * for line in foo(): ... forces Capture'ing the output.
+  * Fix remote() a little. The API stills sucks.
+  * Fix remote() tests.
+
+ -- Marcos Dione <mdione@grulic.org.ar>  Fri, 10 Apr 2015 22:09:40 +0200
+
+ayrton (0.4.2) unstable; urgency=low
+
+  * _bg allows running a command in the background.
+  * _fails allows a Command to fail even when option('-e') is on. 
+  * Try program_name as program-name if the first failed the path lookup.
+  * Convert all arguments to commands to str().
+  * chdir() is an alias of cd().
+  * Capture is a class, not an arbitrary value.
+  * Updated doc.
+  * Fixed globals and local passed to the execution of the script.
+  * Fixed some fd leakage.
+  * Fixed redirection when _out and _err where Capture.
+  * Fixed keyword handling while doing our black magic.
+  * More, better unit tests!
+
+ -- Marcos Dione <mdione@grulic.org.ar>  Wed, 14 Jan 2015 21:58:28 +0100
+
+ayrton (0.4) unstable; urgency=low
+
+  * >= can redirect stederr to stdout.
+  * o(option=argument) can be used to declare keyword params among/before 
+    positional ones.
+  * bash() now returns a single string if there is only one result.
+  * Slightly better error reporting: don't print a part of the stacktrace
+    that belongs to `ayrton` itself. There is still more to do.
+  * No longer depends on `sh`.
+
+ -- Marcos Dione <mdione@grulic.org.ar>  Tue, 14 Jan 2014 21:35:13 +0100
+
 ayrton (0.3) unstable; urgency=low
 
   * Piping and basic redirection works.
