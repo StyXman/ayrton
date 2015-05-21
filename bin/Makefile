@@ -1,5 +1,5 @@
 CFLAGS= $(shell python3-config --cflags)
-LDFLAGS=$(subst -lpython3.3m,,$(shell python3-config --ldflags))
+LDFLAGS=$(subst -lpython3.4m,,$(shell python3.4-config --ldflags))
 
 all: foo ast.diff
 
