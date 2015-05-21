@@ -2555,7 +2555,7 @@ ast_for_call(struct compiling *c, const node *n, expr_ty func)
                     asdl_seq_SET(kws, 0, kw);
 
                     /* ... and out it as an argument */
-                    asdl_seq_SET(args, nargs++, Call (name, NULL, kw, NULL, NULL, e1->lineno, e1->col_offset, c->c_arena));
+                    asdl_seq_SET(args, nargs++, Call(name, NULL, kws, NULL, NULL, e1->lineno, e1->col_offset, c->c_arena));
                 }
             }
         }
