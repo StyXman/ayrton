@@ -1,7 +1,7 @@
 CFLAGS= $(shell python3-config --cflags)
 LDFLAGS=$(subst -lpython3.3m,,$(shell python3-config --ldflags))
 
-all: foo
+all: foo ast.diff
 
 foo: ast.o python.o
 	$(CC) $(LDFLAGS) -o $@ $^ \
@@ -10,3 +10,6 @@ foo: ast.o python.o
 
 %.o: %.c
 	$(CC) $(CFLAGS) -o $@ -c $<
+
+ast.diff: ast.c.orig ast.c
+	diff -uw $^ > $@
