@@ -1,4 +1,4 @@
-CFLAGS= $(shell python3-config --cflags)
+CFLAGS= $(shell python3.4-config --cflags)
 LDFLAGS=$(subst -lpython3.4m,,$(shell python3.4-config --ldflags))
 
 all: foo ast.diff
