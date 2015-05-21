@@ -2433,20 +2433,18 @@ ast_for_call(struct compiling *c, const node *n, expr_ty func)
     nargs = 0;
     nkeywords = 0;
     ngens = 0;
-    convert_keywords= 0;
+    convert_keywords = 0;
     for (i = 0; i < NCH(n); i++) {
         node *ch = CHILD(n, i);
         if (TYPE(ch) == argument) {
             if (NCH(ch) == 1) {
                 nargs++;
-                if (nkeywords) {
-                    convert_keywords= 1;
-                }
+                if (nkeywords)
+                    convert_keywords = 1;
             } else if (TYPE(CHILD(ch, 1)) == comp_for)
                 ngens++;
-            else {
+            else
                 nkeywords++;
-            }
         }
     }
     if (ngens > 1 || (ngens && (nargs || nkeywords))) {
@@ -2546,14 +2544,14 @@ ast_for_call(struct compiling *c, const node *n, expr_ty func)
                     /* build a call o(name=expr) */
                     name= ...('o');
 
-                    kw= keyword (key, e, c->c_arena);
+                    kw = keyword(key, e, c->c_arena);
                     if (!kw)
                         return NULL;
 
                     kws = _Py_asdl_seq_new(1, c->c_arena);
                     if (!kws)
                         return NULL;
-                    asdl_seq_SET (kws, 0, kw);
+                    asdl_seq_SET(kws, 0, kw);
 
                     /* ... and out it as an argument */
                     asdl_seq_SET(args, nargs++, Call (name, NULL, kw, NULL, NULL, e1->lineno, e1->col_offset, c->c_arena));
