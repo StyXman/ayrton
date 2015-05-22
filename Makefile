@@ -1,21 +1,21 @@
-all: bin docs
+all: bin/gerhard docs
 
-bin:
+bin/gerhard:
 	make -C bin
 
 INSTALL_DIR=$(HOME)/local
 
-tests:
-	python3 -m unittest discover -v ayrton
+tests: bin/gerhard
+	bin/gerhard -m unittest discover -v ayrton
 
 docs:
 	PYTHONPATH=${PWD} make -C doc html
 
-install: tests
-	python3 setup.py install --prefix=$(INSTALL_DIR)
+install: tests bin/gerhard
+	bin/gerhard setup.py install --prefix=$(INSTALL_DIR)
 
-upload: tests upload-docs
-	python3 setup.py sdist upload
+upload: tests upload-docs bin/gerhard
+	bin/gerhard setup.py sdist upload
 
 upload-docs: docs
 	rsync --archive --verbose --compress --rsh ssh doc/build/html/ www.grulic.org.ar:www/projects/ayrton/
