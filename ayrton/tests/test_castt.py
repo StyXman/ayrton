@@ -26,38 +26,41 @@ class TestBinding (unittest.TestCase):
     def testSimpleFor (self):
         c= castt.CrazyASTTransformer ({})
         t= ast.parse ("""for x in (): pass""")
+
         t= c.modify (t)
+
         self.assertTrue ('x'  in c.seen_names)
 
     def testTupleFor (self):
         c= castt.CrazyASTTransformer ({})
         t= ast.parse ("""for x, y in (4, 2): pass""")
+
         t= c.modify (t)
+
         self.assertTrue ('x'  in c.seen_names)
         self.assertTrue ('y'  in c.seen_names)
 
 class TestHelperFunctions (unittest.TestCase):
+    def __init__ (self, *args, **kwargs):
+        super ().__init__ (*args, **kwargs)
+        self.test= Name(id='test', ctx=Load ())
+        self.test_me= Attribute (value=self.test, attr='me', ctx=Load ())
+        self.test_me_py= Attribute (value=self.test_me, attr='py', ctx=Load ())
 
     def testName (self):
-        single, combined= castt.func_name2dotted_exec (Name(id='test', ctx=Load ()))
+        single, combined= castt.func_name2dotted_exec (self.test)
 
         self.assertEqual (single, 'test')
         self.assertEqual (combined, 'test')
 
     def testDottedName (self):
-        single, combined= castt.func_name2dotted_exec (
-            Attribute (value=Name(id='test', ctx=Load ()),
-                       attr='py', ctx=Load ()))
+        single, combined= castt.func_name2dotted_exec (self.test_me)
 
         self.assertEqual (single, 'test')
-        self.assertEqual (combined, 'test.py')
+        self.assertEqual (combined, 'test.me')
 
     def testDottedDottedName (self):
-        # NOTE: yes, indentation sucks here
-        single, combined= castt.func_name2dotted_exec (
-            Attribute (value=Attribute (value=Name(id='test', ctx=Load ()),
-                                        attr='me', ctx=Load ()),
-                       attr='py', ctx=Load ()))
+        single, combined= castt.func_name2dotted_exec (self.test_me_py)
 
         self.assertEqual (single, 'test')
         self.assertEqual (combined, 'test.me.py')
