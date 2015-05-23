@@ -1,6 +1,6 @@
-all: bin docs
+all: bins docs
 
-bin:
+bins:
 	make -C bin
 
 INSTALL_DIR=$(HOME)/local
