@@ -20,6 +20,7 @@ import ast
 from ast import Attribute, Name, Load
 
 from ayrton import castt
+from ayrton.execute import o
 
 class TestBinding (unittest.TestCase):
 
@@ -39,6 +40,37 @@ class TestBinding (unittest.TestCase):
 
         self.assertTrue ('x'  in c.seen_names)
         self.assertTrue ('y'  in c.seen_names)
+
+class TestVisits (unittest.TestCase):
+
+    def testFunctionKeywords (self):
+        c= castt.CrazyASTTransformer ({ 'dict': dict, 'o': o})
+        t= ast.parse ("""dict (a=42)""")
+
+        node= c.visit_Call (t.body[0].value)
+
+        self.assertEqual (len (node.args), 0, ast.dump (node))
+        self.assertEqual (len (node.keywords), 1, ast.dump (node))
+
+    def testFunctionOKeywords (self):
+        c= castt.CrazyASTTransformer ({ 'dict': dict, 'o': o})
+        t= ast.parse ("""dict (o (a=42))""")
+
+        node= c.visit_Call (t.body[0].value)
+
+        self.assertEqual (len (node.args), 0, ast.dump (node))
+        self.assertEqual (len (node.keywords), 1, ast.dump (node))
+
+    def testFunctionOArgs (self):
+        # NOTE: I need to give the implementation for o();
+        # otherwise it will also be converted to Command()
+        c= castt.CrazyASTTransformer ({ 'o': o})
+        t= ast.parse ("""dict (o (a=42))""")
+
+        node= c.visit_Call (t.body[0].value)
+
+        self.assertEqual (len (node.args), 1, ast.dump (node))
+        self.assertEqual (len (node.keywords), 0, ast.dump (node))
 
 class TestHelperFunctions (unittest.TestCase):
     def __init__ (self, *args, **kwargs):
