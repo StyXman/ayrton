@@ -490,7 +490,7 @@ class CrazyASTTransformer (ast.NodeTransformer):
         sub_node= node.items[0].context_expr
         if (type (sub_node)==Call and hasattr (sub_node.func, 'id') and
             sub_node.func.id=='remote'):
-            # capture the body and put it as the first argument to ssh()
+            # capture the body and put it as the first argument to remote()
             # but within a module, and already pickled;
             # otherwise we need to create an AST for the call of all the
             # constructors in the body we capture... it's complicated
