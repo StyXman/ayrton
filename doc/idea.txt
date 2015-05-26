@@ -499,6 +499,165 @@
 15:21 < StucKman> Darni: gracias :)
 15:21 < StucKman> y rbistolfi, claro :)
 
+00:47 < StyXman> marianoguerra: esto funciona :) mdione@diablo:~/src/projects/ayrton$ ./bin/gerhard ./bin/ayrton -c 'rsync (archive=True, verbose=True, ".", "/tmp")'
+00:49 < perrito666> StyXman: eso se traduce en rsync -va .  /tmp ?
+01:00 < marianoguerra> StyXman: que es gerhard?
+01:02 < perrito666> no se, pero por la complicacion del comando espero que poco mas haga milagros :p
+01:10 < marianoguerra> perrito666: es un python modificado para que permita correr comandos shell como llamando a funciones
+01:10 < marianoguerra> pero StyXman es terco y no acepto mi opcion que no implicaba cambiar el parser de python :D
+01:12 < perrito666> jajaja, es es para poder poner non key args despues de key args?
+01:13 < perrito666> podia ser rsync(archive=True, verbose=True, nonkey=[args])
+01:15 < perrito666> digo, tener que recompilar python no es tan funny
+10:50 < StyXman> marianoguerra, perrito666: no, no tengo que recompilar *todo* python, sólo dos archivos
+10:51 < StyXman> marianoguerra: y justamente, gerhard es dicho binario
+10:51 < StyXman> https://github.com/StyXman/ayrton/blob/ast/bin/Makefile#L6 <-- ahí sale como foo porque eran pruebas
+10:51 < lalita_> StyXman: [#11400] ayrton/Makefile at ast · StyXman/ayrton · GitHub
+11:27 < StyXman> perrito666: el problema de nonkey args después de los key args es mas complejo. en general tenés que mantener el orden de los parámetros porque pueden tener semántica arar
+                 para el comando
+11:28 < StyXman> fijate sino todo lo que es imagemagick
+11:28 < perrito666> StyXman: lo que te digo es que podes usar alguna forma de key arg para decir "esto que sigue son args que van asi"
+11:28 < StyXman> de hecho debería ser mas agresivo con triggerear la parte que hace esa magia
+11:28 < StyXman> perrito666: pero queda poco natural
+11:29 < perrito666> mi preferido seria tener un objeto que sea "esto es un non key arg" y que el kw sea lo que se te cante y a la goma
+11:29 < perrito666> StyXman: depende, si la persona esta acostumbrada a python le queda mucho menos natural eso que hiciste
+11:30 < StyXman> perrito666: lo hay
+11:30 < StyXman> o()
+11:30 < StyXman> rsync (o(verbose=True), ...)
+11:30 < StyXman> pero queda horrible
+11:31 < StyXman> ojo, desde el punto de alguien que viene de bash, no de alguien que hace python todo el día
+11:31 < perrito666> tonces rsync(archive=True, verbose=True, origin=o("."), destination=o("/tmp"))
+11:31 < StyXman> y quién te dice
+11:31 < perrito666> StyXman: yo pensaba en eso
+11:31 < perrito666> no se si se entiende la idea que planteo
+11:31 < StyXman> perrito666: y no, porque rsync no acepta --origin/--destination
+11:31 < perrito666> StyXman: claro, lo que te estoy diciendo es justo eso
+11:31 < StyXman> y de todas formas me quedan todos los **kwargs desordenados
+11:32 < perrito666> sea o algo que devuelve un NonKArg object y te fijas en el type del valor
+11:32 < StyXman> sigo teniendo el prob del orden
+11:33 < perrito666> StyXman: mm, no podes obtener eso de la identidad? digo, como haces la introspeccion?
+11:33 < StyXman> identidad?
+11:33 < perrito666> (yo pasaria una lista de 2-uplas :P)
+11:33 < StyXman> claro, que es lo que estoy haciendo con el parser
+11:33 < perrito666> StyXman: supongo que lo que haces es parseas la llamada e inyectas la funcion en globals o algo asi?
+11:33 < StyXman> cambio foo=bar por o(foo=bar) transparentemente
+11:34 < StyXman> si, mas o menos
+11:34 < perrito666> StyXman: por eso, vos parseas eso y tenes el orden en la llamada
+11:34 < StyXman> el tema es que el parser en C ya es el que maneja la parte del orden de args
+11:34 < StyXman> y de hecho si no lo modifico me rechaza los foo(a=4, 2)
+11:35 < perrito666> StyXman: link al codigo que hace eso? (la parte de python )
+11:35 < StyXman> coming
+11:35 < perrito666> tx
+11:35 < perrito666> StyXman: tambien podrias usar pypy y ahorrarte recompilar cosas
+11:35 < StyXman> la de python as in el parser en C o as in lo que hago yo después?
+11:35 < perrito666> para lo que estas haciendo deberia alcanzar
+11:35 < perrito666> lo que haces vos
+11:35 < StyXman> perrito666: por ahora son sólo 2 archivos
+11:37 < StyXman> esto es lo que le hago al AST: https://github.com/StyXman/ayrton/blob/ast/ayrton/castt.py#L426
+11:37 < lalita_> StyXman: [#11401] ayrton/castt.py at ast · StyXman/ayrton · GitHub
+11:37 < StyXman> y esto es lo que tuve que modificar para que el parser me deje pasar ese syntax error: https://github.com/StyXman/ayrton/blob/ast/bin/ast.c#L2417
+11:37 < lalita_> StyXman: [#11402] ayrton/ast.c at ast · StyXman/ayrton · GitHub
+11:52 < StyXman> perrito666: perdón, hubo un poco de charla de sordos ahí, ahí respondo en mejor orden
+11:53 < StyXman> si, puedo hacer eso de origin=o(...), pero aún tengo que tratar de mantener el orden de los **kwargs
+11:53 < StyXman> (que eso son)
+11:55 < StyXman> de hecho ya estoy viendo que voy a tener que pasar todo a o(...) y luego volverlos a **kwargs cuando no sea un comando sino una función python :-/
+11:55 < perrito666> StyXman: no es inmediatamente obvio lo que hace el codigo, pero deberia haber alguna forma de sacar eso del llamado
+11:55 < StyXman> y ojo, todo esto es un prototipo en un (b)rancho aparte
+11:56 < StyXman> o(0 ya está implementaod, podés llamar a rsync como
+11:56 < StyXman> rsync (o(verbose=True), o(archive=True), ".", "/tmp")
+11:56 < StyXman> perrito666: no por como funciona el parser en C
+11:58 < StyXman> hmmm
+11:58 < perrito666> StyXman: me dejaste pensando, pypy no te dejara usar/monkeypatchear el parser?
+11:58 < StyXman> perrito666: puede ser
+11:58 < StyXman> pero es lo mismo que jugar con dos sources en c
+11:59 < perrito666> es bastante interesante el concepto
+11:59 < StyXman> (creo)
+11:59 < perrito666> StyXman: no, porque es pure python
+11:59 < perrito666> y no hay que compilar nada
+11:59 < StyXman> perrito666: digo, es igual de chancho
+12:00 < StyXman> y si vamos al caso, habría que ver porqué pusieron esa limitación
+12:00 < marianoguerra> StyXman: no lei todo el history pero se me ocurrio otra idea
+12:00 < StyXman> marianoguerra: tescucho
+12:00 < marianoguerra> porque no haces un import hook que lea el ast del modulo y reemplaze los argumentos por o(k=v)
+12:00 < marianoguerra> en el ast estan ordenados
+12:01 < StyXman> marianoguerra: porque patra cuando tengo el ast, el parser en C ya me rechazó los kwargs antes de los posicionales
+12:01 < marianoguerra> StyXman: si queres un arg posicional sin nombre usa _=val
+12:01 < StyXman> si, estoy revisando el tema del orden en el parser
+12:01 < marianoguerra> _1 _2 _3
+12:02 < StyXman> si, también lo pensé
+12:02 < marianoguerra> StyXman: lo que digo no requiere cambiar el parser ni tener un python custom
+12:02 < StyXman> pero aún sigo con el problema de que me salen fuera de orden, creo
+12:02 < marianoguerra> en el ast no creo que esten fuera de orden
+12:02 < StyXman> marianoguerra: no es un python custom, son sólo dos archivos C
+12:02 < marianoguerra> StyXman: es un binario custom
+12:03 < StyXman> el resto es la libpython3 y toda la stdlib
+12:03 < StyXman> marianoguerra: sip
+12:03 < marianoguerra> es lo mismo que le digas que se instalen otro lenguaje que se parece mucho a python
+12:03 < StyXman> hasta el resto de la static lib es la original
+12:03 < StyXman> marianoguerra: no es todo el lenguaje, es un binario solo
+12:03 < StyXman> el intérprete puro
+12:04 < marianoguerra> aclaro, muy interesante lo que estas haciendo, pero si queres adopcion, tener que usar un binario aparte y que cambia la semantica de llamar a funciones te va a jugar
+                       en contra
+12:04 < StyXman> marianoguerra: a ver, no cambia la semántica
+12:04 < StyXman> o no debería
+12:04 < StyXman> salvo cuando llamás a un comando
+12:04 < StyXman> pero es lo mismo que te pasa en shell
+12:04 < StyXman> ponés un nombre suelto y cree que es un comando
+12:05 < perrito666> StyXman: te lo resumo un poco mas, si requiere un binario aparte, no te lo van a usar
+12:05 < StyXman> $ bash -c 'foo'
+12:05 < StyXman> bash: foo: command not found
+12:05 < perrito666> sobre todo por el poo valor que agrega
+12:05 < StyXman> perrito666: por? viene en el bundle
+12:05 < StyXman> ni se dan cuenta
+12:06 < StyXman> ellos laman a /usr/bin/ayrton que tiene como primer línea #! /usr/bin/gerhard
+12:06 < StyXman> y tampoco llaman a ayrton a mano
+12:06 < StyXman> su script dice #! /usr/bin/ayrton
+12:07 < StyXman> y de nuevo, es sólo un prototipo
+12:07 < StyXman> (b)rancho aparte :)
+12:09 < perrito666> StyXman:  seh, soh, ponele, ya si tuviese que mantenertelo empaquetado, a mi, como empaquetador, me daria una paja barbara
+
+In [2]: ast.dump (ast.parse ('f (a=3, b=4, c=5, d=6, giogdfioh=7, vforeuihfrieuhfre=10)'))
+Out[2]: "Module(body=[Expr(value=Call(func=Name(id='f', ctx=Load()), args=[], keywords=[keyword(arg='a', value=Num(n=3)), keyword(arg='b', value=Num(n=4)), keyword(arg='c', value=Num(n=5)), keyword(arg='d', value=Num(n=6)), keyword(arg='giogdfioh', value=Num(n=7)), keyword(arg='vforeuihfrieuhfre', value=Num(n=10))], starargs=None, kwargs=None))])"
+
+12:10 < StyXman> confirmado, los keywords me vienen en una lista ordenada :)
+12:10 < perrito666> StyXman: ojo, me parece re bien tu idea, es tu implementacion la que me llena el culo de preguntas
+12:10 < StyXman> heeh
+12:11 < StyXman> perate que me agarre la loca y me mande a preguntar porqué esa limitación en python-dev :-P
+12:12 < perrito666> StyXman: porque en una funcion python es imposible mapear argumentos posicionales si no estan en posicion
+12:12 < perrito666> obvio
+12:13 < perrito666> StyXman: no te olvides que cuando son ordered mapean al orden en que esta definido, si empezas a meterle kwargs al medio no sabe como hacer el orden
+12:13 < StyXman> perrito666: yo los tiraría al fondo
+12:14 < perrito666> StyXman: no es bueno cuando un compilador es ambiguo
+12:14 < perrito666> haces dos de esas mugres y terminas con javascript
+12:27 < StyXman> a ver
+12:27 < StyXman> el parser ve sólo 4 tipos de args
+12:28 < StyXman> posicionales, keywords, starargs y kwargs
+12:28 < StyXman> los dos últimos son o None o el nombre que pusieron onda foo (**args, **kwargs)
+12:29 < StyXman> es decir que cuando hacés foo (2, a=3), 2 termina en args y a=3 en keywords
+12:29 < StyXman> eso en Call time
+12:37 < marianoguerra> StyXman: lo que yo digo es un import hook que haga esto http://ix.io/iI9
+12:37 < lalita_> marianoguerra: [#11403] text/plain
+12:37 < marianoguerra> si el parser no lo permite ponele el _=
+12:37 < marianoguerra> si el parser no permite multiples _= en la misma call los vas a tener que numerar
+12:38 < StyXman> marianoguerra: eso siempre pensando en python, no?
+12:38 < marianoguerra> es syntax error kw arg repeated :S
+12:38 < marianoguerra> StyXman: si
+12:38 < StyXman> si, es syntax error
+12:40 < StyXman> marianoguerra: pero mi target son mas bien sysadmins
+12:40 < marianoguerra> y foo(1, a(b=2), 3, a(c=4)) donde a es una function tipo dict que soporta solo un arg?
+12:40 < StyXman> capá perrito666 tiene razón y debería ir por el lado de pypy
+12:41 < marianoguerra> StyXman: cual seria el lado de pypy?
+12:41 < StyXman> marianoguerra: joder el parser monkeypatcheándolo :)
+12:41 < StyXman> yo lo que digo es que yapara un sysadmin es un poco duro
+12:58 < StyXman> decía que
+12:59 < StyXman> at FunctionDef time hay 5 tipos de argumentos: posicionales, posicionales con default, *args, keywords y **kwargs
+13:00 < StyXman> o sea que el matching se hace cuando interpretea Call
+13:01 < StyXman> creo que la limitación es porque complica la semántica de un keywor suelto porái, pero posible es posible
+13:02 < StyXman> digo, ya tiene que hacer el matching a mano, lo único que hay que cambiar es el algoritmo que lo hace
+13:04 < StyXman> lo loco es cómo con un foo=42 tiene que determinar si va a parar a los posicionales (con o sin default), a los kwonly o a **kwargs
+13:06 < StyXman> 12:40 < marianoguerra> y foo(1, a(b=2), 3, a(c=4)) donde a es una function tipo dict que soporta solo un arg?
+13:06 < StyXman> marianoguerra: a(0 en realidad se llama o() y ya está implementado en develop
+13:06 < StyXman> de hecho lo que hago en esta branch es convertir los kw sueltos en o()
+
 * plumbum
 * sh
 * fabric

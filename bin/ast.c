@@ -2423,7 +2423,7 @@ ast_for_call(struct compiling *c, const node *n, expr_ty func)
       argument: [test '='] (test) [comp_for]        # Really [keyword '='] test
     */
 
-    int i, nargs, nkeywords, ngens, convert_keywords;
+    int i, nargs, nkeywords, ngens;
     asdl_seq *args;
     asdl_seq *keywords;
     expr_ty vararg = NULL, kwarg = NULL;
@@ -2433,15 +2433,12 @@ ast_for_call(struct compiling *c, const node *n, expr_ty func)
     nargs = 0;
     nkeywords = 0;
     ngens = 0;
-    convert_keywords = 0;
     for (i = 0; i < NCH(n); i++) {
         node *ch = CHILD(n, i);
         if (TYPE(ch) == argument) {
-            if (NCH(ch) == 1) {
+            if (NCH(ch) == 1)
                 nargs++;
-                if (nkeywords)
-                    convert_keywords = 1;
-            } else if (TYPE(CHILD(ch, 1)) == comp_for)
+            else if (TYPE(CHILD(ch, 1)) == comp_for)
                 ngens++;
             else
                 nkeywords++;
@@ -2458,10 +2455,8 @@ ast_for_call(struct compiling *c, const node *n, expr_ty func)
         return NULL;
     }
 
-    if (convert_keywords) {
-        nargs+= nkeywords;
-        nkeywords= 0;
-    }
+    nargs+= nkeywords;
+    nkeywords= 0;
 
     args = _Py_asdl_seq_new(nargs + ngens, c->c_arena);
     if (!args)
@@ -2503,7 +2498,7 @@ ast_for_call(struct compiling *c, const node *n, expr_ty func)
                 keyword_ty kw;
                 identifier key, tmp;
                 int k;
-                asdl_seq *t, *kws;
+                asdl_seq *kws;
                 expr_ty name;
 
                 /* CHILD(ch, 0) is test, but must be an identifier? */
@@ -2535,28 +2530,22 @@ ast_for_call(struct compiling *c, const node *n, expr_ty func)
                 e = ast_for_expr(c, CHILD(ch, 2));
                 if (!e)
                     return NULL;
-                if (!convert_keywords) {
-                    kw = keyword(key, e, c->c_arena);
-                    if (!kw)
-                        return NULL;
-                    asdl_seq_SET(keywords, nkeywords++, kw);
-                } else {
-                    /* build a call o(name=expr) */
-                    identifier id = PyUnicode_FromString ("o");
-                    name = Name(id, Load, e1->lineno, e1->col_offset, c->c_arena);
 
-                    kw = keyword(key, e, c->c_arena);
-                    if (!kw)
-                        return NULL;
+                /* build a call o(name=expr) */
+                identifier id = PyUnicode_FromString ("o");
+                name = Name(id, Load, e1->lineno, e1->col_offset, c->c_arena);
 
-                    kws = _Py_asdl_seq_new(1, c->c_arena);
-                    if (!kws)
-                        return NULL;
-                    asdl_seq_SET(kws, 0, kw);
+                kw = keyword(key, e, c->c_arena);
+                if (!kw)
+                    return NULL;
 
-                    /* ... and out it as an argument */
-                    asdl_seq_SET(args, nargs++, Call(name, NULL, kws, NULL, NULL, e1->lineno, e1->col_offset, c->c_arena));
-                }
+                kws = _Py_asdl_seq_new(1, c->c_arena);
+                if (!kws)
+                    return NULL;
+                asdl_seq_SET(kws, 0, kw);
+
+                /* ... and out it as an argument */
+                asdl_seq_SET(args, nargs++, Call(name, NULL, kws, NULL, NULL, e1->lineno, e1->col_offset, c->c_arena));
             }
         }
         else if (TYPE(ch) == STAR) {
