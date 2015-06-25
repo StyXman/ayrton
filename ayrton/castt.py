@@ -155,6 +155,30 @@ class CrazyASTTransformer (ast.NodeTransformer):
     # [x] A target occurring in a del statement is also considered bound for this
     #     purpose (though the actual semantics are to unbind the name).
 
+    def bind (self, o):
+        name= None
+
+        if type (o)==Name:
+            # Name(id='a', ctx=Store())
+            name= o.id
+
+        elif type (o)==str:
+            name= o
+
+        elif type (o)==Tuple:
+            # Tuple(elts=[Name(id='a', ctx=Store()), Name(id='b', ctx=Store())])
+            for elt in o.elts:
+                self.bind (elt)
+
+        elif type (o)==list:
+            for e in o:
+                self.bind (e)
+
+        if name is not None:
+            self.known_names[name]+= 1
+            self.defined_names[self.stack].append (name)
+            self.seen_names.add (name)
+
     def visit_Import (self, node):
         self.generic_visit (node)
         # Import(names=[alias(name='foo', asname=None)])
@@ -231,7 +255,7 @@ class CrazyASTTransformer (ast.NodeTransformer):
         #     iter=Tuple(elts=[...], ctx=Load()),
         #     body=[Pass()], orelse=[])
         self.generic_visit (node)
-        self.assign (node.target)
+        self.bind (node.target)
 
         # if iter is Command, _out=Capture
         # so this works as expected:
@@ -261,27 +285,11 @@ class CrazyASTTransformer (ast.NodeTransformer):
 
         return node
 
-    def assign (self, node):
-        if type (node)==Name:
-            # Name(id='a', ctx=Store())
-            self.known_names[node.id]+= 1
-            self.defined_names[self.stack].append (node.id)
-            self.seen_names.add (node.id)
-
-        elif type (node)==Tuple:
-            # Tuple(elts=[Name(id='a', ctx=Store()), Name(id='b', ctx=Store())])
-            for elt in node.elts:
-                self.assign (elt)
-
-        elif type (node)==list:
-            for e in node:
-                self.assign (e)
-
     def visit_Assign (self, node):
         # Assign(targets=[Tuple(elts=[Name(id='a', ctx=Store()), Name(id='b', ctx=Store())], ctx=Store())],
         #        value=Tuple(elts=[Num(n=4), Num(n=2)], ctx=Load()))
         self.generic_visit (node)
-        self.assign (node.targets)
+        self.bind (node.targets)
 
         return node
 
