@@ -36,6 +36,12 @@ class TestBinding (unittest.TestCase):
         self.assertTrue ('x'  in c.seen_names)
         self.assertTrue ('y'  in c.seen_names)
 
+    def testImport (self):
+        c= castt.CrazyASTTransformer ({})
+        t= ast.parse ("""import os""")
+        t= c.modify (t)
+        self.assertTrue ('os' in c.seen_names)
+
 class TestHelperFunctions (unittest.TestCase):
 
     def testName (self):
