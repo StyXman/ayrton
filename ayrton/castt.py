@@ -187,11 +187,11 @@ class CrazyASTTransformer (ast.NodeTransformer):
                 n= name.asname
             else:
                 # 'import os.path' -> only save 'os'
+                # NOTE: why? doesn't this clash with resolving foo.py as executable name?
                 n= name.name.split ('.')[0]
 
             logger.debug (n)
-            self.known_names[n]+=1
-            self.defined_names[self.stack].append (n)
+            self.bind (n)
 
         return node
 
