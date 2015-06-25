@@ -179,6 +179,9 @@ class CrazyASTTransformer (ast.NodeTransformer):
             self.defined_names[self.stack].append (name)
             self.seen_names.add (name)
 
+    def unbind (self, name):
+        self.known_names[name]-= 1
+
     def visit_Import (self, node):
         self.generic_visit (node)
         # Import(names=[alias(name='foo', asname=None)])
@@ -210,9 +213,9 @@ class CrazyASTTransformer (ast.NodeTransformer):
         # take out the function from the stack
         names= self.defined_names[self.stack]
         self.stack= pop_from_tuple (self.stack)
-        # ... and remove the names defined in it from the known_names
+        # ... and unbind the names defined in it from the known_names
         for name in names:
-            self.known_names[name]-= 1
+            self.unbind (name)
 
         return node
 
