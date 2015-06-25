@@ -179,8 +179,10 @@ class CrazyASTTransformer (ast.NodeTransformer):
             self.defined_names[self.stack].append (name)
             self.seen_names.add (name)
 
-    def unbind (self, name):
+    def unbind (self, name, remove_from_stack=False):
         self.known_names[name]-= 1
+        if remove_from_stack:
+            self.defined_names[self.stack].remove (name)
 
     def visit_Import (self, node):
         self.generic_visit (node)
@@ -204,8 +206,7 @@ class CrazyASTTransformer (ast.NodeTransformer):
     def visit_ClassDef (self, node):
         # ClassDef(name='foo', bases=[], keywords=[], starargs=None, kwargs=None,
         #          body=[Pass()], decorator_list=[])
-        self.known_names[node.name]+= 1
-        self.defined_names[self.stack].append (node.name)
+        self.bind (node.name)
 
         self.stack= append_to_tuple (self.stack, node.name)
         self.generic_visit (node)
@@ -230,8 +231,7 @@ class CrazyASTTransformer (ast.NodeTransformer):
         #             body=[Pass()], decorator_list=[], returns=None)
 
         # add the name as local name
-        self.known_names[node.name]+= 1
-        self.defined_names[self.stack].append (node.name)
+        self.bind (node.name)
 
         self.stack= append_to_tuple (self.stack, node.name)
 
@@ -247,7 +247,7 @@ class CrazyASTTransformer (ast.NodeTransformer):
         self.stack= pop_from_tuple (self.stack)
         # ... and remove the names defined in it from the known_names
         for name in names:
-            self.known_names[name]-= 1
+            self.unbind (name)
 
         return node
 
@@ -299,9 +299,8 @@ class CrazyASTTransformer (ast.NodeTransformer):
     def visit_Delete (self, node):
         self.generic_visit (node)
         # Delete(targets=[Name(id='foo', ctx=Del())])
-        for target in node.targets:
-            self.known_names[target.id]-= 1
-            self.defined_names[self.stack].remove (target.id)
+        for name in node.targets:
+            self.unbind (name.id, remove_from_stack=True)
 
         return node
 
@@ -482,8 +481,7 @@ class CrazyASTTransformer (ast.NodeTransformer):
         #                      optional_vars=Name(id='bar', ctx=Store()))], body=[Pass()])
         for item in node.items:
             if item.optional_vars is not None:
-                self.known_names[item.optional_vars.id]+= 1
-                self.defined_names[self.stack].append (item.optional_vars.id)
+                self.bind (item.optional_vars.id)
 
         self.generic_visit (node)
 
