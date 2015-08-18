@@ -51,9 +51,12 @@ class CommandFailed (Exception):
     def __str__ (self):
         return "%s: %d" % (' '.join ([ repr (arg) for arg in self.command.args]), self.command._exit_code)
 
-class CommandNotFound (Exception):
-    def __init__ (self, path):
-        self.path= path
+class CommandNotFound (NameError):
+    def __init__ (self, name):
+        self.name= name
+
+    def __str__ (self):
+        return "CommandNotFound or NameError: command %(name)s not found or name %(name)s is not defined" % self.__dict__
 
 def which(program):
     def is_exe(fpath):
