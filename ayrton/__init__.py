@@ -74,8 +74,11 @@ class Ayrton (object):
             child.wait ()
 
 def polute (d, more):
-    # TODO: weed out some stuff (copyright, etc)
     d.update (__builtins__)
+    # weed out some stuff
+    for weed in ('copyright', '__doc__', 'help', '__package__', 'credits', 'license', '__name__'):
+        del d[weed]
+
     d.update (os.environ)
 
     # these functions will be loaded from each module and put in the globals
