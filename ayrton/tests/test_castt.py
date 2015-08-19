@@ -17,7 +17,7 @@
 
 import unittest
 import ast
-from ast import Attribute, Name, Load
+from ast import Attribute, Name, Load, Subscript, Index, Num
 
 from ayrton import castt
 
@@ -66,3 +66,17 @@ class TestHelperFunctions (unittest.TestCase):
 
         self.assertEqual (single, 'test')
         self.assertEqual (combined, 'test.me.py')
+
+    def testDottedSubscript (self):
+        single, combined= castt.func_name2dotted_exec (parse ('argv[3].split'))
+
+        self.assertEqual (single, 'argv')
+        # this is a very strange but possible executable name
+        self.assertEqual (combined, 'argv[3].split')
+
+    def testDottedSubscriptComplex (self):
+        single, combined= castt.func_name2dotted_exec (parse ('argv[3].split[:42]'))
+
+        self.assertEqual (single, 'argv')
+        # this is a very strange but possible executable name
+        self.assertEqual (combined, 'argv[3].split[:42]')
