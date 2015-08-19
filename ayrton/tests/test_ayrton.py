@@ -527,7 +527,6 @@ foo ()''')
             pass
         self.assertRaises (NameError, ayrton.main, '''fff()''')
         self.assertRaises (CommandNotFound, ayrton.main, '''fff()''')
-        # ayrton.main ('print (globals ())')
 
 class ParsingErrors (unittest.TestCase):
 
