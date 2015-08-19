@@ -21,7 +21,7 @@ import ast
 from ast import Pass, Module, Bytes, copy_location, Call, Name, Load, Str, BitOr
 from ast import fix_missing_locations, Import, alias, Attribute, ImportFrom
 from ast import keyword, Gt, Lt, GtE, RShift, Tuple, FunctionDef, arguments
-from ast import Store, Assign
+from ast import Store, Assign, Subscript
 import pickle
 from collections import defaultdict
 import logging
@@ -29,6 +29,7 @@ import logging
 logger= logging.getLogger ('ayton.castt')
 
 import ayrton
+from ayrton.ast_pprinter import pprint
 
 def append_to_tuple (t, o):
     l= list (t)
@@ -65,20 +66,15 @@ def update_keyword (node, keyword):
     if not found:
         node.keywords.append (keyword)
 
-def func_name2dotted_exec (name):
-    logger.debug (ast.dump (name))
+def func_name2dotted_exec (node):
+    logger.debug (ast.dump (node))
 
-    names= []
-    while type (name)==Attribute:
-        # 1st iter: Attribute(value=Attribute(value=Name(id='test', ...), attr='me', ...), attr='py', ...)
-        # 2nd iter: Attribute(value=Name(id='test', ...), attr='me', ...)
-        names.insert (0, name.attr)
-        name= name.value
+    complete_name= pprint (node)
 
-    # Name(id='test', ...)
-    names.insert (0, name.id)
+    while type (node) in (Attribute, Subscript):
+        node= node.value
 
-    return (name.id, '.'.join (names))
+    return (node.id, complete_name)
 
 class CrazyASTTransformer (ast.NodeTransformer):
     def __init__ (self, environ):
