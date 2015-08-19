@@ -10,22 +10,25 @@ from ast import YieldFrom, UAdd, LShift, DictComp, Div, Starred, BitXor, Pow
 from _ast import arguments, arg as arg_type, keyword as keyword_type
 from _ast import alias as alias_type, comprehension, withitem
 
+def atom (s):
+    print (s, end='')
+
 def pprint_body (body, level):
     for statement in body:
-        print ('    '*level, end='')
+        atom ('    '*level)
         pprint (statement, level)
         print ()
 
 def pprint_seq (seq, sep=', '):
     for i, e in enumerate (seq):
         if type (e)==str:
-            print (e, end='')
+            atom (e)
         else:
             pprint (e)
 
         if i<len (seq)-1:
             if type (sep)==str:
-                print (sep, end='')
+                atom (sep)
             else:
                 pprint (sep)
 
@@ -40,14 +43,14 @@ def pprint_args (args, defaults):
     # defaults=[Num(n=1)]
     d_index= len (args)-len (defaults)
     for index, arg in enumerate (args):
-        print (arg.arg, end='')
+        atom (arg.arg)
 
         if index>=d_index:
-            print ('=', end='')
+            atom ('=')
             pprint (defaults[index-d_index])
 
         if index<len (args)-1:
-            print (', ', end='')
+            atom (', ')
 
 def pprint (node, level=0):
     # move down to the lineno
@@ -57,14 +60,14 @@ def pprint (node, level=0):
     t= type (node)
 
     if t==Add:
-        print ('+', end='')
+        atom ('+')
 
     elif t==And:
-        print (' and ', end='')
+        atom (' and ')
 
     elif t==Assert:
         # Assert(test=..., msg=None)
-        print ('assert ', end='')
+        atom ('assert ')
         pprint (node.test)
         # TODO: msg
 
@@ -72,20 +75,20 @@ def pprint (node, level=0):
         # Assign(targets=[Name(id='c', ctx=Store())],
         #        value=...)
         pprint_seq (node.targets)
-        print ('= ', end='')
+        atom ('= ')
         pprint (node.value)
 
     elif t==Attribute:
         # Attribute(value=Name(id='node', ctx=Load()), attr='body', ctx=Load())
         pprint (node.value)
-        print ('.', end='')
-        print (node.attr, end='')
+        atom ('.')
+        atom (node.attr)
 
     elif t==AugAssign:
         # AugAssign(target=Name(id='ans', ctx=Store()), op=Add(), value=Name(id='a', ctx=Load()))
         pprint (node.target)
         pprint (node.op)
-        print ('= ', end='')
+        atom ('= ')
         pprint (node.value)
 
     elif t==BinOp:
@@ -98,13 +101,13 @@ def pprint (node, level=0):
         pprint (node.right)
 
     elif t==BitAnd:
-        print (' & ', end='')
+        atom (' & ')
 
     elif t==BitOr:
-        print ('|', end='')
+        atom ('|')
 
     elif t==BitXor:
-        print ('^', end='')
+        atom ('^')
 
     elif t==BoolOp:
         pprint_seq (node.values, node.op)
@@ -113,52 +116,52 @@ def pprint (node, level=0):
         print ('break')
 
     elif t==Bytes:
-        print (repr (node.s), end='')
+        atom (repr (node.s))
 
     elif t==Call:
         # Call(func=Name(id='foo', ctx=Load()), args=[], keywords=[], starargs=None, kwargs=None)
         # TODO: annotations
         pprint (node.func)
-        print (' (', end='')
+        atom (' (')
         pprint_seq (node.args)
 
         if len (node.args)>0 and (len (node.keywords)>0 or
                                   node.starargs is not None or
                                   node.kwargs is not None):
-            print (', ', end='')
+            atom (', ')
 
         pprint_seq (node.keywords)
 
         if ((len (node.args)>0 or len (node.keywords)>0) and
             (node.starargs is not None or node.kwargs is not None)):
-            print (', ', end='')
+            atom (', ')
 
         if node.starargs is not None:
-            print ('*', end='')
+            atom ('*')
             pprint (node.starargs)
 
         if ((len (node.args)>0 or
              len (node.keywords)>0 or
              (node.starargs is not None) and node.kwargs is not None)):
-            print (', ', end='')
+            atom (', ')
 
         if node.kwargs is not None:
-            print ('**', end='')
+            atom ('**')
             pprint (node.kwargs)
 
-        print (')', end='')
+        atom (')')
 
     elif t==ClassDef:
         # ClassDef(name='ToExpand', bases=[Name(id='object', ctx=Load())],
         #          keywords=[], starargs=None, kwargs=None, body=[...]
-        print ('class ', end='')
-        print (node.name, end='')
+        atom ('class ')
+        atom (node.name)
 
         # TODO: more
         if len (node.bases)>0:
-            print (' (', end='')
+            atom (' (')
             pprint_seq (node.bases)
-            print (')', end='')
+            atom (')')
 
         print (':')
         pprint_body (node.body, level+1)
@@ -174,46 +177,46 @@ def pprint (node, level=0):
             pprint (comparator)
 
     elif t==Continue:
-        print ('continue', end='')
+        atom ('continue')
 
     elif t==Delete:
-        print ('delete ', end='')
+        atom ('delete ')
         pprint_seq (node.targets)
 
     elif t==Dict:
-        print ('{ ', end='')
+        atom ('{ ')
         for k, v in zip (node.keys, node.values):
             pprint (k)
-            print ('=', end='')
+            atom ('=')
             pprint (v)
-            print (', ', end='')
-        print (' }', end='')
+            atom (', ')
+        atom (' }')
 
     elif t==DictComp:
         # DictComp(key=Name(id='v', ctx=Load()), value=Name(id='k', ctx=Load()), generators=[comprehension(target=Tuple(elts=[Name(id='k', ctx=Store()), Name(id='v', ctx=Store())], ctx=Store()), iter=Call(func=Name(id='enumerate', ctx=Load()), args=[Name(id='_b32alphabet', ctx=Load())], keywords=[], starargs=None, kwargs=None), ifs=[])])
-        print ('{ ', end='')
+        atom ('{ ')
         pprint (node.key)
-        print (': ', end='')
+        atom (': ')
         pprint (node.value)
-        print (' for ', end='')
+        atom (' for ')
         # TODO: more
         pprint (node.generators[0])
-        print (' }', end='')
+        atom (' }')
 
     elif t==Div:
-        print ('/', end='')
+        atom ('/')
 
     elif t==Eq:
-        print ('==', end='')
+        atom ('==')
 
     elif t==ExceptHandler:
         # ExceptHandler(type=Name(id='KeyError', ctx=Load()), name=None, body=[Pass()])
-        print ('    '*level+'except ', end='')
+        atom ('    '*level+'except ')
         if node.type is not None:
             pprint (node.type)
             if node.name is not None:
-                print (' as ', end='')
-                print (node.name, end='')
+                atom (' as ')
+                atom (node.name)
 
         print (':')
         pprint_body (node.body, level+1)
@@ -223,13 +226,13 @@ def pprint (node, level=0):
         pprint (node.value, level)
 
     elif t==FloorDiv:
-        print ('\\\\', end='')
+        atom ('\\\\')
 
     elif t==For:
         # For(target=..., iter=..., body=[...], orelse=[...]
-        print ('for ', end='')
+        atom ('for ')
         pprint (node.target)
-        print (' in ', end='')
+        atom (' in ')
         pprint (node.iter)
         print (':')
         pprint_body (node.body, level+1)
@@ -239,33 +242,33 @@ def pprint (node, level=0):
         #FunctionDef(name='foo', args=arguments(...), body=[ ... ], decorator_list=[], returns=None)
         # TODO: decorator_list
         # TODO: returns
-        print ('def ', node.name, ' (', end='')
+        atom ('def ', node.name, ' (')
         pprint (node.args)
         print ('):')
         pprint_body (node.body, level+1)
 
     elif t==GeneratorExp:
         # GeneratorExp(elt=Name(id='line', ctx=Load()), generators=[...])
-        print ('( ', end='')
+        atom ('( ')
         pprint (node.elt)
-        print (' for ', end='')
+        atom (' for ')
         # TODO: more
         pprint (node.generators[0])
-        print (' )', end='')
+        atom (' )')
 
     elif t==Global:
-        print ('global ', end='')
+        atom ('global ')
         pprint_seq (node.names)
 
     elif t==Gt:
-        print ('>', end='')
+        atom ('>')
 
     elif t==GtE:
-        print ('>=', end='')
+        atom ('>=')
 
     elif t==If:
         # If(test=..., body=[...], orelse=[...]
-        print ('if ', end='')
+        atom ('if ')
         pprint (node.test)
         print (':')
         pprint_body (node.body, level+1)
@@ -273,7 +276,7 @@ def pprint (node, level=0):
         if len (node.orelse)>0:
             # special case for elif
             if len (node.orelse)==1 and type (node.orelse[0])==If:
-                print ('    '*level+'el', end='')
+                atom ('    '*level+'el')
                 pprint (node.orelse[0], level)
             else:
                 pprint_orelse (node.orelse, level)
@@ -281,131 +284,131 @@ def pprint (node, level=0):
     elif t==IfExp:
         # IfExp(test=..., body=Str(s=''), orelse=Str(s='s'))
         pprint (node.body)
-        print (' if ', end='')
+        atom (' if ')
         pprint (node.test)
-        print (' else ', end='')
+        atom (' else ')
         pprint (node.orelse)
 
     elif t==Import:
         # Import(names=[alias(name='ayrton', asname=None)])
-        print ("import ", end='')
+        atom ("import ")
         pprint_seq (node.names)
 
     elif t==ImportFrom:
         # ImportFrom(module='ayrton.execute', names=[alias(name='Command', asname=None)], level=0)
-        print ("from ", end='')
-        print (node.module, end='')
-        print (" import ", end='')
+        atom ("from ")
+        atom (node.module)
+        atom (" import ")
         pprint_seq (node.names)
 
     elif t==In:
-        print (' in ', end='')
+        atom (' in ')
 
     elif t==Index:
         pprint (node.value)
 
     elif t==Is:
-        print (' is ', end='')
+        atom (' is ')
 
     elif t==IsNot:
-        print (' is not ', end='')
+        atom (' is not ')
 
     elif t==LShift:
-        print ('<<', end='')
+        atom ('<<')
 
     elif t==Lambda:
         # Lambda(args=arguments(args=[], vararg=None, kwonlyargs=[], kw_defaults=[], kwarg=None, defaults=[]), body=Num(n=0))
-        print ('lambda ', end='')
+        atom ('lambda ')
         pprint (node.args)
-        print (': ', end='')
+        atom (': ')
         pprint (node.body)
 
     elif t==List:
-        print ('[ ', end='')
+        atom ('[ ')
         pprint_seq (node.elts)
-        print (' ]', end='')
+        atom (' ]')
 
     elif t==ListComp:
         # ListComp(elt=Name(id='i', ctx=Load()), generators=[...])
         # [ i for i in self.indexes if i.right is not None ]
-        print ('[ ', end='')
+        atom ('[ ')
         pprint (node.elt)
-        print (' for ', end='')
+        atom (' for ')
         # TODO: more
         pprint (node.generators[0])
-        print (' ]', end='')
+        atom (' ]')
 
     elif t==Lt:
-        print ('<', end='')
+        atom ('<')
 
     elif t==LtE:
-        print ('<=', end='')
+        atom ('<=')
 
     elif t==Mod:
-        print (' % ', end='')
+        atom (' % ')
 
     elif t==Module:
         # Module(body=[ ... ])
         pprint_body (node.body, 0)
 
     elif t==Mult:
-        print ('*', end='')
+        atom ('*')
 
     elif t==Name:
-        print (node.id, end='')
+        atom (node.id)
 
     elif t==NameConstant:
-        print (node.value, end='')
+        atom (node.value)
 
     elif t==Not:
-        print ('not ', end='')
+        atom ('not ')
 
     elif t==NotEq:
-        print ('!=', end='')
+        atom ('!=')
 
     elif t==NotIn:
-        print (' not in ', end='')
+        atom (' not in ')
 
     elif t==Num:
-        print (node.n, end='')
+        atom (node.n)
 
     elif t==Or:
-        print (' or ', end='')
+        atom (' or ')
 
     elif t==Pass:
         print ('pass')
 
     elif t==Pow:
-        print ('**', end='')
+        atom ('**')
 
     elif t==RShift:
-        print ('>>', end='')
+        atom ('>>')
 
     elif t==Raise:
         # Raise(exc=Call(func=Name(id='ValueError', ctx=Load()),
         #                args=[Str(s='too many lines')], keywords=[],
         #                starargs=None, kwargs=None),
         #       cause=None)
-        print ('raise ', end='')
+        atom ('raise ')
         if node.exc is not None:
             pprint (node.exc)
         # TODO: cause?
 
     elif t==Return:
-        print ('return ', end='')
+        atom ('return ')
         if node.value is not None:
             pprint (node.value)
 
     elif t==Set:
-        print ('{ ', end='')
+        atom ('{ ')
         pprint_seq (node.elts)
-        print (' }', end='')
+        atom (' }')
 
     elif t==SetComp:
         # SetComp(elt=Name(id='name', ctx=Load()), generators=[...])
-        print ('{ ', end='')
+        atom ('{ ')
         pprint (node.elt)
-        print (' for ', end='')
+        atom (' for ')
         # TODO: more
         pprint (node.generators[0])
 
@@ -414,29 +417,29 @@ def pprint (node, level=0):
         if node.lower is not None:
             pprint (node.lower)
 
-        print (':', end='')
+        atom (':')
 
         if node.upper is not None:
             pprint (node.upper)
 
         if node.step is not None:
-            print (':', end='')
+            atom (':')
             pprint (node.step)
 
     elif t==Str:
         # Str(s='true')
-        print (repr (node.s), end='')
+        atom (repr (node.s))
 
     elif t==Sub:
-        print ('-', end='')
+        atom ('-')
 
     elif t==Subscript:
         # Subscript(value=Attribute(value=Name(id='node', ctx=Load()), attr='orelse', ctx=Load()),
         #           slice=Index(value=Num(n=0)), ctx=Load())
         pprint (node.value)
-        print ('[', end='')
+        atom ('[')
         pprint (node.slice)
-        print (']', end='')
+        atom (']')
 
     elif t==Try:
         # Try(body=[...],  handlers=[...], orelse=[], finalbody=[])
@@ -452,52 +455,52 @@ def pprint (node, level=0):
             pprint_body (node.finalbody, level+1)
 
     elif t==Tuple:
-        print ('( ', end='')
+        atom ('( ')
         pprint_seq (node.elts)
-        print (' )', end='')
+        atom (' )')
 
     elif t==UAdd:
-        print ('+', end='')
+        atom ('+')
 
     elif t==USub:
-        print ('-', end='')
+        atom ('-')
 
     elif t==UnaryOp:
         pprint (node.op)
         pprint (node.operand)
 
     elif t==While:
-        print ('while ', end='')
+        atom ('while ')
         pprint (node.test)
         print (':')
         pprint_body (node.body, level+1)
         pprint_orelse (node.orelse, level)
 
     elif t==With:
-        print ('with ', end='')
+        atom ('with ')
         pprint_seq (node.items)
-        print (':', end='')
+        atom (':')
         pprint_body (node.body, level+1)
 
     elif t==Yield:
         # Yield(value=Attribute(value=Name(id='self', ctx=Load()), attr='left', ctx=Load()))
-        print ('yield ', end='')
+        atom ('yield ')
         pprint (node.value)
 
     elif t==YieldFrom:
-        print ('yield from ', end='')
+        atom ('yield from ')
         pprint (node.value)
 
     elif t==alias_type:
-        print (node.name, end='')
+        atom (node.name)
         if node.asname is not None:
-            print (" as ", end='')
+            atom (" as ")
             print (node.asname, end= '')
 
     elif t==arg_type:
         # arg(arg='node', annotation=None)
         # TODO: annotation
-        print (node.arg, end='')
+        atom (node.arg)
 
     elif t==arguments:
         # arguments(args=[arg(arg='a', annotation=None), arg(arg='b', annotation=None)],
@@ -524,26 +527,26 @@ def pprint (node, level=0):
         if len (node.args)>0 and (node.vararg is not None or
                                   len (node.kwonlyargs)>0 or
                                   node.kwarg is not None):
-            print (', ', end='')
+            atom (', ')
 
         if node.vararg is not None:
-            print ('*', end='')
+            atom ('*')
             pprint (node.vararg)
 
         if ((len (node.args)>0 or node.vararg is not None) and
             (len (node.kwonlyargs)>0 or node.kwarg is not None)):
 
-            print (', ', end='')
+            atom (', ')
 
         pprint_args (node.kwonlyargs, node.kw_defaults)
 
         if ((len (node.args)>0 or
              node.vararg is not None or
              len (node.kwonlyargs)>0) and node.kwarg is not None):
-            print (', ', end='')
+            atom (', ')
 
         if node.kwarg is not None:
-            print ('**', end='')
+            atom ('**')
             pprint (node.kwarg)
 
     elif t==comprehension:
@@ -554,25 +557,25 @@ def pprint (node, level=0):
         #                            comparators=[NameConstant(value=None)])])
         # i in self.indexes if i.right is not None
         pprint (node.target)
-        print (' in ', end='')
+        atom (' in ')
         pprint (node.iter)
 
         if len (node.ifs)>0:
             # TODO: more
-            print (' if ', end='')
+            atom (' if ')
             pprint (node.ifs[0])
 
     elif t==keyword_type:
         # keyword(arg='end', value=Str(s=''))
-        print (node.arg, end='')
-        print ('=', end='')
+        atom (node.arg)
+        atom ('=')
         pprint (node.value)
 
     elif t==withitem:
         # withitem(context_expr=..., optional_vars=Name(id='f', ctx=Store()))
         pprint (node.context_expr)
         if node.optional_vars is not None:
-            print (' as ', end='')
+            atom (' as ')
             pprint (node.optional_vars)
 
     else:
