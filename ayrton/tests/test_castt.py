@@ -48,6 +48,16 @@ class TestBinding (unittest.TestCase):
 
         self.assertTrue ('os' in self.c.seen_names)
 
+    def testTryExcept (self):
+        t= ast.parse ("""try:
+    foo()
+except Exception as e:
+    pass""")
+
+        t= self.c.modify (t)
+
+        self.assertTrue ('e' in self.c.seen_names)
+
 def parse_expression (s):
     # Module(body=[Expr(value=...)])
     return ast.parse (s).body[0].value
