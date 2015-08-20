@@ -79,7 +79,7 @@ def func_name2dotted_exec (node):
 class CrazyASTTransformer (ast.NodeTransformer):
     def __init__ (self, environ):
         super ().__init__ ()
-        # the whole ayrton environmen; see ayrton.Environ.
+        # the whole ayrton environment; see ayrton.Environ.
         self.environ= environ
         # names defined in the global namespace
         self.known_names= defaultdict (lambda: 0)
@@ -126,7 +126,7 @@ class CrazyASTTransformer (ast.NodeTransformer):
     # [x] and targets that are identifiers if occurring in an assignment,
     # [x] for loop header, or
     # [x] after as in a with statement
-    # [ ] or except clause.
+    # [x] or except clause.
     # The import statement of the form from ... import * binds all names defined
     # in the imported module, except those beginning with an underscore.
 
@@ -272,14 +272,10 @@ class CrazyASTTransformer (ast.NodeTransformer):
         return node
 
     def visit_ExceptHandler (self, node):
-        # Try(body=[Expr(value=Name(id='fo', ctx=Load()))],
-        #     handlers=[ExceptHandler(type=Name(id='A', ctx=Load()), name='e',
-        #               body=[Pass()])],
-        #     orelse=[], finalbody=[])
-
-        # not sure what/how to do here
-        # self.known_names[name.id]+= 1
-        # self.defined_names[self.stack].append (name.id)
+        # ExceptHandler(type=Name(id='A', ctx=Load()),
+        #               name='e',
+        #               body=[Pass()])
+        self.bind (node.name)
         self.generic_visit (node)
 
         return node
