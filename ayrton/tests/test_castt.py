@@ -42,40 +42,40 @@ class TestBinding (unittest.TestCase):
         t= c.modify (t)
         self.assertTrue ('os' in c.seen_names)
 
-def parse (s):
+def parse_expression (s):
     # Module(body=[Expr(value=...)])
     return ast.parse (s).body[0].value
 
 class TestHelperFunctions (unittest.TestCase):
 
     def testName (self):
-        single, combined= castt.func_name2dotted_exec (parse ('test'))
+        single, combined= castt.func_name2dotted_exec (parse_expression ('test'))
 
         self.assertEqual (single, 'test')
         self.assertEqual (combined, 'test')
 
     def testDottedName (self):
-        single, combined= castt.func_name2dotted_exec (parse ('test.py'))
+        single, combined= castt.func_name2dotted_exec (parse_expression ('test.py'))
 
         self.assertEqual (single, 'test')
         self.assertEqual (combined, 'test.py')
 
     def testDottedDottedName (self):
         # NOTE: yes, indentation sucks here
-        single, combined= castt.func_name2dotted_exec (parse ('test.me.py'))
+        single, combined= castt.func_name2dotted_exec (parse_expression ('test.me.py'))
 
         self.assertEqual (single, 'test')
         self.assertEqual (combined, 'test.me.py')
 
     def testDottedSubscript (self):
-        single, combined= castt.func_name2dotted_exec (parse ('argv[3].split'))
+        single, combined= castt.func_name2dotted_exec (parse_expression ('argv[3].split'))
 
         self.assertEqual (single, 'argv')
         # this is a very strange but possible executable name
         self.assertEqual (combined, 'argv[3].split')
 
     def testDottedSubscriptComplex (self):
-        single, combined= castt.func_name2dotted_exec (parse ('argv[3].split[:42]'))
+        single, combined= castt.func_name2dotted_exec (parse_expression ('argv[3].split[:42]'))
 
         self.assertEqual (single, 'argv')
         # this is a very strange but possible executable name
