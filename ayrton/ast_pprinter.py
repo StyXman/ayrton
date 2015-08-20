@@ -9,6 +9,11 @@ from ast import Assert, Set, SetComp, LtE, IfExp, FloorDiv, GtE, With, Continue
 from ast import YieldFrom, UAdd, LShift, DictComp, Div, Starred, BitXor, Pow
 from _ast import arguments, arg as arg_type, keyword as keyword_type
 from _ast import alias as alias_type, comprehension, withitem
+try:
+    # python3.5 support
+    from _ast import AsyncFor, AsyncFunctionDef, AsyncWith, Await
+except ImportError:
+    AsyncFor= AsyncFunctionDef= AsyncWith= Await= object()
 
 def pprint_body (body, level):
     for statement in body:
@@ -74,6 +79,25 @@ def pprint_inner (node, level=0):
         yield '= '
         for i in pprint_inner (node.value): yield i
 
+    elif t==AsyncFor:
+        yield 'async '
+        # For(target=..., iter=..., body=[...], orelse=[...])
+        node= For (target=node.target, iter=node.iter, body=node.body, orelse=node.orelse)
+        for i in pprint_inner (node): yield i
+
+    elif t==AsyncFunctionDef:
+        yield 'async '
+        # FunctionDef(name='foo', args=arguments(...), body=[ ... ], decorator_list=[], returns=None)
+        node= FunctionDef (name=node.name, args=node.args, body=node.body, decorator_list=node.decorator_list,
+                           returns=node.returns)
+        for i in pprint_inner (node): yield i
+
+    elif t==AsyncWith:
+        yield 'async '
+        # With(items=[...], body=[...])
+        node= With (items=node.items, body=node.body)
+        for i in pprint_inner (node): yield i
+
     elif t==Attribute:
         # Attribute(value=Name(id='node', ctx=Load()), attr='body', ctx=Load())
         for i in pprint_inner (node.value): yield i
@@ -85,6 +109,11 @@ def pprint_inner (node, level=0):
         for i in pprint_inner (node.target): yield i
         for i in pprint_inner (node.op): yield i
         yield '= '
+        for i in pprint_inner (node.value): yield i
+
+    elif t==Await:
+        # value=Await(value=...)
+        yield 'await '
         for i in pprint_inner (node.value): yield i
 
     elif t==BinOp:
@@ -225,7 +254,7 @@ def pprint_inner (node, level=0):
         yield '\\\\'
 
     elif t==For:
-        # For(target=..., iter=..., body=[...], orelse=[...]
+        # For(target=..., iter=..., body=[...], orelse=[...])
         yield 'for '
         for i in pprint_inner (node.target): yield i
         yield ' in '
@@ -235,7 +264,7 @@ def pprint_inner (node, level=0):
         for i in pprint_orelse (node.orelse, level): yield i
 
     elif t==FunctionDef:
-        #FunctionDef(name='foo', args=arguments(...), body=[ ... ], decorator_list=[], returns=None)
+        # FunctionDef(name='foo', args=arguments(...), body=[ ... ], decorator_list=[], returns=None)
         # TODO: decorator_list
         # TODO: returns
         yield 'def ', node.name, ' ('
