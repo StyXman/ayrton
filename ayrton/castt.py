@@ -247,6 +247,8 @@ class CrazyASTTransformer (ast.NodeTransformer):
 
         return node
 
+    visit_AsyncFunctionDef= visit_FunctionDef
+
     def visit_For (self, node):
         # For(target=Name(id='x', ctx=Store()), iter=List(elts=[], ctx=Load()),
         #     body=[Pass()], orelse=[])
@@ -270,6 +272,8 @@ class CrazyASTTransformer (ast.NodeTransformer):
             ast.fix_missing_locations (node.iter)
 
         return node
+
+    visit_AsyncFor= visit_For
 
     def visit_ExceptHandler (self, node):
         # ExceptHandler(type=Name(id='A', ctx=Load()),
