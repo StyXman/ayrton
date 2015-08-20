@@ -23,24 +23,30 @@ from ayrton import castt
 
 class TestBinding (unittest.TestCase):
 
+    def setUp (self):
+        self.c= castt.CrazyASTTransformer ({})
+
     def testSimpleFor (self):
-        c= castt.CrazyASTTransformer ({})
         t= ast.parse ("""for x in (): pass""")
-        t= c.modify (t)
-        self.assertTrue ('x'  in c.seen_names)
+
+        t= self.c.modify (t)
+
+        self.assertTrue ('x'  in self.c.seen_names)
 
     def testTupleFor (self):
-        c= castt.CrazyASTTransformer ({})
         t= ast.parse ("""for x, y in (4, 2): pass""")
-        t= c.modify (t)
-        self.assertTrue ('x'  in c.seen_names)
-        self.assertTrue ('y'  in c.seen_names)
+
+        t= self.c.modify (t)
+
+        self.assertTrue ('x'  in self.c.seen_names)
+        self.assertTrue ('y'  in self.c.seen_names)
 
     def testImport (self):
-        c= castt.CrazyASTTransformer ({})
         t= ast.parse ("""import os""")
-        t= c.modify (t)
-        self.assertTrue ('os' in c.seen_names)
+
+        t= self.c.modify (t)
+
+        self.assertTrue ('os' in self.c.seen_names)
 
 def parse_expression (s):
     # Module(body=[Expr(value=...)])
