@@ -304,8 +304,7 @@ class ASTBuilder(object):
             test = self.handle_expr(if_node.children[1])
             suite = self.handle_suite(if_node.children[3])
             else_suite = self.handle_suite(if_node.children[6])
-            return ast.If(test, suite, else_suite, if_node.lineno,
-                          if_node.column)
+            return ast.If(test, suite, else_suite, if_node.lineno, if_node.column)
         elif otherwise_string == "elif":
             elif_count = child_count - 4
             after_elif = if_node.children[elif_count + 1]
@@ -840,8 +839,7 @@ class ASTBuilder(object):
         body = self.handle_expr(if_expr_node.children[0])
         expression = self.handle_expr(if_expr_node.children[2])
         otherwise = self.handle_expr(if_expr_node.children[4])
-        return ast.IfExp(expression, body, otherwise, if_expr_node.lineno,
-                         if_expr_node.column)
+        return ast.IfExp(expression, body, otherwise, if_expr_node.lineno, if_expr_node.column)
 
     def handle_comp_op(self, comp_op_node):
         comp_node = comp_op_node.children[0]
