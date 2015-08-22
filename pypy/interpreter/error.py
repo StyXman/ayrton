@@ -350,3 +350,21 @@ class OperationError(Exception):
             space.setattr(w_value, space.wrap('__context__'), w_context)
 
 
+def oefmt(w_type, valuefmt, *args):
+    """Equivalent to OperationError(w_type, space.wrap(valuefmt % args)).
+    More efficient in the (common) case where the value is not actually
+    needed. Note that in the py3k branch the exception message will
+    always be unicode.
+
+    Supports the standard %s and %d formats, plus the following:
+
+    %8 - The result of arg.decode('utf-8')
+    %N - The result of w_arg.getname(space)
+    %R - The result of space.unicode_w(space.repr(w_arg))
+    %T - The result of space.type(w_arg).name
+
+    """
+    if not len(args):
+        return OpErrFmtNoArgs(w_type, valuefmt)
+    OpErrFmt, strings = get_operr_class(valuefmt)
+    return OpErrFmt(w_type, strings, *args)
