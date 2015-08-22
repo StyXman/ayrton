@@ -79,7 +79,7 @@ def dict_to_switch(d):
     """Convert of dictionary with integer keys to a switch statement."""
     def lookup(query):
         if we_are_translated():
-            for key, value in unrolling_iteritems:
+            for key, value in unrolling_items:
                 if key == query:
                     return value
             else:
@@ -87,7 +87,7 @@ def dict_to_switch(d):
         else:
             return d[query]
     lookup._always_inline_ = True
-    unrolling_iteritems = unrolling_iterable(d.iteritems())
+    unrolling_items = unrolling_iterable(d.items())
     return lookup
 
 

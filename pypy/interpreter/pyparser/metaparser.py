@@ -4,7 +4,7 @@ Makes a parser from a grammar source.
 Inspired by Guido van Rossum's pgen2.
 """
 
-import StringIO
+import io
 import tokenize
 import token
 
@@ -46,7 +46,7 @@ class DFA(object):
         self.arcs[label] = next
 
     def unify_state(self, old, new):
-        for label, state in self.arcs.iteritems():
+        for label, state in self.arcs.items():
             if state is old:
                 self.arcs[label] = new
 
@@ -61,7 +61,7 @@ class DFA(object):
             return False
         if len(self.arcs) != len(other.arcs):
             return False
-        for label, state in self.arcs.iteritems():
+        for label, state in self.arcs.items():
             try:
                 other_state = other.arcs[label]
             except KeyError:
@@ -89,7 +89,7 @@ def nfa_to_dfa(start, end):
             for label, sub_nfa in nfa.arcs:
                 if label is not None:
                     sub_nfa.find_unlabeled_states(arcs.setdefault(label, set()))
-        for label, nfa_set in arcs.iteritems():
+        for label, nfa_set in arcs.items():
             for st in state_stack:
                 if st.nfas == nfa_set:
                     break
@@ -104,7 +104,7 @@ def simplify_dfa(dfa):
     while changed:
         changed = False
         for i, state in enumerate(dfa):
-            for j in xrange(i + 1, len(dfa)):
+            for j in range(i + 1, len(dfa)):
                 other_state = dfa[j]
                 if state == other_state:
                     del dfa[j]
@@ -120,7 +120,7 @@ class ParserGenerator(object):
     def __init__(self, grammar_source):
         self.start_symbol = None
         self.dfas = {}
-        stream = StringIO.StringIO(grammar_source)
+        stream = io.StringIO(grammar_source)
         self.token_stream = tokenize.generate_tokens(stream.readline)
         self.parse()
         self.first = {}
@@ -129,7 +129,7 @@ class ParserGenerator(object):
     def build_grammar(self, grammar_cls):
         gram = grammar_cls()
         gram.start = self.start_symbol
-        names = self.dfas.keys()
+        names = list(self.dfas.keys())
         names.sort()
         names.remove(self.start_symbol)
         names.insert(0, self.start_symbol)
@@ -144,7 +144,7 @@ class ParserGenerator(object):
             states = []
             for state in dfa:
                 arcs = []
-                for label, next in state.arcs.iteritems():
+                for label, next in state.arcs.items():
                     arcs.append((self.make_label(gram, label), dfa.index(next)))
                 states.append((arcs, state.is_final))
             gram.dfas.append((states, self.make_first(gram, name)))
@@ -204,7 +204,7 @@ class ParserGenerator(object):
         return firsts
 
     def add_first_sets(self):
-        for name, dfa in self.dfas.iteritems():
+        for name, dfa in self.dfas.items():
             if name not in self.first:
                 self.get_first(name, dfa)
 
@@ -213,7 +213,7 @@ class ParserGenerator(object):
         state = dfa[0]
         all_labels = set()
         overlap_check = {}
-        for label, sub_state in state.arcs.iteritems():
+        for label, sub_state in state.arcs.items():
             if label in self.dfas:
                 if label in self.first:
                     new_labels = self.first[label]
@@ -227,7 +227,7 @@ class ParserGenerator(object):
                 all_labels.add(label)
                 overlap_check[label] = set((label,))
         inverse = {}
-        for label, their_first in overlap_check.iteritems():
+        for label, their_first in overlap_check.items():
             for sub_label in their_first:
                 if sub_label in inverse:
                     raise PgenError("ambiguous symbol with label %s"
@@ -256,10 +256,10 @@ class ParserGenerator(object):
         return False
 
     def advance_token(self):
-        data = self.token_stream.next()
+        data = next(self.token_stream)
         # Ignore comments and non-logical newlines.
         while data[0] in (tokenize.NL, tokenize.COMMENT):
-            data = self.token_stream.next()
+            data = next(self.token_stream)
         self.type, self.value = data[:2]
         self.location = data[2:]
 

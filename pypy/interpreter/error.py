@@ -1,4 +1,4 @@
-import cStringIO
+import io
 import itertools
 import os
 import sys
@@ -152,7 +152,7 @@ class OperationError(Exception):
         application-level traceback, useful to debug the interpreter."""
         if file is None:
             file = sys.stderr
-        f = cStringIO.StringIO()
+        f = io.StringIO()
         for i in range(len(self.debug_excs)-1, -1, -1):
             print >> f, "Traceback (interpreter-level):"
             traceback.print_tb(self.debug_excs[i][2], file=f)

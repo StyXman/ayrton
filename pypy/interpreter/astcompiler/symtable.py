@@ -182,7 +182,7 @@ class Scope(object):
         new_free = {}
         if self._hide_bound_from_nested_scopes:
             self._pass_on_bindings(local, bound, globs, new_bound, new_globs)
-        for name, flags in self.roles.iteritems():
+        for name, flags in self.roles.items():
             self._finalize_name(name, flags, local, bound, free, globs)
         if not self._hide_bound_from_nested_scopes:
             self._pass_on_bindings(local, bound, globs, new_bound, new_globs)
@@ -273,7 +273,7 @@ class FunctionScope(Scope):
         Scope._pass_on_bindings(self, local, bound, globs, new_bound, new_globs)
 
     def _finalize_cells(self, free):
-        for name, role in self.symbols.iteritems():
+        for name, role in self.symbols.items():
             if role == SCOPE_LOCAL and name in free:
                 self.symbols[name] = SCOPE_CELL
                 del free[name]
@@ -298,7 +298,7 @@ class ClassScope(Scope):
         new_bound['__class__'] = None
 
     def _finalize_cells(self, free):
-        for name, role in self.symbols.iteritems():
+        for name, role in self.symbols.items():
             if role == SCOPE_LOCAL and name in free and name == '__class__':
                 self.symbols[name] = SCOPE_CELL
                 del free[name]

@@ -22,13 +22,13 @@ python_grammar = _get_python_grammar()
 
 class _Tokens(object):
     pass
-for tok_name, idx in pytoken.python_tokens.iteritems():
+for tok_name, idx in pytoken.python_tokens.items():
     setattr(_Tokens, tok_name, idx)
 tokens = _Tokens()
 
 class _Symbols(object):
     pass
-for sym_name, idx in python_grammar.symbol_ids.iteritems():
+for sym_name, idx in python_grammar.symbol_ids.items():
     setattr(_Symbols, sym_name, idx)
 syms = _Symbols()
 

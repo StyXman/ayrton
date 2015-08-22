@@ -140,7 +140,7 @@ class Block(object):
 def _make_index_dict_filter(syms, flag):
     i = 0
     result = {}
-    for name, scope in syms.iteritems():
+    for name, scope in syms.items():
         if scope == flag:
             result[name] = i
             i += 1
@@ -533,7 +533,7 @@ class PythonCodeMaker(ast.ASTVisitor):
 
 def _list_from_dict(d, offset=0):
     result = [None] * len(d)
-    for obj, index in d.iteritems():
+    for obj, index in d.items():
         result[index - offset] = obj
     return result
 
@@ -709,7 +709,7 @@ for name, func in globals().items():
     if name.startswith("_compute_"):
         func._always_inline_ = True
         _stack_effect_computers[getattr(ops, name[9:])] = func
-for op, value in _static_opcode_stack_effects.iteritems():
+for op, value in _static_opcode_stack_effects.items():
     def func(arg, _value=value):
         return _value
     func._always_inline_ = True

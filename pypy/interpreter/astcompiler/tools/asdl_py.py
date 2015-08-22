@@ -517,7 +517,7 @@ def W_AST_init(space, w_self, __args__):
     if args_w:
         for i, w_field in enumerate(fields_w):
             space.setattr(w_self, w_field, args_w[i])
-    for field, w_value in kwargs_w.iteritems():
+    for field, w_value in kwargs_w.items():
         space.setattr(w_self, space.wrap(field), w_value)
 
 
