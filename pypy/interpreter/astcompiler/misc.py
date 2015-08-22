@@ -1,30 +1,3 @@
-from pypy.interpreter import gateway
-from rpython.rlib.objectmodel import we_are_translated
-from rpython.rlib.unroll import unrolling_iterable
-
-
-app = gateway.applevel("""
-def syntax_warning(msg, fn, lineno, offset):
-    import warnings
-    try:
-        warnings.warn_explicit(msg, SyntaxWarning, fn, lineno)
-    except SyntaxWarning:
-        raise SyntaxError(msg, fn, lineno, offset)
-""", filename=__file__)
-_emit_syntax_warning = app.interphook("syntax_warning")
-del app
-
-def syntax_warning(space, msg, fn, lineno, offset):
-    """Raise an applevel SyntaxWarning.
-
-    If the user has set this warning to raise an error, a SyntaxError will be
-    raised."""
-    w_msg = space.wrap(msg)
-    w_filename = space.wrap(fn)
-    w_lineno = space.wrap(lineno)
-    w_offset = space.wrap(offset)
-    _emit_syntax_warning(space, w_msg, w_filename, w_lineno, w_offset)
-
 
 def parse_future(tree, feature_flags):
     from pypy.interpreter.astcompiler import ast
@@ -78,14 +51,7 @@ def check_forbidden_name(name, node=None):
 def dict_to_switch(d):
     """Convert of dictionary with integer keys to a switch statement."""
     def lookup(query):
-        if we_are_translated():
-            for key, value in unrolling_items:
-                if key == query:
-                    return value
-            else:
-                raise KeyError
-        else:
-            return d[query]
+        return d[query]
     lookup._always_inline_ = True
     unrolling_items = unrolling_iterable(d.items())
     return lookup
