@@ -48,6 +48,35 @@ def check_forbidden_name(name, node=None):
     # XXX Warn about using True and False
 
 
+# shamelessly lifted off rpython
+class unrolling_iterable:
+
+    def __init__(self, iterable):
+        self._items = list(iterable)
+        self._head = _unroller(self._items)
+
+    def __iter__(self):
+        return iter(self._items)
+
+    def get_unroller(self):
+        return self._head
+
+
+# ditto
+class _unroller:
+
+    def __init__(self, items, i=0):
+        self._items = items
+        self._i = i
+        self._next = None
+
+    def step(self):
+        v = self._items[self._i]
+        if self._next is None:
+            self._next = _unroller(self._items, self._i+1)
+        return v, self._next
+
+
 def dict_to_switch(d):
     """Convert of dictionary with integer keys to a switch statement."""
     def lookup(query):
