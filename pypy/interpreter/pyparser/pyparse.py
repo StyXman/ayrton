@@ -1,7 +1,6 @@
 from pypy.interpreter.error import OperationError
 from pypy.interpreter.pyparser import future, parser, pytokenizer, pygram, error
 from pypy.interpreter.astcompiler import consts
-from rpython.rlib import rstring
 
 
 def recode_to_utf8(space, bytes, encoding):
@@ -57,6 +56,12 @@ def _check_line_for_encoding(line):
     return pytokenizer.match_encoding_declaration(line[i:]), True
 
 
+# shamelessly ripped off rpython to avoid dependency
+def check_str0(fname):
+    """A 'probe' to trigger a failure at translation time, if the
+    string was not proved to not contain NUL characters."""
+    assert '\x00' not in fname, "NUL byte in string"
+
 class CompileInfo(object):
     """Stores information about the source being compiled.
 
@@ -77,7 +82,7 @@ class CompileInfo(object):
 
     def __init__(self, filename, mode="exec", flags=0, future_pos=(0, 0),
                  hidden_applevel=False, optimize=-1):
-        rstring.check_str0(filename)
+        check_str0(filename)
         self.filename = filename
         self.mode = mode
         self.encoding = None

@@ -5,9 +5,6 @@ import sys
 import traceback
 from errno import EINTR
 
-from rpython.rlib import jit
-from rpython.rlib.objectmodel import we_are_translated, specialize
-
 from pypy.interpreter import debug
 
 
@@ -166,7 +163,6 @@ class OperationError(Exception):
         if AUTO_DEBUG:
             debug.fire(self)
 
-    @jit.unroll_safe
     def normalize_exception(self, space):
         """Normalize the OperationError.  In other words, fix w_type and/or
         w_value to make sure that the __class__ of w_value is exactly w_type.

@@ -1,4 +1,4 @@
-from pypy.tool import stdlib___future__ as future
+import __future__ as future
 
 class FutureFlags(object):
 
