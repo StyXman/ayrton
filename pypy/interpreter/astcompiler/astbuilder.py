@@ -2,8 +2,6 @@ from pypy.interpreter.astcompiler import consts, misc
 from pypy.interpreter import error
 from pypy.interpreter.pyparser.pygram import syms, tokens
 from pypy.interpreter.pyparser.error import SyntaxError
-from pypy.interpreter.pyparser import parsestring
-
 import ast
 
 def ast_from_node(space, node, compile_info):
@@ -40,6 +38,10 @@ operator_map = misc.dict_to_switch({
     tokens.PERCENT : ast.Mod
 })
 
+
+def parsestr(space, encoding, literal):
+    # return space.wrap(eval (literal))
+    return eval (literal)
 
 class ASTBuilder(object):
 
@@ -1103,7 +1105,7 @@ class ASTBuilder(object):
             space = self.space
             encoding = self.compile_info.encoding
             try:
-                sub_strings_w = [parsestring.parsestr(space, encoding, s.value)
+                sub_strings_w = [parsestr(space, encoding, s.value)
                                  for s in atom_node.children]
             except error.OperationError as e:
                 if not (e.match(space, space.w_UnicodeError) or
@@ -1123,7 +1125,7 @@ class ASTBuilder(object):
                     self.error("cannot mix bytes and nonbytes literals",
                               atom_node)
                 # UnicodeError in literal: turn into SyntaxError
-            strdata = space.isinstance_w(w_string, space.w_unicode)
+            strdata = type(w_string)==str
             node = ast.Str if strdata else ast.Bytes
             return node(w_string, atom_node.lineno, atom_node.column)
         elif first_child_type == tokens.NUMBER:
