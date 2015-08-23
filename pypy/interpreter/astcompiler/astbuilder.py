@@ -600,8 +600,7 @@ class ASTBuilder(object):
         # and varargslist (lambda definition).
         if arguments_node.type == syms.parameters:
             if len(arguments_node.children) == 2:
-                return ast.arguments(None, None, None, None, None, None, None,
-                                     None)
+                return ast.arguments([], None, [], [], None, [])
             arguments_node = arguments_node.children[1]
         i = 0
         child_count = len(arguments_node.children)
