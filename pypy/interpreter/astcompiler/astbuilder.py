@@ -872,7 +872,7 @@ class ASTBuilder(object):
                     op = ast.Or
                 else:
                     op = ast.And
-                new_node = ast.BoolOp (op, seq, )
+                new_node = ast.BoolOp (op(), seq)
                 new_node.lineno = expr_node.lineno
                 new_node.column = expr_node.column
                 return new_node
@@ -881,7 +881,7 @@ class ASTBuilder(object):
                     expr_node = expr_node.children[0]
                     continue
                 expr = self.handle_expr(expr_node.children[1])
-                new_node = ast.UnaryOp (ast.Not, expr, )
+                new_node = ast.UnaryOp (ast.Not(), expr)
                 new_node.lineno = expr_node.lineno
                 new_node.column = expr_node.column
                 return new_node
