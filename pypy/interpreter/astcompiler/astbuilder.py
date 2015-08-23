@@ -361,7 +361,10 @@ class ASTBuilder(object):
                 last_elif_test = self.handle_expr(last_elif)
                 elif_body = self.handle_suite(if_node.children[-4])
                 else_body = self.handle_suite(if_node.children[-1])
-                otherwise = [ast.If(last_elif_test, elif_body, else_body, last_elif.lineno, last_elif.column)]
+                new_node = ast.If(last_elif_test, elif_body, else_body)
+                new_node.lineno = last_elif.lineno
+                new_node.column = last_elif.column
+                otherwise = [new_node]
                 elif_count -= 1
             else:
                 otherwise = None
