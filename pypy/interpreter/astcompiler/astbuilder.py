@@ -400,11 +400,11 @@ class ASTBuilder(object):
 
     def handle_for_stmt(self, for_node):
         target_node = for_node.children[1]
-        target_as_exprlist = self.handle_exprlist(target_node, ast.Store)
+        target_as_exprlist = self.handle_exprlist(target_node, ast.Store())
         if len(target_node.children) == 1:
             target = target_as_exprlist[0]
         else:
-            target = ast.Tuple (target_as_exprlist, ast.Store)
+            target = ast.Tuple (target_as_exprlist, ast.Store())
             target.lineno = target_node.lineno
             target.column = target_node.column
         expr = self.handle_testlist(for_node.children[3])
@@ -473,7 +473,7 @@ class ASTBuilder(object):
             test = self.handle_expr(item.children[0])
             if len(item.children) == 3:
                 target = self.handle_expr(item.children[2])
-                self.set_context(target, ast.Store)
+                self.set_context(target, ast.Store())
             else:
                 target = None
             wi = ast.With (test, target, body)
@@ -488,7 +488,7 @@ class ASTBuilder(object):
         test = self.handle_expr(item_node.children[0])
         if len(item_node.children) == 3:
             target = self.handle_expr(item_node.children[2])
-            self.set_context(target, ast.Store)
+            self.set_context(target, ast.Store())
         else:
             target = None
         return ast.withitem(test, target)
@@ -802,7 +802,7 @@ class ASTBuilder(object):
             # Augmented assignment.
             target_child = stmt.children[0]
             target_expr = self.handle_testlist(target_child)
-            self.set_context(target_expr, ast.Store)
+            self.set_context(target_expr, ast.Store())
             value_child = stmt.children[2]
             if value_child.type == syms.testlist:
                 value_expr = self.handle_testlist(value_child)
@@ -823,7 +823,7 @@ class ASTBuilder(object):
                     self.error("assignment to yield expression not possible",
                                target_node)
                 target_expr = self.handle_testlist(target_node)
-                self.set_context(target_expr, ast.Store)
+                self.set_context(target_expr, ast.Store())
                 targets.append(target_expr)
             value_child = stmt.children[-1]
             if value_child.type == syms.testlist_star_expr:
@@ -1360,7 +1360,7 @@ class ASTBuilder(object):
         comps = []
         for i in range(fors_count):
             for_node = comp_node.children[1]
-            for_targets = self.handle_exprlist(for_node, ast.Store)
+            for_targets = self.handle_exprlist(for_node, ast.Store())
             expr = self.handle_expr(comp_node.children[3])
             assert isinstance(expr, ast.expr)
             if len(for_node.children) == 1:
@@ -1372,7 +1372,7 @@ class ASTBuilder(object):
                 assert isinstance(expr_node, ast.expr)
                 col = expr_node.col_offset
                 line = expr_node.lineno
-                target = ast.Tuple(for_targets, ast.Store, line, col)
+                target = ast.Tuple(for_targets, ast.Store(), line, col)
                 comp = ast.comprehension(target, expr, None)
             if len(comp_node.children) == 5:
                 comp_node = comp_iter = comp_node.children[4]
