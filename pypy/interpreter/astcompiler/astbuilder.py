@@ -333,7 +333,7 @@ class ASTBuilder(object):
         if child_count == 4:
             test = self.handle_expr(if_node.children[1])
             suite = self.handle_suite(if_node.children[3])
-            new_node = ast.If (test, suite, None, )
+            new_node = ast.If (test, suite, [])
             new_node.lineno = if_node.lineno
             new_node.column = if_node.column
             return new_node
