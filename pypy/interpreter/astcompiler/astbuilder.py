@@ -392,8 +392,8 @@ class ASTBuilder(object):
         if len(while_node.children) == 7:
             otherwise = self.handle_suite(while_node.children[6])
         else:
-            otherwise = None
-        new_node = ast.While (loop_test, body, otherwise, )
+            otherwise = []
+        new_node = ast.While (loop_test, body, otherwise)
         new_node.lineno = while_node.lineno
         new_node.column = while_node.column
         return new_node
@@ -412,8 +412,8 @@ class ASTBuilder(object):
         if len(for_node.children) == 9:
             otherwise = self.handle_suite(for_node.children[8])
         else:
-            otherwise = None
-        new_node = ast.For (target, expr, body, otherwise, )
+            otherwise = []
+        new_node = ast.For (target, expr, body, otherwise)
         new_node.lineno = for_node.lineno
         new_node.column = for_node.column
         return new_node
