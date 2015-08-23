@@ -651,7 +651,7 @@ class ASTBuilder(object):
             i += 1
         pos = []
         posdefaults = []
-        kwonly = [] if n_kwdonly else None
+        kwonly = []
         kwdefaults = []
         kwarg = None
         kwargann = None
@@ -710,8 +710,12 @@ class ASTBuilder(object):
                 i += 3
             else:
                 raise AssertionError("unknown node in argument list")
-        return ast.arguments(pos, vararg, varargann, kwonly, kwarg,
-                             kwargann, posdefaults, kwdefaults)
+        # TODO: fix annotations
+        # def __init__(self, args, vararg, varargannotation, kwonlyargs, kwarg, kwargannotation, defaults, kw_defaults):
+        # arguments(args=[arg(arg='a', annotation=None), arg(arg='b', annotation=None)],
+        #           vararg=arg(arg='more', annotation=None), kwonlyargs=[], kw_defaults=[],
+        #           kwarg=arg(arg='kmore', annotation=None), defaults=[Num(n=1)])
+        return ast.arguments(pos, vararg, kwonly, kwdefaults, kwarg, posdefaults)
 
     def handle_keywordonly_args(self, arguments_node, i, kwonly, kwdefaults):
         if kwonly is None:
