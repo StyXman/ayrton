@@ -1089,7 +1089,7 @@ class ASTBuilder(object):
         first_child = trailer_node.children[0]
         if first_child.type == tokens.LPAR:
             if len(trailer_node.children) == 2:
-                new_node = ast.Call (left_expr, None, None, None, None, )
+                new_node = ast.Call (left_expr, [], [], None, None)
                 new_node.lineno = trailer_node.lineno
                 new_node.column = trailer_node.column
                 return new_node
@@ -1197,9 +1197,9 @@ class ASTBuilder(object):
                 i += 1
             i += 1
         if not args:
-            args = None
+            args = []
         if not keywords:
-            keywords = None
+            keywords = []
         new_node = ast.Call(callable_expr, args, keywords, variable_arg, keywords_arg)
         new_node.lineno = callable_expr.lineno
         new_node.column = callable_expr.column
