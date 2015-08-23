@@ -973,7 +973,7 @@ class ASTBuilder(object):
         comp_type = comp_node.type
         if len(comp_op_node.children) == 1:
             if comp_type == tokens.LESS:
-                return ast.Lt
+                return ast.Lt()
             elif comp_type == tokens.GREATER:
                 return ast.Gt()
             elif comp_type == tokens.EQEQUAL:
