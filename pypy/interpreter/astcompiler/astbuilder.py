@@ -809,7 +809,7 @@ class ASTBuilder(object):
                 value_expr = self.handle_expr(value_child)
             op_str = stmt.children[1].children[0].value
             operator = augassign_operator_map[op_str]
-            new_node = ast.AugAssign (target_expr, operator, value_expr, )
+            new_node = ast.AugAssign (target_expr, operator(), value_expr)
             new_node.lineno = stmt.lineno
             new_node.column = stmt.column
             return new_node
@@ -1009,7 +1009,7 @@ class ASTBuilder(object):
         left = self.handle_expr(binop_node.children[0])
         right = self.handle_expr(binop_node.children[2])
         op = operator_map(binop_node.children[1].type)
-        result = ast.BinOp (left, op, right)
+        result = ast.BinOp (left, op(), right)
         result.lineno = binop_node.lineno
         result.column = binop_node.column
         number_of_ops = (len(binop_node.children) - 1) / 2
@@ -1017,7 +1017,7 @@ class ASTBuilder(object):
             op_node = binop_node.children[i * 2 + 1]
             op = operator_map(op_node.type)
             sub_right = self.handle_expr(binop_node.children[i * 2 + 2])
-            result = ast.BinOp (result, op, sub_right)
+            result = ast.BinOp (result, op(), sub_right)
             result.lineno = op_node.lineno
             result.column = op_node.column
         return result
@@ -1033,7 +1033,7 @@ class ASTBuilder(object):
             op = ast.Invert
         else:
             raise AssertionError("invalid factor node")
-        new_node = ast.UnaryOp (op, expr, )
+        new_node = ast.UnaryOp (op(), expr)
         new_node.lineno = factor_node.lineno
         new_node.column = factor_node.column
         return new_node
@@ -1052,7 +1052,7 @@ class ASTBuilder(object):
             atom_expr = tmp_atom_expr
         if power_node.children[-1].type == syms.factor:
             right = self.handle_expr(power_node.children[-1])
-            atom_expr = ast.BinOp (atom_expr, ast.Pow, right)
+            atom_expr = ast.BinOp (atom_expr, ast.Pow(), right)
             atom_expr.lineno = power_node.lineno
             atom_expr.column = power_node.column
         return atom_expr
