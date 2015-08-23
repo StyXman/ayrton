@@ -520,7 +520,7 @@ class ASTBuilder(object):
 
         # class NAME '(' arglist ')' ':' suite
         # build up a fake Call node so we can extract its pieces
-        call_name = ast.Name (name, ast.Load)
+        call_name = ast.Name (name, ast.Load())
         call_name.lineno = classdef_node.lineno
         call_name.column = classdef_node.column
         call = self.handle_call(classdef_node.children[3], call_name)
@@ -581,13 +581,13 @@ class ASTBuilder(object):
 
     def handle_dotted_name(self, dotted_name_node):
         base_value = self.new_identifier(dotted_name_node.children[0].value)
-        name = ast.Name (base_value, ast.Load)
+        name = ast.Name (base_value, ast.Load())
         name.lineno = dotted_name_node.lineno
         name.column = dotted_name_node.column
         for i in range(2, len(dotted_name_node.children), 2):
             attr = dotted_name_node.children[i].value
             attr = self.new_identifier(attr)
-            name = ast.Attribute (name, attr, ast.Load)
+            name = ast.Attribute (name, attr, ast.Load())
             name.lineno = dotted_name_node.lineno
             name.column = dotted_name_node.column
         return name
@@ -841,7 +841,7 @@ class ASTBuilder(object):
             return self.handle_expr(tests.children[0])
         else:
             elts = self.get_expression_list(tests)
-            new_node = ast.Tuple (elts, ast.Load, )
+            new_node = ast.Tuple (elts, ast.Load(), )
             new_node.lineno = tests.lineno
             new_node.column = tests.column
             return new_node
@@ -940,7 +940,7 @@ class ASTBuilder(object):
 
     def handle_star_expr(self, star_expr_node):
         expr = self.handle_expr(star_expr_node.children[1])
-        new_node = ast.Starred (expr, ast.Load, )
+        new_node = ast.Starred (expr, ast.Load(), )
         new_node.lineno = star_expr_node.lineno
         new_node.column = star_expr_node.column
         return new_node
@@ -1094,7 +1094,7 @@ class ASTBuilder(object):
                 return self.handle_call(trailer_node.children[1], left_expr)
         elif first_child.type == tokens.DOT:
             attr = self.new_identifier(trailer_node.children[1].value)
-            new_node = ast.Attribute (left_expr, attr, ast.Load, )
+            new_node = ast.Attribute (left_expr, attr, ast.Load(), )
             new_node.lineno = trailer_node.lineno
             new_node.column = trailer_node.column
             return new_node
@@ -1102,7 +1102,7 @@ class ASTBuilder(object):
             middle = trailer_node.children[1]
             if len(middle.children) == 1:
                 slice = self.handle_slice(middle.children[0])
-                new_node = ast.Subscript (left_expr, slice, ast.Load, )
+                new_node = ast.Subscript (left_expr, slice, ast.Load(), )
                 new_node.lineno = middle.lineno
                 new_node.column = middle.column
                 return new_node
@@ -1115,7 +1115,7 @@ class ASTBuilder(object):
                 slices.append(slc)
             if not simple:
                 ext_slice = ast.ExtSlice(slices)
-                new_node = ast.Subscript (left_expr, ext_slice, ast.Load, )
+                new_node = ast.Subscript (left_expr, ext_slice, ast.Load(), )
                 new_node.lineno = middle.lineno
                 new_node.column = middle.column
                 return new_node
@@ -1123,10 +1123,10 @@ class ASTBuilder(object):
             for idx in slices:
                 assert isinstance(idx, ast.Index)
                 elts.append(idx.value)
-            tup = ast.Tuple (elts, ast.Load)
+            tup = ast.Tuple (elts, ast.Load())
             tup.lineno = middle.lineno
             tup.column = middle.column
-            new_node = ast.Subscript(left_expr, ast.Index (tup), ast.Load, )
+            new_node = ast.Subscript(left_expr, ast.Index (tup), ast.Load(), )
             new_node.lineno = middle.lineno
             new_node.column = middle.column
             return new_node
@@ -1210,7 +1210,7 @@ class ASTBuilder(object):
         first_child_type = first_child.type
         if first_child_type == tokens.NAME:
             name = self.new_identifier(first_child.value)
-            new_node = ast.Name (name, ast.Load, )
+            new_node = ast.Name (name, ast.Load(), )
             new_node.lineno = first_child.lineno
             new_node.column = first_child.column
             return new_node
@@ -1258,7 +1258,7 @@ class ASTBuilder(object):
         elif first_child_type == tokens.LPAR:
             second_child = atom_node.children[1]
             if second_child.type == tokens.RPAR:
-                new_node = ast.Tuple (None, ast.Load, )
+                new_node = ast.Tuple (None, ast.Load(), )
                 new_node.lineno = atom_node.lineno
                 new_node.column = atom_node.column
                 return new_node
@@ -1268,14 +1268,14 @@ class ASTBuilder(object):
         elif first_child_type == tokens.LSQB:
             second_child = atom_node.children[1]
             if second_child.type == tokens.RSQB:
-                new_node = ast.List (None, ast.Load, )
+                new_node = ast.List (None, ast.Load(), )
                 new_node.lineno = atom_node.lineno
                 new_node.column = atom_node.column
                 return new_node
             if len(second_child.children) == 1 or \
                     second_child.children[1].type == tokens.COMMA:
                 elts = self.get_expression_list(second_child)
-                new_node = ast.List (elts, ast.Load, )
+                new_node = ast.List (elts, ast.Load(), )
                 new_node.lineno = atom_node.lineno
                 new_node.column = atom_node.column
                 return new_node
