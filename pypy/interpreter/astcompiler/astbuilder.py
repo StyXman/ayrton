@@ -145,7 +145,7 @@ class ASTBuilder(object):
             self.error_ast("cannot assign to %s" % (e.name,), e.node)
 
     def handle_del_stmt(self, del_node):
-        targets = self.handle_exprlist(del_node.children[1], ast.Del)
+        targets = self.handle_exprlist(del_node.children[1], ast.Del())
         new_node = ast.Delete (targets)
         new_node.lineno = ( del_node.lineno)
         new_node.column = del_node.column
