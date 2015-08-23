@@ -1012,7 +1012,7 @@ class ASTBuilder(object):
         result = ast.BinOp (left, op(), right)
         result.lineno = binop_node.lineno
         result.column = binop_node.column
-        number_of_ops = (len(binop_node.children) - 1) / 2
+        number_of_ops = (len(binop_node.children) - 1) // 2
         for i in range(1, number_of_ops):
             op_node = binop_node.children[i * 2 + 1]
             op = operator_map(op_node.type)
