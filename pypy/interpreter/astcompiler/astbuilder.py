@@ -954,7 +954,7 @@ class ASTBuilder(object):
     def handle_lambdef(self, lambdef_node):
         expr = self.handle_expr(lambdef_node.children[-1])
         if len(lambdef_node.children) == 3:
-            args = ast.arguments(None, None, None, None, None, None, None, None)
+            args = ast.arguments([], None, [], [], None, [])
         else:
             args = self.handle_arguments(lambdef_node.children[1])
         new_node = ast.Lambda (args, expr, )
