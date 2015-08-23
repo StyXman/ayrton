@@ -503,20 +503,22 @@ class ASTBuilder(object):
         return new_node
 
     def handle_classdef(self, classdef_node, decorators=None):
+        if decorators is None:
+            decorators = []
         name_node = classdef_node.children[1]
         name = self.new_identifier(name_node.value)
         self.check_forbidden_name(name, name_node)
         if len(classdef_node.children) == 4:
             # class NAME ':' suite
             body = self.handle_suite(classdef_node.children[3])
-            new_node = ast.ClassDef (name, None, None, None, None, body, decorators, )
+            new_node = ast.ClassDef (name, [], [], None, None, body, decorators)
             new_node.lineno = classdef_node.lineno
             new_node.column = classdef_node.column
             return new_node
         if classdef_node.children[3].type == tokens.RPAR:
             # class NAME '(' ')' ':' suite
             body = self.handle_suite(classdef_node.children[5])
-            new_node = ast.ClassDef (name, None, None, None, None, body, decorators, )
+            new_node = ast.ClassDef (name, [], [], None, None, body, decorators)
             new_node.lineno = classdef_node.lineno
             new_node.column = classdef_node.column
             return new_node
