@@ -539,6 +539,8 @@ class ASTBuilder(object):
         return self.get_expression_list(bases_node)
 
     def handle_funcdef(self, funcdef_node, decorators=None):
+        if decorators is None:
+            decorators = []
         name_node = funcdef_node.children[1]
         name = self.new_identifier(name_node.value)
         self.check_forbidden_name(name, name_node)
