@@ -38,6 +38,11 @@ operator_map = misc.dict_to_switch({
     tokens.PERCENT : ast.Mod
 })
 
+expression_name_map = {
+    ast.Attribute: 'attr',
+    ast.Name: 'id',
+}
+
 
 def parsestr(space, encoding, literal):
     # return space.wrap(eval (literal))
@@ -124,10 +129,18 @@ class ASTBuilder(object):
 
     def set_context(self, expr, ctx):
         """Set the context of an expression to Store or Del if possible."""
+        t = type(expr)
         try:
-            expr.set_context(ctx)
-        except ast.UnacceptableExpressionContext as e:
-            self.error_ast(e.msg, e.node)
+            # TODO: check if Starred is ok
+            if t in (ast.Attribute, ast.Name):
+                if type(ctx) == ast.Store():
+                    mis.check_forbidden_name(getattr (expr, expression_name_map[t]), expr)
+            elif t in (ast.Subscript, ast.Starred):
+                pass
+            elif t in (ast.List, ast.Tuple):
+                for elt in expr.elts:
+                    self.set_context(elt, ctx)
+            expr.ctx = ctx
         except misc.ForbiddenNameAssignment as e:
             self.error_ast("cannot assign to %s" % (e.name,), e.node)
 
