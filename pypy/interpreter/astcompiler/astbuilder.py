@@ -815,7 +815,7 @@ class ASTBuilder(object):
     def handle_expr_stmt(self, stmt):
         if len(stmt.children) == 1:
             expression = self.handle_testlist(stmt.children[0])
-            new_node = ast.Expr (expression, )
+            new_node = ast.Expr (expression)
             new_node.lineno = stmt.lineno
             new_node.column = stmt.column
             return new_node
@@ -851,7 +851,7 @@ class ASTBuilder(object):
                 value_expr = self.handle_testlist(value_child)
             else:
                 value_expr = self.handle_expr(value_child)
-            new_node = ast.Assign (targets, value_expr, )
+            new_node = ast.Assign (targets, value_expr)
             new_node.lineno = stmt.lineno
             new_node.column = stmt.column
             return new_node
@@ -916,7 +916,7 @@ class ASTBuilder(object):
                 for i in range(1, len(expr_node.children), 2):
                     operators.append(self.handle_comp_op(expr_node.children[i]))
                     operands.append(self.handle_expr(expr_node.children[i + 1]))
-                new_node = ast.Compare (expr, operators, operands, )
+                new_node = ast.Compare (expr, operators, operands)
                 new_node.lineno = expr_node.lineno
                 new_node.column = expr_node.column
                 return new_node
@@ -964,7 +964,7 @@ class ASTBuilder(object):
 
     def handle_star_expr(self, star_expr_node):
         expr = self.handle_expr(star_expr_node.children[1])
-        new_node = ast.Starred (expr, ast.Load(), )
+        new_node = ast.Starred (expr, ast.Load())
         new_node.lineno = star_expr_node.lineno
         new_node.column = star_expr_node.column
         return new_node
@@ -975,7 +975,7 @@ class ASTBuilder(object):
             args = ast.arguments([], None, [], [], None, [])
         else:
             args = self.handle_arguments(lambdef_node.children[1])
-        new_node = ast.Lambda (args, expr, )
+        new_node = ast.Lambda (args, expr)
         new_node.lineno = lambdef_node.lineno
         new_node.column = lambdef_node.column
         return new_node
@@ -1234,7 +1234,7 @@ class ASTBuilder(object):
         first_child_type = first_child.type
         if first_child_type == tokens.NAME:
             name = self.new_identifier(first_child.value)
-            new_node = ast.Name (name, ast.Load(), )
+            new_node = ast.Name (name, ast.Load())
             new_node.lineno = first_child.lineno
             new_node.column = first_child.column
             return new_node
@@ -1270,7 +1270,7 @@ class ASTBuilder(object):
             return new_node
         elif first_child_type == tokens.NUMBER:
             num_value = self.parse_number(first_child.value)
-            new_node = ast.Num (num_value, )
+            new_node = ast.Num (num_value)
             new_node.lineno = atom_node.lineno
             new_node.column = atom_node.column
             return new_node
@@ -1282,7 +1282,7 @@ class ASTBuilder(object):
         elif first_child_type == tokens.LPAR:
             second_child = atom_node.children[1]
             if second_child.type == tokens.RPAR:
-                new_node = ast.Tuple (None, ast.Load(), )
+                new_node = ast.Tuple (None, ast.Load())
                 new_node.lineno = atom_node.lineno
                 new_node.column = atom_node.column
                 return new_node
@@ -1292,14 +1292,14 @@ class ASTBuilder(object):
         elif first_child_type == tokens.LSQB:
             second_child = atom_node.children[1]
             if second_child.type == tokens.RSQB:
-                new_node = ast.List (None, ast.Load(), )
+                new_node = ast.List (None, ast.Load())
                 new_node.lineno = atom_node.lineno
                 new_node.column = atom_node.column
                 return new_node
             if len(second_child.children) == 1 or \
                     second_child.children[1].type == tokens.COMMA:
                 elts = self.get_expression_list(second_child)
-                new_node = ast.List (elts, ast.Load(), )
+                new_node = ast.List (elts, ast.Load())
                 new_node.lineno = atom_node.lineno
                 new_node.column = atom_node.column
                 return new_node
@@ -1307,7 +1307,7 @@ class ASTBuilder(object):
         elif first_child_type == tokens.LBRACE:
             maker = atom_node.children[1]
             if maker.type == tokens.RBRACE:
-                new_node = ast.Dict (None, None, )
+                new_node = ast.Dict (None, None)
                 new_node.lineno = atom_node.lineno
                 new_node.column = atom_node.column
                 return new_node
@@ -1316,7 +1316,7 @@ class ASTBuilder(object):
                 elts = []
                 for i in range(0, n_maker_children, 2):
                     elts.append(self.handle_expr(maker.children[i]))
-                new_node = ast.Set (elts, )
+                new_node = ast.Set (elts)
                 new_node.lineno = atom_node.lineno
                 new_node.column = atom_node.column
                 return new_node
