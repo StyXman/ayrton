@@ -438,8 +438,8 @@ class ASTBuilder(object):
         body = self.handle_suite(try_node.children[2])
         child_count = len(try_node.children)
         except_count = (child_count - 3 ) // 3
-        otherwise = None
-        finally_suite = None
+        otherwise = []
+        finally_suite = []
         possible_extra_clause = try_node.children[-3]
         if possible_extra_clause.type == tokens.NAME:
             if possible_extra_clause.value == "finally":
