@@ -367,7 +367,7 @@ class ASTBuilder(object):
                 otherwise = [new_node]
                 elif_count -= 1
             else:
-                otherwise = None
+                otherwise = []
             for i in range(elif_count):
                 offset = 5 + (elif_count - i - 1) * 4
                 elif_test_node = if_node.children[offset]
