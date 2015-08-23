@@ -1203,48 +1203,7 @@ class ASTBuilder(object):
         return new_node
 
     def parse_number(self, raw):
-        base = 10
-        if raw.startswith("-"):
-            negative = True
-            raw = raw.lstrip("-")
-        else:
-            negative = False
-        if raw.startswith("0"):
-            if len(raw) > 2 and raw[1] in "Xx":
-                base = 16
-            elif len(raw) > 2 and raw[1] in "Bb":
-                base = 2
-            ## elif len(raw) > 2 and raw[1] in "Oo": # Fallback below is enough
-            ##     base = 8
-            elif len(raw) > 1:
-                base = 8
-            # strip leading characters
-            i = 0
-            limit = len(raw) - 1
-            while i < limit:
-                if base == 16 and raw[i] not in "0xX":
-                    break
-                if base == 8 and raw[i] not in "0oO":
-                    break
-                if base == 2 and raw[i] not in "0bB":
-                    break
-                i += 1
-            raw = raw[i:]
-            if not raw[0].isdigit():
-                raw = "0" + raw
-        if negative:
-            raw = "-" + raw
-        w_num_str = self.space.wrap(raw)
-        w_base = self.space.wrap(base)
-        if raw[-1] in "jJ":
-            tp = self.space.w_complex
-            return self.space.call_function(tp, w_num_str)
-        try:
-            return self.space.call_function(self.space.w_int, w_num_str, w_base)
-        except error.OperationError as e:
-            if not e.match(self.space, self.space.w_ValueError):
-                raise
-            return self.space.call_function(self.space.w_float, w_num_str)
+        return eval(raw)
 
     def handle_atom(self, atom_node):
         first_child = atom_node.children[0]
