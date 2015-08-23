@@ -975,34 +975,34 @@ class ASTBuilder(object):
             if comp_type == tokens.LESS:
                 return ast.Lt
             elif comp_type == tokens.GREATER:
-                return ast.Gt
+                return ast.Gt()
             elif comp_type == tokens.EQEQUAL:
-                return ast.Eq
+                return ast.Eq()
             elif comp_type == tokens.LESSEQUAL:
-                return ast.LtE
+                return ast.LtE()
             elif comp_type == tokens.GREATEREQUAL:
-                return ast.GtE
+                return ast.GtE()
             elif comp_type == tokens.NOTEQUAL:
                 flufl = self.compile_info.flags & consts.CO_FUTURE_BARRY_AS_BDFL
                 if flufl and comp_node.value == '!=':
                     self.error('invalid comparison', comp_node)
                 elif not flufl and comp_node.value == '<>':
                     self.error('invalid comparison', comp_node)
-                return ast.NotEq
+                return ast.NotEq()
             elif comp_type == tokens.NAME:
                 if comp_node.value == "is":
-                    return ast.Is
+                    return ast.Is()
                 elif comp_node.value == "in":
-                    return ast.In
+                    return ast.In()
                 else:
                     raise AssertionError("invalid comparison")
             else:
                 raise AssertionError("invalid comparison")
         else:
             if comp_op_node.children[1].value == "in":
-                return ast.NotIn
+                return ast.NotIn()
             elif comp_node.value == "is":
-                return ast.IsNot
+                return ast.IsNot()
             else:
                 raise AssertionError("invalid comparison")
 
