@@ -538,7 +538,9 @@ class ASTBuilder(object):
 
         # class NAME '(' arglist ')' ':' suite
         # build up a fake Call node so we can extract its pieces
-        # TODO: undo this
+        # what it's doing is use handle_call() to parse the 'arguments'
+        # see ClassDef(name='Foo', bases=[], keywords=[], starargs=None, kwargs=None, body=[Pass()], decorator_list=[])
+        # and handle_suite() to parse the body
         call_name = ast.Name (name, ast.Load())
         call_name.lineno = classdef_node.lineno
         call_name.column = classdef_node.column
