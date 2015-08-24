@@ -505,4 +505,4 @@ class CrazyASTTransformer (ast.NodeTransformer):
 
         return node
 
-    def visit_AsyncWith= visit_With
+    visit_AsyncWith= visit_With
