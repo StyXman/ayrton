@@ -1187,9 +1187,9 @@ class ASTBuilder(object):
             if argument.type == syms.argument:
                 if len(argument.children) == 1:
                     expr_node = argument.children[0]
-                    if keywords:
-                        self.error("non-keyword arg after keyword arg",
-                                   expr_node)
+                    # if keywords:
+                    #     self.error("non-keyword arg after keyword arg",
+                    #                expr_node)
                     if variable_arg:
                         self.error("only named arguments may follow "
                                    "*expression", expr_node)
@@ -1211,7 +1211,16 @@ class ASTBuilder(object):
                     used_keywords[keyword] = None
                     self.check_forbidden_name(keyword, keyword_node)
                     keyword_value = self.handle_expr(argument.children[2])
-                    keywords.append(ast.keyword(keyword, keyword_value))
+                    if keyword in Command.supported_options:
+                        keywords.append(ast.keyword(keyword, keyword_value))
+                    else:
+                        kw = ast.keyword(keyword, keyword_value)
+                        kw.lineno = keyword_node.lineno
+                        name = ast.Name ('o', ast.Load())
+                        name.lineno = keyword_node.lineno
+                        arg = ast.Call(name, [], [ kw ], None, None)
+                        arg.lineno = keyword_node.lineno
+                        args.append(arg)
             elif argument.type == tokens.STAR:
                 variable_arg = self.handle_expr(args_node.children[i + 1])
                 i += 1

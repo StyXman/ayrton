@@ -467,6 +467,24 @@ class CrazyASTTransformer (ast.NodeTransformer):
                 ast.copy_location (new_node, node)
                 node.func= new_node
                 ast.fix_missing_locations (node)
+            else:
+                # this is a normal function call
+                # Call(func=Name(id='foo', ctx=Load()),
+                #      args=[Call(func=Name(id='o', ctx=Load()),
+                #                 args=[], keywords=[keyword(arg='a', value=Num(n=42))],
+                #                 starargs=None, kwargs=None)],
+                #      keywords=[], starargs=None, kwargs=None))
+                # the parser has converted all the keyword arguments to o(k=v)
+                # we need to convert them back to keywords and apply Python's syntax rules
+                new_args= []
+                for index, arg in enumerate (node.args):
+                    # NOTE: maybe o() can be left in its own namespace so it doesn't pollute
+                    if type (arg)==Call and type (arg.func)==Name and arg.func.id=='o':
+                        node.keywords.append (arg.keywords[0])
+                    else:
+                        new_args.append (arg)
+
+                node.args= new_args
 
         return node
 
