@@ -14,7 +14,7 @@ setup (
     author= 'Marcos Dione',
     author_email= 'mdione@grulic.org.ar',
     url= 'https://github.com/StyXman/ayrton',
-    packages= [ 'ayrton' ],
+    packages= [ 'ayrton', 'ayrton.parser', 'ayrton.parser.pyparser', 'ayrton.parser.astcompiler' ],
     scripts= [ 'bin/ayrton' ],
     license= 'GPLv3',
     classifiers= [
