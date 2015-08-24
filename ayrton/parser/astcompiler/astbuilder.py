@@ -1397,7 +1397,7 @@ class ASTBuilder(object):
             expr = self.handle_expr(comp_node.children[3])
             assert isinstance(expr, ast.expr)
             if len(for_node.children) == 1:
-                comp = ast.comprehension(for_targets[0], expr, None)
+                comp = ast.comprehension(for_targets[0], expr, [])
             else:
                 # Modified in python2.7, see http://bugs.python.org/issue6704
                 # Fixing unamed tuple location
@@ -1406,7 +1406,7 @@ class ASTBuilder(object):
                 col = expr_node.col_offset
                 line = expr_node.lineno
                 target = ast.Tuple(for_targets, ast.Store(), line, col)
-                comp = ast.comprehension(target, expr, None)
+                comp = ast.comprehension(target, expr, [])
             if len(comp_node.children) == 5:
                 comp_node = comp_iter = comp_node.children[4]
                 assert comp_iter.type == syms.comp_iter
