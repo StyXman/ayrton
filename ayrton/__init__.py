@@ -33,8 +33,8 @@ runner= None
 
 from ayrton.castt import CrazyASTTransformer
 from ayrton.execute import o, Command, Capture, CommandFailed
-from pypy.interpreter.pyparser.pyparse import CompileInfo, PythonParser
-from pypy.interpreter.astcompiler.astbuilder import ast_from_node
+from ayrton.parser.pyparser.pyparse import CompileInfo, PythonParser
+from ayrton.parser.astcompiler.astbuilder import ast_from_node
 
 __version__= '0.4.4'
 
