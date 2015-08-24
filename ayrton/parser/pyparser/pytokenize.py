@@ -16,8 +16,8 @@ $Id: pytokenize.py,v 1.3 2003/10/03 16:31:53 jriehl Exp $
 """
 # ______________________________________________________________________
 
-from pypy.interpreter.pyparser import automata
-from pypy.interpreter.pyparser.dfa_generated import *
+from ayrton.parser.pyparser import automata
+from ayrton.parser.pyparser.dfa_generated import *
 
 __all__ = [ "tokenize" ]
 

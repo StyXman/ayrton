@@ -1,7 +1,8 @@
-from pypy.interpreter.astcompiler import consts, misc
-from pypy.interpreter import error
-from pypy.interpreter.pyparser.pygram import syms, tokens
-from pypy.interpreter.pyparser.error import SyntaxError
+from ayrton.parser.astcompiler import consts, misc
+from ayrton.parser import error
+from ayrton.parser.pyparser.pygram import syms, tokens
+from ayrton.parser.pyparser.error import SyntaxError
+from ayrton.execute import Command
 import ast
 
 def ast_from_node(space, node, compile_info):

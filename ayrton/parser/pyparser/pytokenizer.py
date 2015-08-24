@@ -1,10 +1,10 @@
-from pypy.interpreter.pyparser import automata
-from pypy.interpreter.pyparser.pygram import tokens
-from pypy.interpreter.pyparser.pytoken import python_opmap
-from pypy.interpreter.pyparser.error import TokenError, TokenIndentationError, TabError
-from pypy.interpreter.pyparser.pytokenize import tabsize, alttabsize, whiteSpaceDFA, \
+from ayrton.parser.pyparser import automata
+from ayrton.parser.pyparser.pygram import tokens
+from ayrton.parser.pyparser.pytoken import python_opmap
+from ayrton.parser.pyparser.error import TokenError, TokenIndentationError, TabError
+from ayrton.parser.pyparser.pytokenize import tabsize, alttabsize, whiteSpaceDFA, \
     triple_quoted, endDFAs, single_quoted, pseudoDFA
-from pypy.interpreter.astcompiler import consts
+from ayrton.parser.astcompiler import consts
 
 NAMECHARS = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_'
 NUMCHARS = '0123456789'

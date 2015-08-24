@@ -5,7 +5,7 @@ import sys
 import traceback
 from errno import EINTR
 
-from pypy.interpreter import debug
+from ayrton.parser import debug
 
 
 AUTO_DEBUG = os.getenv('PYPY_DEBUG')

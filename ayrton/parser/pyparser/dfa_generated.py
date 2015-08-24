@@ -3,7 +3,7 @@
 # TO REGENERATE THE FILE, RUN:
 #     python gendfa.py > dfa_generated.py
 
-from pypy.interpreter.pyparser import automata
+from ayrton.parser.pyparser import automata
 accepts = [True, True, True, True, True, True, True, True,
            True, True, True, False, True, True, True, True,
            True, False, False, False, True, False, False,

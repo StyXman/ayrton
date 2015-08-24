@@ -1,6 +1,6 @@
-from pypy.interpreter.error import OperationError
-from pypy.interpreter.pyparser import future, parser, pytokenizer, pygram, error
-from pypy.interpreter.astcompiler import consts
+from ayrton.parser.error import OperationError
+from ayrton.parser.pyparser import future, parser, pytokenizer, pygram, error
+from ayrton.parser.astcompiler import consts
 
 
 def recode_to_utf8(space, bytes, encoding):

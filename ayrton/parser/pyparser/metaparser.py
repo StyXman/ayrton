@@ -8,7 +8,7 @@ import io
 import tokenize
 import token
 
-from pypy.interpreter.pyparser import parser
+from ayrton.parser.pyparser import parser
 
 
 class PgenError(Exception):

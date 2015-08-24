@@ -1,5 +1,5 @@
 import os
-from pypy.interpreter.pyparser import parser, pytoken, metaparser
+from ayrton.parser.pyparser import parser, pytoken, metaparser
 
 class PythonGrammar(parser.Grammar):
 
