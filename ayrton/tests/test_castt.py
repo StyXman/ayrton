@@ -95,7 +95,7 @@ class TestVisits (unittest.TestCase):
         self.assertEqual (len (node.args), 1, ast.dump (node))
         self.assertEqual (len (node.keywords), 0, ast.dump (node))
 
-    def testDoubleKeyword (self):
+    def testDoubleKeywordCommand (self):
         c= castt.CrazyASTTransformer ({ 'o': o})
         t= ayrton.parse ("""foo (p= True, p=False)""")
 
@@ -108,6 +108,19 @@ class TestVisits (unittest.TestCase):
         # both arguments have the same name!
         self.assertEqual (node.args[0].keywords[0].arg,
                           node.args[1].keywords[0].arg, ast.dump (node))
+
+    def testDoubleKeywordFunction (self):
+        c= castt.CrazyASTTransformer ({ 'o': o, 'dict': dict})
+        t= ayrton.parse ("""dict (p= True, p=False)""")
+
+        self.assertRaises (SyntaxError, c.visit_Call, t.body[0].value)
+
+    def testKeywordAfterPosFunction (self):
+        c= castt.CrazyASTTransformer ({ 'o': o, 'dict': dict})
+        t= ayrton.parse ("""dict (p= True, False)""")
+
+        self.assertRaises (SyntaxError, c.visit_Call, t.body[0].value)
+
 
 class TestHelperFunctions (unittest.TestCase):
 
