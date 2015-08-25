@@ -38,6 +38,11 @@ from ayrton.parser.astcompiler.astbuilder import ast_from_node
 
 __version__= '0.4.4'
 
+def parse (script, file_name=''):
+    parser= PythonParser (None)
+    info= CompileInfo (file_name, 'exec')
+    return ast_from_node (None, parser.parse_source (script, info), info)
+
 class Ayrton (object):
     def __init__ (self, globals=None, **kwargs):
         if globals is None:
@@ -55,10 +60,8 @@ class Ayrton (object):
         return self.run_script (open (file).read (), file)
 
     def run_script (self, script, file_name):
-        parser= PythonParser (None)
-        info= CompileInfo (file_name, 'exec')
-        tree= ast_from_node (None, parser.parse_source (script, info), info)
-        tree= CrazyASTTransformer (self.globals).modify (tree)
+        tree= parse (script, file_name)
+        tree= CrazyASTTransformer (self.globals, file_name).modify (tree)
 
         return self.run_tree (tree, file_name)
 
