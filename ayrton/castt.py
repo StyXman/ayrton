@@ -77,7 +77,7 @@ def func_name2dotted_exec (node):
     return (node.id, complete_name)
 
 class CrazyASTTransformer (ast.NodeTransformer):
-    def __init__ (self, environ):
+    def __init__ (self, environ, file_name=None):
         super ().__init__ ()
         # the whole ayrton environment; see ayrton.Environ.
         self.environ= environ
@@ -92,6 +92,7 @@ class CrazyASTTransformer (ast.NodeTransformer):
         self.defined_names= defaultdict (lambda: [])
         # for testing
         self.seen_names= set ()
+        self.file_name= file_name
 
     def modify (self, tree):
         m= self.visit (tree)
