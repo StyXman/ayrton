@@ -478,10 +478,17 @@ class CrazyASTTransformer (ast.NodeTransformer):
                 # the parser has converted all the keyword arguments to o(k=v)
                 # we need to convert them back to keywords and apply Python's syntax rules
                 new_args= []
+                used_keywords= set ()
                 for index, arg in enumerate (node.args):
                     # NOTE: maybe o() can be left in its own namespace so it doesn't pollute
                     if type (arg)==Call and type (arg.func)==Name and arg.func.id=='o':
+                        kw_name= arg.keywords[0].arg
+                        if kw_name in used_keywords:
+                            raise SyntaxError("keyword argument repeated",
+                                              node.lineno, node.column, filename=self.file_name)
+
                         node.keywords.append (arg.keywords[0])
+                        used_keywords.add (kw_name)
                     else:
                         new_args.append (arg)
 

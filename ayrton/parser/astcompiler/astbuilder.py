@@ -1178,7 +1178,6 @@ class ASTBuilder(object):
             self.error("more than 255 arguments", args_node)
         args = []
         keywords = []
-        used_keywords = {}
         variable_arg = None
         keywords_arg = None
         child_count = len(args_node.children)
@@ -1207,9 +1206,6 @@ class ASTBuilder(object):
                         self.error("keyword can't be an expression",
                                    keyword_node)
                     keyword = keyword_expr.id
-                    if keyword in used_keywords:
-                        self.error("keyword argument repeated", keyword_node)
-                    used_keywords[keyword] = None
                     self.check_forbidden_name(keyword, keyword_node)
                     keyword_value = self.handle_expr(argument.children[2])
                     if keyword in Command.supported_options:

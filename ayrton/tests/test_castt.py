@@ -21,6 +21,7 @@ from ast import Attribute, Name, Load, Subscript, Index, Num
 
 from ayrton import castt
 from ayrton.execute import o
+import ayrton
 
 class TestBinding (unittest.TestCase):
 
@@ -93,6 +94,20 @@ class TestVisits (unittest.TestCase):
 
         self.assertEqual (len (node.args), 1, ast.dump (node))
         self.assertEqual (len (node.keywords), 0, ast.dump (node))
+
+    def testDoubleKeyword (self):
+        c= castt.CrazyASTTransformer ({ 'o': o})
+        t= ayrton.parse ("""foo (p= True, p=False)""")
+
+        node= c.visit_Call (t.body[0].value)
+
+        # Call(func=Call(func=Name(id='Command', ctx=Load()), args=[Str(s='foo')], keywords=[], starargs=None, kwargs=None),
+        #      args=[Call(func=Name(id='o', ctx=Load()), args=[], keywords=[keyword(arg='p', value=Name(id='True', ctx=Load()))], starargs=None, kwargs=None),
+        #            Call(func=Name(id='o', ctx=Load()), args=[], keywords=[keyword(arg='p', value=Name(id='False', ctx=Load()))], starargs=None, kwargs=None)],
+        #      keywords=[], starargs=None, kwargs=None)
+        # both arguments have the same name!
+        self.assertEqual (node.args[0].keywords[0].arg,
+                          node.args[1].keywords[0].arg, ast.dump (node))
 
 class TestHelperFunctions (unittest.TestCase):
 
