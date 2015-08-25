@@ -485,16 +485,16 @@ class CrazyASTTransformer (ast.NodeTransformer):
                     if type (arg)==Call and type (arg.func)==Name and arg.func.id=='o':
                         kw_name= arg.keywords[0].arg
                         if kw_name in used_keywords:
-                            raise SyntaxError("keyword argument repeated",
-                                              node.lineno, node.column, filename=self.file_name)
+                            raise SyntaxError(self.file_name, node.lineno, node.column,
+                                              "keyword argument repeated")
 
                         node.keywords.append (arg.keywords[0])
                         used_keywords.add (kw_name)
                         first_kw= True
                     else:
                         if first_kw:
-                            raise SyntaxError("non-keyword arg after keyword arg",
-                                              node.lineno, node.column, filename=self.file_name)
+                            raise SyntaxError(self.file_name, node.lineno, node.column,
+                                              "non-keyword arg after keyword arg")
 
                         new_args.append (arg)
 
