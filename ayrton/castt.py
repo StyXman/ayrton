@@ -479,6 +479,7 @@ class CrazyASTTransformer (ast.NodeTransformer):
                 # we need to convert them back to keywords and apply Python's syntax rules
                 new_args= []
                 used_keywords= set ()
+                first_kw= False
                 for index, arg in enumerate (node.args):
                     # NOTE: maybe o() can be left in its own namespace so it doesn't pollute
                     if type (arg)==Call and type (arg.func)==Name and arg.func.id=='o':
@@ -489,7 +490,12 @@ class CrazyASTTransformer (ast.NodeTransformer):
 
                         node.keywords.append (arg.keywords[0])
                         used_keywords.add (kw_name)
+                        first_kw= True
                     else:
+                        if first_kw:
+                            raise SyntaxError("non-keyword arg after keyword arg",
+                                              node.lineno, node.column, filename=self.file_name)
+
                         new_args.append (arg)
 
                 node.args= new_args
