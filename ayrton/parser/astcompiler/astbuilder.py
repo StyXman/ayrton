@@ -1213,10 +1213,13 @@ class ASTBuilder(object):
                     else:
                         kw = ast.keyword(keyword, keyword_value)
                         kw.lineno = keyword_node.lineno
+                        kw.col_offset = keyword_node.column
                         name = ast.Name ('o', ast.Load())
                         name.lineno = keyword_node.lineno
+                        name.column = keyword_node.column
                         arg = ast.Call(name, [], [ kw ], None, None)
                         arg.lineno = keyword_node.lineno
+                        arg.column = keyword.column
                         args.append(arg)
             elif argument.type == tokens.STAR:
                 variable_arg = self.handle_expr(args_node.children[i + 1])
