@@ -50,6 +50,9 @@ def is_executable (node):
             type (node.func.func)==Name and
             node.func.func.id=='Command')
 
+def is_option (arg):
+    return type (arg)==Call and type (arg.func)==Name and arg.func.id=='o'
+
 def has_keyword (node, keyword):
     return any ([kw.arg==keyword for kw in node.keywords])
 
@@ -482,7 +485,7 @@ class CrazyASTTransformer (ast.NodeTransformer):
                 first_kw= False
                 for index, arg in enumerate (node.args):
                     # NOTE: maybe o() can be left in its own namespace so it doesn't pollute
-                    if type (arg)==Call and type (arg.func)==Name and arg.func.id=='o':
+                    if is_option (arg):
                         kw_name= arg.keywords[0].arg
                         if kw_name in used_keywords:
                             raise SyntaxError(self.file_name, node.lineno, node.column,
