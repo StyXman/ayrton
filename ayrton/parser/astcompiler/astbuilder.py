@@ -1202,7 +1202,7 @@ class ASTBuilder(object):
                     keyword = keyword_expr
                     self.check_forbidden_name(keyword.id, keyword_node)
                     keyword_value = self.handle_expr(argument.children[2])
-                    if keyword.id in Command.supported_options:
+                    if isinstance (keyword, ast.Name) and keyword.id in Command.supported_options:
                         keywords.append(ast.keyword(keyword.id, keyword_value))
                     else:
                         kw = ast.keyword(keyword, keyword_value)
