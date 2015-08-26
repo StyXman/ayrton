@@ -1200,7 +1200,8 @@ class ASTBuilder(object):
                         self.error("lambda cannot contain assignment",
                                    keyword_node)
                     keyword = keyword_expr
-                    self.check_forbidden_name(keyword.id, keyword_node)
+                    if isinstance (keyword, ast.Name):
+                        self.check_forbidden_name(keyword.id, keyword_node)
                     keyword_value = self.handle_expr(argument.children[2])
                     if isinstance (keyword, ast.Name) and keyword.id in Command.supported_options:
                         keywords.append(ast.keyword(keyword.id, keyword_value))
