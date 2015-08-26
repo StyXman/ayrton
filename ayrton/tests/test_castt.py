@@ -112,16 +112,29 @@ class TestVisits (unittest.TestCase):
 
     def testDoubleKeywordFunction (self):
         c= castt.CrazyASTTransformer ({ 'o': o, 'dict': dict})
-        t= ayrton.parse ("""dict (p= True, p=False)""")
+        t= ayrton.parse ("""dict (p=True, p=False)""")
 
         self.assertRaises (SyntaxError, c.visit_Call, t.body[0].value)
 
     def testKeywordAfterPosFunction (self):
         c= castt.CrazyASTTransformer ({ 'o': o, 'dict': dict})
-        t= ayrton.parse ("""dict (p= True, False)""")
+        t= ayrton.parse ("""dict (p=True, False)""")
 
         self.assertRaises (SyntaxError, c.visit_Call, t.body[0].value)
 
+    def testMniusMinusFunction (self):
+        c= castt.CrazyASTTransformer ({ 'o': o, 'dict': dict})
+        t= ayrton.parse ("""dict (--p=True)""")
+
+        self.assertRaises (SyntaxError, c.visit_Call, t.body[0].value)
+
+    def testMniusMinusCommand (self):
+        c= castt.CrazyASTTransformer ({ 'o': o})
+        t= ayrton.parse ("""foo (--p=True)""")
+
+        node= c.visit_Call (t.body[0].value)
+
+        self.assertEqual (node.args[0].keywords[0].arg, '--p')
 
 class TestHelperFunctions (unittest.TestCase):
 
