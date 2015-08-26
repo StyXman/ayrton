@@ -107,7 +107,8 @@ class TestVisits (unittest.TestCase):
         #      keywords=[], starargs=None, kwargs=None)
         # both arguments have the same name!
         self.assertEqual (node.args[0].keywords[0].arg,
-                          node.args[1].keywords[0].arg, ast.dump (node))
+                          node.args[1].keywords[0].arg,
+                          "\n%s\n%s\n" % (ast.dump (node.args[0]), ast.dump (node.args[1])))
 
     def testDoubleKeywordFunction (self):
         c= castt.CrazyASTTransformer ({ 'o': o, 'dict': dict})
