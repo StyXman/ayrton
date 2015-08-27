@@ -37,3 +37,7 @@ If we {have time,are bored}:
 
 * what to do about relative/absolute command paths?
 * executable path caching à la bash.
+* git (commit) vs git.commit() vs git ('commit')
+* function names are expressions too:
+    * / as unary op? => /path/to/excecutable and relative/path
+    * foo_bar vs foo__bar vs foo-bar
