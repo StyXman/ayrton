@@ -122,19 +122,27 @@ class TestVisits (unittest.TestCase):
 
         self.assertRaises (SyntaxError, c.visit_Call, t.body[0].value)
 
-    def testMniusMinusFunction (self):
+    def testMinusMinusFunction (self):
         c= castt.CrazyASTTransformer ({ 'o': o, 'dict': dict})
         t= ayrton.parse ("""dict (--p=True)""")
 
         self.assertRaises (SyntaxError, c.visit_Call, t.body[0].value)
 
-    def testMniusMinusCommand (self):
+    def testMinusMinusCommand (self):
         c= castt.CrazyASTTransformer ({ 'o': o})
         t= ayrton.parse ("""foo (--p=True)""")
 
         node= c.visit_Call (t.body[0].value)
 
         self.assertEqual (node.args[0].keywords[0].arg, '--p')
+
+    def testLongOptionCommand (self):
+        c= castt.CrazyASTTransformer ({ 'o': o})
+        t= ayrton.parse ("""foo (--long-option=True)""")
+
+        node= c.visit_Call (t.body[0].value)
+
+        self.assertEqual (node.args[0].keywords[0].arg, '--long-option')
 
 class TestHelperFunctions (unittest.TestCase):
 
@@ -151,7 +159,6 @@ class TestHelperFunctions (unittest.TestCase):
         self.assertEqual (combined, 'test.py')
 
     def testDottedDottedName (self):
-        # NOTE: yes, indentation sucks here
         single, combined= castt.func_name2dotted_exec (parse_expression ('test.me.py'))
 
         self.assertEqual (single, 'test')
