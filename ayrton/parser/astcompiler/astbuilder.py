@@ -1187,9 +1187,6 @@ class ASTBuilder(object):
             if argument.type == syms.argument:
                 if len(argument.children) == 1:
                     expr_node = argument.children[0]
-                    # if keywords:
-                    #     self.error("non-keyword arg after keyword arg",
-                    #                expr_node)
                     if variable_arg:
                         self.error("only named arguments may follow "
                                    "*expression", expr_node)
@@ -1202,21 +1199,22 @@ class ASTBuilder(object):
                     if isinstance(keyword_expr, ast.Lambda):
                         self.error("lambda cannot contain assignment",
                                    keyword_node)
-                    elif not isinstance(keyword_expr, ast.Name):
-                        self.error("keyword can't be an expression",
-                                   keyword_node)
-                    keyword = keyword_expr.id
-                    self.check_forbidden_name(keyword, keyword_node)
+                    keyword = keyword_expr
+                    if isinstance (keyword, ast.Name):
+                        self.check_forbidden_name(keyword.id, keyword_node)
                     keyword_value = self.handle_expr(argument.children[2])
-                    if keyword in Command.supported_options:
-                        keywords.append(ast.keyword(keyword, keyword_value))
+                    if isinstance (keyword, ast.Name) and keyword.id in Command.supported_options:
+                        keywords.append(ast.keyword(keyword.id, keyword_value))
                     else:
                         kw = ast.keyword(keyword, keyword_value)
                         kw.lineno = keyword_node.lineno
+                        kw.col_offset = keyword_node.column
                         name = ast.Name ('o', ast.Load())
                         name.lineno = keyword_node.lineno
+                        name.column = keyword_node.column
                         arg = ast.Call(name, [], [ kw ], None, None)
                         arg.lineno = keyword_node.lineno
+                        arg.column = keyword.column
                         args.append(arg)
             elif argument.type == tokens.STAR:
                 variable_arg = self.handle_expr(args_node.children[i + 1])

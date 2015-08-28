@@ -50,6 +50,9 @@ def is_executable (node):
             type (node.func.func)==Name and
             node.func.func.id=='Command')
 
+def is_option (arg):
+    return type (arg)==Call and type (arg.func)==Name and arg.func.id=='o'
+
 def has_keyword (node, keyword):
     return any ([kw.arg==keyword for kw in node.keywords])
 
@@ -465,6 +468,13 @@ class CrazyASTTransformer (ast.NodeTransformer):
                         node.args.pop (0)
                         update_keyword (node, keyword (arg='_in', value=first_arg))
 
+                    for arg in node.args:
+                        if is_option (arg):
+                            # ast_pprinter takes care of expressions
+                            kw= arg.keywords[0]
+                            logger.debug ("->>>kw: %s", ast.dump (kw))
+                            kw.arg= pprint (kw.arg)
+
                 ast.copy_location (new_node, node)
                 node.func= new_node
                 ast.fix_missing_locations (node)
@@ -482,19 +492,30 @@ class CrazyASTTransformer (ast.NodeTransformer):
                 first_kw= False
                 for index, arg in enumerate (node.args):
                     # NOTE: maybe o() can be left in its own namespace so it doesn't pollute
-                    if type (arg)==Call and type (arg.func)==Name and arg.func.id=='o':
-                        kw_name= arg.keywords[0].arg
-                        if kw_name in used_keywords:
-                            raise SyntaxError(self.file_name, node.lineno, node.column,
-                                              "keyword argument repeated")
+                    if is_option (arg):
+                        kw_expr= arg.keywords[0].arg
+                        if not isinstance (kw_expr, ast.Name) and not isinstance (kw_expr, str):
+                            raise SyntaxError (self.file_name, node.lineno, node.column,
+                                               "keyword can't be an expression")
 
-                        node.keywords.append (arg.keywords[0])
+                        if isinstance (kw_expr, ast.Name):
+                            kw_name= kw_expr.id
+                        else:
+                            kw_name= kw_expr  # str
+
+                        if kw_name in used_keywords:
+                            raise SyntaxError (self.file_name, node.lineno, node.column,
+                                               "keyword argument repeated")
+
+                        # convert the expr into a str
+                        new_kw= keyword (kw_name, arg.keywords[0].value)
+                        node.keywords.append (new_kw)
                         used_keywords.add (kw_name)
                         first_kw= True
                     else:
                         if first_kw:
-                            raise SyntaxError(self.file_name, node.lineno, node.column,
-                                              "non-keyword arg after keyword arg")
+                            raise SyntaxError (self.file_name, node.lineno, node.column,
+                                               "non-keyword arg after keyword arg")
 
                         new_args.append (arg)
 

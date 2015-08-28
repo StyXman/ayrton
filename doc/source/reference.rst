@@ -10,7 +10,7 @@ from shell like languages.
 .. py:data:: argv
 
     This variable holds a list of the arguments passed to the script, with the
-    script's path in the first position.
+    script's path in the first position. In Python-speak, this is ``sys.argv``.
 
 .. py:data:: path
 
@@ -42,7 +42,7 @@ Functions
     that order). *list_or_str* can be a string or a list of strings. The return
     value can be an empty list, a single string, or a list of two or more strings.
 
-.. py:function:: cd (path)
+.. py:function:: cd (path) | chdir (path)
 
     Changes the current working directory for the script process. If used as a
     context manager, it restores the original path when the context finishes,
@@ -57,7 +57,7 @@ Functions
 .. py:function:: o (name=value)
 
     Creates a positional option that will be expanded as an option/value when
-    running a command. See :py:func:`foo`.
+    running a command. See :py:func:`foo`. This is mostly used internally.
 
 .. py:function:: option (opt, value=True)
 
@@ -117,13 +117,10 @@ Functions
 
     Executes the binary *foo*, searching the binary using :py:data:`path`.
     Arguments in *\*args* are used as positional arguments for the command. This
-    returns a :py:class:`Command`.
-    If one is an :py:func:`o(k=v)`, it's replaced by two positional arguments,
-    `-k` (or `--k` if `k` is longer than one character) and a second one `v`.
-    The rest of the *\*\*kwargs* are added in the same way as :py:func:`o`,
-    but in an arbitrary order, except for the following items, which are not
-    passed but drive how the command is executed and where does input come from
-    and output goes to:
+    returns a :py:class:`Command`. The syntaxis for Commands departs a little from
+    pure Python. Python expressions are allowed as keyword names, so `-o` and
+    `--long-option` are valid. Also, keywords and positional arguments can be mixed,
+    as in `find (-L=True, '/', -name='*.so')`
 
 .. py:attribute:: _in
 

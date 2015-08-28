@@ -603,6 +603,9 @@ def pprint_inner (node, level=0):
             yield ' as '
             for i in pprint_inner (node.optional_vars): yield i
 
+    elif t==str:
+        yield node
+
     else:
         yield '\n'
         yield '# unknown construction\n'

@@ -288,16 +288,15 @@ class Command:
 
     def prepare_arg (self, seq, name, value):
         if value!=False:
-            if len (name)==1:
-                arg="-%s" % name
-            else:
-                # TODO: longopt_prefix
-                # and/or simply subclass find(Command)
-                arg="--%s" % name
-            seq.append (arg)
+            seq.append (name)
 
+            # this is not the same as 'not value'
+            # because value can have any, well, value of any kind
             if value!=True:
                 seq.append (str (value))
+        else:
+            # TODO: --no-option?
+            pass
 
     def parent (self):
         if self.stdin_pipe is not None:
@@ -355,6 +354,7 @@ class Command:
             self.capture_file= open (r)
 
         if self._exit_code==127:
+            # NOTE: when running bash, it returns 127 when it can't find the script to run
             raise CommandNotFound (self.path)
 
         if (ayrton.runner.options.get ('errexit', False) and

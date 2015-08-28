@@ -107,20 +107,42 @@ class TestVisits (unittest.TestCase):
         #      keywords=[], starargs=None, kwargs=None)
         # both arguments have the same name!
         self.assertEqual (node.args[0].keywords[0].arg,
-                          node.args[1].keywords[0].arg, ast.dump (node))
+                          node.args[1].keywords[0].arg,
+                          "\n%s\n%s\n" % (ast.dump (node.args[0]), ast.dump (node.args[1])))
 
     def testDoubleKeywordFunction (self):
         c= castt.CrazyASTTransformer ({ 'o': o, 'dict': dict})
-        t= ayrton.parse ("""dict (p= True, p=False)""")
+        t= ayrton.parse ("""dict (p=True, p=False)""")
 
         self.assertRaises (SyntaxError, c.visit_Call, t.body[0].value)
 
     def testKeywordAfterPosFunction (self):
         c= castt.CrazyASTTransformer ({ 'o': o, 'dict': dict})
-        t= ayrton.parse ("""dict (p= True, False)""")
+        t= ayrton.parse ("""dict (p=True, False)""")
 
         self.assertRaises (SyntaxError, c.visit_Call, t.body[0].value)
 
+    def testMinusMinusFunction (self):
+        c= castt.CrazyASTTransformer ({ 'o': o, 'dict': dict})
+        t= ayrton.parse ("""dict (--p=True)""")
+
+        self.assertRaises (SyntaxError, c.visit_Call, t.body[0].value)
+
+    def testMinusMinusCommand (self):
+        c= castt.CrazyASTTransformer ({ 'o': o})
+        t= ayrton.parse ("""foo (--p=True)""")
+
+        node= c.visit_Call (t.body[0].value)
+
+        self.assertEqual (node.args[0].keywords[0].arg, '--p')
+
+    def testLongOptionCommand (self):
+        c= castt.CrazyASTTransformer ({ 'o': o})
+        t= ayrton.parse ("""foo (--long-option=True)""")
+
+        node= c.visit_Call (t.body[0].value)
+
+        self.assertEqual (node.args[0].keywords[0].arg, '--long-option')
 
 class TestHelperFunctions (unittest.TestCase):
 
@@ -137,7 +159,6 @@ class TestHelperFunctions (unittest.TestCase):
         self.assertEqual (combined, 'test.py')
 
     def testDottedDottedName (self):
-        # NOTE: yes, indentation sucks here
         single, combined= castt.func_name2dotted_exec (parse_expression ('test.me.py'))
 
         self.assertEqual (single, 'test')

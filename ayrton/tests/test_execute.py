@@ -30,7 +30,6 @@ cat= Command ('cat', )
 ls= Command ('ls')
 ssh= Command ('ssh')
 mcedit= Command ('mcedit')
-bash= Command ('bash')
 true= Command ('true')
 false= Command ('false')
 grep= Command ('grep')
@@ -110,28 +109,15 @@ class MockedStdOut (unittest.TestCase):
         self.assertEqual (self.mock_stdout.read (), '')
         self.mock_stdout.close ()
 
-    def testKwargsAsUnorderedOptions (self):
-        echo (l=True, more=42, kwargs_as_unordered_options='yes!')
+    def testOrderedOptions (self):
+        ayrton.main ("""echo (-l=True, --more=42, --ordered_options='yes!')""")
         tearDownMockStdOut (self)
-
-        output= self.mock_stdout.read ()
-        # we can't know for sure the order of the options in the final command line
-        # '-l --more 42 --kwargs_as_unordered_options yes!\n'
-        self.assertTrue ('-l' in output)
-        self.assertTrue ('--more 42' in output)
-        self.assertTrue ('--kwargs_as_unordered_options yes!' in output)
-        self.assertTrue (output[-1]=='\n')
-        self.mock_stdout.close ()
-
-    def testOOrdersOptions (self):
-        echo (o(l=True), o(more=42), o(o_orders_options='yes!'))
-        tearDownMockStdOut (self)
-        self.assertEqual (self.mock_stdout.read (), '-l --more 42 --o_orders_options yes!\n')
+        self.assertEqual (self.mock_stdout.read (), '-l --more 42 --ordered_options yes!\n')
         self.mock_stdout.close ()
 
     def testEnvironment (self):
         # NOTE: we convert envvars to str when we export() them
-        bash (c='echo environments works: $FOO', _env=dict (FOO='yes'))
+        ayrton.main ("""sh (-c='echo environments works: $FOO', _env=dict (FOO='yes'))""")
         tearDownMockStdOut (self)
         self.assertEqual (self.mock_stdout.read (), 'environments works: yes\n')
         self.mock_stdout.close ()

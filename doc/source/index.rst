@@ -70,10 +70,13 @@ Commands do not raise Exceptions
     When you run a command with ``sh`` and it either exited with a return code
     different from 0 or it was stopped/finished by a signal, it would raise an
     exception. You then can recover the exit code and the output from the
-    exception. In ``ayrton`` not only exceptions are not raised, you can ask the
+    exception. In ``ayrton`` not only exceptions are not raised by defaut, you can ask the
     exit code in the ``code`` attribute and the output in the ``stdout`` and
     ``stderr`` attributes. You can also use commands as booleans in conditions
-    to ``if``, ``while``, etc: ``if ls(): then echo ("yes!")``.
+    to ``if``, ``while``, etc: ``if ls(): then echo ("yes!")``. Exceptions are raised when
+    the command is not found; or when the `errexit` :py:func:`option` is set, a
+    command returns an exit code not 0, and ``_fails`` was not specified. See also
+    :py:func:`foo`.
 
 Commands with dots are supported
     You can call `foo.py()`, no extra work needed.
@@ -98,4 +101,6 @@ enough that the benefits will overweight this.
   an empty list, or a list with two or more elements.
 * If you name a variable with the same name as an executable, you can't execute it until
   you're out of that scope. This is exactly the same thing that happens when you
-  eclipse a Python variable from an outer scope.
+  eclipse a Python variable from an outer scope, and similar to when you define a function
+  in `bash` with the same names as the executable (but that you can go around by giving
+  the full path if you know it, which you can't do in `ayrton`).

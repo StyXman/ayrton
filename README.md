@@ -1,6 +1,6 @@
-`ayrton` - a shell-like scripting language based on Python3.
+`ayrton` - a shell-like scripting language strongly based on Python3.
 
-`ayrton` is an extension of the Python language that tries to make it look more
+`ayrton` is an modification of the Python language that tries to make it look more
 like a shell programming language. It takes ideas already present in `sh`, adds
 a few functions for better emulating envvars, and provides a mechanism for (semi)
 transparent remote execution via `ssh`.
@@ -54,7 +54,7 @@ So, in short:
 
 # First steps: execution, output
 
-To mimic the second example in the introduction,
+To do the same as the second example in the introduction,
 with `sh` you could `from sh import echo` and it will create a callable that will
 transparently run `/bin/echo` for you; `ayrton` takes a step further and creates
 the callable on the fly, so you don't have to pre-declare it. Another difference
@@ -73,18 +73,16 @@ Just guess were the output went :) ... (ok, ok, it went to `/dev/null`).
 
 # Composing
 
-Just like `sh`, you can nest callables, but you must explicitly tell it that you
-want to capture the output so the nesting callable gets its input:
+Just like `sh`, you can nest callables:
 
-    root= grep (cat ('/etc/passwd', _out=Capture), 'root', _out=Capture)
+    root= grep (cat ('/etc/passwd'), 'root', _out=Capture)
 
-This seems more cumbersome than `sh`, but if you think that in any shell language
-you do something similar (either using `$()`, `|` or even redirection), it's not
-a high price to pay.
+In the special case where a command is the first argument for another, its output
+will be captured and piped to the stdin of the outer command.
 
 Another improvement over `sh` is that you can use commands as conditions:
 
-    if grep (cat ('/etc/passwd', _out=Capture), 'mdione', _out=None):
+    if grep (cat ('/etc/passwd'), 'mdione', _out=None):
         print ('user «mdione» is present on your system; that's a security vulnerability right there!')
 
 As a consequence, you can also use `and`, `or` and `not`.
@@ -97,9 +95,7 @@ we had to implement it:
     if cat ('/etc/passwd') | grep ('mdione', _out=None):
         print ('I'm here, baby!')
 
-Notice that this time you don't have to be explicit about the `cat`'s output;
-we know it's going to a pipe, so we automatically `Capture` it. Of course, we
-also have redirection:
+And of course, we also have redirection:
 
     grep ('mdione') < '/etc/passwd' > '/tmp/foo'
     grep ('root') < '/etc/passwd' >> '/tmp/foo'
@@ -119,7 +115,7 @@ of:
     /home/mdione/src/projects/ayrton/bin
     /home/mdione/src/projects/ayrton
 
-`bash()` applies brace, tilde and glob (pathname) expansions:
+The `bash()` function applies brace, tilde and glob (pathname) expansions:
 
     >>> from ayrton.expansion import bash
     >>> import os
@@ -184,14 +180,17 @@ If the latter fails the construct fails and your script will finish. We're
 checking its limitations to see where we can draw the line of what will be
 possible or not.
 
+The development of this construct is not complete, so expect some changes in its
+API.
+
 Here you'll find [the docs](http://www.grulic.org.ar/~mdione/projects/ayrton/).
 
 # FAQ
 
 Q: Why bother? Isn't `bash` great?
 
-A: Yes and no. `bash` is very powerful, both from the CLI and as a language. But
-it's clumsy, mainly due to two reasons: parsing lines into commands and their
+A: Yes and no. `bash` is very powerful, both from the CLI point of view and as a language.
+But it's clumsy, mainly due to two reasons: parsing lines into commands and their
 arguments, and the methods for preventing overzealous word splitting, which leads
 to several pitfalls, some of them listed [here](http://mywiki.wooledge.org/BashPitfalls));
 and poor data manipulation syntax.  It also lacks of good remote
