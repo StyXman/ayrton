@@ -35,10 +35,16 @@ ayrton.runner= ayrton.Ayrton ()
 
 class Bash(unittest.TestCase):
     def test_simple_string (self):
-        self.assertEqual (bash ('s'), 's')
+        self.assertEqual (bash ('s'), [ 's' ])
+
+    def test_simple_string_single (self):
+        self.assertEqual (bash ('s', single=True), 's')
 
     def test_glob1 (self):
-        self.assertEqual (bash ('*.py'), 'setup.py')
+        self.assertEqual (bash ('*.py'), [ 'setup.py' ])
+
+    def test_glob1_single (self):
+        self.assertEqual (bash ('*.py', single=True), 'setup.py')
 
     def test_glob2 (self):
         self.assertEqual (sorted (bash ([ '*.py', '*.txt' ])), [ 'LICENSE.txt', 'setup.py', ])
@@ -56,10 +62,16 @@ class Bash(unittest.TestCase):
         self.assertEqual (bash ('a{b,ce}d'), [ 'abd', 'aced' ])
 
     def test_simple3_brace (self):
-        self.assertEqual (bash ('{a}'), '{a}')
+        self.assertEqual (bash ('{a}'), [ '{a}' ])
+
+    def test_simple3_brace_single (self):
+        self.assertEqual (bash ('{a}', single=True), '{a}')
 
     def test_simple4_brace (self):
-        self.assertEqual (bash ('a}'), 'a}')
+        self.assertEqual (bash ('a}'), [ 'a}' ])
+
+    def test_simple4_brace_single (self):
+        self.assertEqual (bash ('a}', single=True), 'a}')
 
     def test_simple5_brace (self):
         self.assertEqual (bash ('a{bfgh,{ci,djkl}e'), [ 'a{bfgh,cie', 'a{bfgh,djkle' ])
@@ -78,14 +90,20 @@ class Bash(unittest.TestCase):
         self.assertEqual (bash ('{c{a,b}d,e{f,g}h}'), [ 'cad', 'cbd', 'efh', 'egh' ])
 
     def test_escaped_brace (self):
-        self.assertEqual (bash ('\{a,b}'), '{a,b}')
+        self.assertEqual (bash ('\{a,b}'), [ '{a,b}' ])
+
+    def test_escaped_brace_single (self):
+        self.assertEqual (bash ('\{a,b}', single=True), '{a,b}')
 
     def test_real_example1 (self):
         # tiles/{legend*,Elevation.dgml,preview.png,Makefile}
         pass
 
     def test_tilde (self):
-        self.assertEqual (bash ('~'), os.environ['HOME'])
+        self.assertEqual (bash ('~'), [ os.environ['HOME'] ])
+
+    def test_tilde_single (self):
+        self.assertEqual (bash ('~', single=True), os.environ['HOME'])
 
 def setUpMockStdout (self):
     # due to the interaction between file descriptors,
