@@ -36,7 +36,7 @@ from ayrton.execute import o, Command, Capture, CommandFailed
 from ayrton.parser.pyparser.pyparse import CompileInfo, PythonParser
 from ayrton.parser.astcompiler.astbuilder import ast_from_node
 
-__version__= '0.4.4'
+__version__= '0.5'
 
 def parse (script, file_name=''):
     parser= PythonParser (None)
