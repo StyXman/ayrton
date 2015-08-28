@@ -203,7 +203,7 @@ class PipingRedirection (unittest.TestCase):
         self.assertEqual (self.r.read (), b'setup.py\n')
 
     def testLongPipe (self):
-        ayrton.main ('ls () | grep ("setup") | wc (l=True)')
+        ayrton.main ('ls () | grep ("setup") | wc (-l=True)')
         # close stdout as per the description of setUpMockStdout()
         os.close (1)
         self.assertEqual (self.r.read (), b'1\n')
