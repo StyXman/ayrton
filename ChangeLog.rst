@@ -1,9 +1,16 @@
-ayrton (0.4.4) UNRELEASED; urgency=medium
+ayrton (0.5) UNRELEASED; urgency=medium
 
   * source() is out. use python's import system.
   * Support executing foo.py().
+  * Much better command detection.
+  * CommandNotFound exception is now a subclass of NameError.
+  * Allow Command keywords be named like '-l' and '--long-option', so it supports options with dashes.
+  * This also means that long-option is no longer passed as --long-option; you have to put the dashes explicitly.
+  * bash() does not return a single string by default; override with single=True.
+  * Way more tests.
+  * Updated docs.
 
- -- Marcos Dione <mdione@grulic.org.ar>  Wed, 20 May 2015 23:44:45 +0200
+ -- Marcos Dione <mdione@grulic.org.ar>  Sun, 30 Aug 2015 15:13:30 +0200
 
 ayrton (0.4.3) unstable; urgency=medium
 
