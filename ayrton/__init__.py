@@ -21,9 +21,11 @@ import os
 import sys
 import importlib
 import ast
-# import logging
+import logging
 
-# logging.basicConfig(filename='tmp/bar.log',level=logging.DEBUG)
+# logging.basicConfig(filename='ayrton.%d.log' % os.getpid (),level=logging.DEBUG)
+# logging.basicConfig(filename='ayrton.log',level=logging.DEBUG)
+logger= logging.getLogger ('ayrton')
 
 # things that have to be defined before importing ayton.execute :(
 # singleton
@@ -31,21 +33,23 @@ runner= None
 
 from ayrton.castt import CrazyASTTransformer
 from ayrton.execute import o, Command, Capture, CommandFailed
+from ayrton.parser.pyparser.pyparse import CompileInfo, PythonParser
+from ayrton.parser.astcompiler.astbuilder import ast_from_node
 
-__version__= '0.4.2'
+__version__= '0.5'
+
+def parse (script, file_name=''):
+    parser= PythonParser (None)
+    info= CompileInfo (file_name, 'exec')
+    return ast_from_node (None, parser.parse_source (script, info), info)
 
 class Ayrton (object):
-    def __init__ (self, globals=None, locals=None, **kwargs):
+    def __init__ (self, globals=None, **kwargs):
         if globals is None:
             self.globals= {}
         else:
             self.globals= globals
         polute (self.globals, kwargs)
-
-        if locals is None:
-            self.locals= None
-        else:
-            self.locals= locals
 
         self.options= {}
         self.pending_children= []
@@ -53,19 +57,23 @@ class Ayrton (object):
     def run_file (self, file):
         # it's a pity that parse() does not accept a file as input
         # so we could avoid reading the whole file
-        self.run_script (open (file).read (), file)
+        return self.run_script (open (file).read (), file)
 
     def run_script (self, script, file_name):
-        tree= ast.parse (script)
-        tree= CrazyASTTransformer (self.globals).visit (tree)
+        tree= parse (script, file_name)
+        tree= CrazyASTTransformer (self.globals, file_name).modify (tree)
 
-        self.run_tree (tree, file_name)
+        return self.run_tree (tree, file_name)
 
     def run_tree (self, tree, file_name):
-        self.run_code (compile (tree, file_name, 'exec'))
+        logger.debug (ast.dump (tree))
+        return self.run_code (compile (tree, file_name, 'exec'))
 
     def run_code (self, code):
-        exec (code, self.globals, self.locals)
+        locals= {}
+        exec (code, self.globals, locals)
+
+        return locals['ayrton_return_value']
 
     def wait_for_pending_children (self):
         for i in range (len (self.pending_children)):
@@ -73,8 +81,11 @@ class Ayrton (object):
             child.wait ()
 
 def polute (d, more):
-    # TODO: weed out some stuff (copyright, etc)
     d.update (__builtins__)
+    # weed out some stuff
+    for weed in ('copyright', '__doc__', 'help', '__package__', 'credits', 'license', '__name__'):
+        del d[weed]
+
     d.update (os.environ)
 
     # these functions will be loaded from each module and put in the globals
@@ -90,7 +101,7 @@ def polute (d, more):
                               '_N', '_S', '_nt', '_ot' ],
         'ayrton.expansion': [ 'bash', ],
         'ayrton.functions': [ 'cd', ('cd', 'chdir'), 'export', 'option', 'remote', 'run',
-                               'shift', 'source', 'unset', ],
+                               'shift', 'unset', ],
         'ayrton.execute': [ 'o', 'Capture', 'CommandFailed', 'CommandNotFound',
                             'Pipe', 'Command'],
         }
@@ -112,18 +123,20 @@ def polute (d, more):
 
     d.update (more)
 
-def run_tree (tree, globals, locals):
+def run_tree (tree, globals):
     global runner
-    runner= Ayrton (globals=globals, locals=locals)
-    runner.run_tree (tree)
+    runner= Ayrton (globals=globals)
+    runner.run_tree (tree, 'unknown_tree')
 
 def run_file_or_script (script=None, file=None, **kwargs):
     global runner
     runner= Ayrton (**kwargs)
     if script is None:
-        runner.run_file (file)
+        v= runner.run_file (file)
     else:
-        runner.run_script (script, 'script_from_command_line')
+        v= runner.run_script (script, 'script_from_command_line')
+
+    return v
 
 # backwards support for unit tests
 main= run_file_or_script

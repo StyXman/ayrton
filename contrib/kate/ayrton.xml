@@ -168,6 +168,15 @@
 			<item> stderr </item>
 			<item> Capture </item>
 			<item> path </item>
+			<item> _in </item>
+			<item> _out </item>
+			<item> _err </item>
+			<item> _end </item>
+			<item> _comp </item>
+			<item> _encoding </item>
+			<item> _env </item>
+			<item> _bg </item>
+			<item> _fails </item>
 		</list>
 		<list name="overloaders">
 			<item>__new__</item>

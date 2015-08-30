@@ -41,9 +41,6 @@ def glob_expand (s):
         # accumulate them
         ans+= a
 
-    if len(ans)==1:
-        ans= ans[0]
-
     return ans
 
 class Group (object):
@@ -202,9 +199,6 @@ def brace_expand (s):
             else:
                 ans.append (te.text)
 
-    if len(ans)==1:
-        ans= ans[0]
-
     return ans
 
 def backslash_descape (s):
@@ -225,5 +219,8 @@ def tilde_expand (s):
 
     return ans
 
-def bash (s):
-    return backslash_descape (glob_expand (tilde_expand (brace_expand (s))))
+def bash (s, single=False):
+    data= backslash_descape (glob_expand (tilde_expand (brace_expand (s))))
+    if single and len(data)==1:
+        data= data[0]
+    return data

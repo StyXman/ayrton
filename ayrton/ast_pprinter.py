@@ -9,30 +9,35 @@ from ast import Assert, Set, SetComp, LtE, IfExp, FloorDiv, GtE, With, Continue
 from ast import YieldFrom, UAdd, LShift, DictComp, Div, Starred, BitXor, Pow
 from _ast import arguments, arg as arg_type, keyword as keyword_type
 from _ast import alias as alias_type, comprehension, withitem
+try:
+    # python3.5 support
+    from _ast import AsyncFor, AsyncFunctionDef, AsyncWith, Await
+except ImportError:
+    AsyncFor= AsyncFunctionDef= AsyncWith= Await= object()
 
 def pprint_body (body, level):
     for statement in body:
-        print ('    '*level, end='')
-        pprint (statement, level)
-        print ()
+        yield '    '*level
+        for i in pprint_inner (statement, level): yield i
+        yield '\n'
 
 def pprint_seq (seq, sep=', '):
-    for i, e in enumerate (seq):
-        if type (e)==str:
-            print (e, end='')
+    for index, elem in enumerate (seq):
+        if type (elem)==str:
+            yield elem
         else:
-            pprint (e)
+            for i in pprint_inner (elem): yield i
 
-        if i<len (seq)-1:
+        if index<len (seq)-1:
             if type (sep)==str:
-                print (sep, end='')
+                yield sep
             else:
-                pprint (sep)
+                for i in pprint_inner (sep): yield i
 
 def pprint_orelse (orelse, level):
     if len (orelse)>0:
-        print ('    '*level+'else:')
-        pprint_body (orelse, level+1)
+        yield '    '*level+'else:\n'
+        for i in pprint_body (orelse, level+1): yield i
 
 def pprint_args (args, defaults):
     # TODO: anotations
@@ -40,464 +45,487 @@ def pprint_args (args, defaults):
     # defaults=[Num(n=1)]
     d_index= len (args)-len (defaults)
     for index, arg in enumerate (args):
-        print (arg.arg, end='')
+        yield arg.arg
 
         if index>=d_index:
-            print ('=', end='')
-            pprint (defaults[index-d_index])
+            yield '='
+            for i in pprint_inner (defaults[index-d_index]): yield i
 
         if index<len (args)-1:
-            print (', ', end='')
+            yield ', '
 
 def pprint (node, level=0):
-    # move down to the lineno
-    # for lineno in range (line, node.lineno):
-    #     print ()
-    #     line+= 1
+    return ''.join (pprint_inner (node, level))
+
+def pprint_inner (node, level=0):
     t= type (node)
 
     if t==Add:
-        print ('+', end='')
+        yield '+'
 
     elif t==And:
-        print (' and ', end='')
+        yield ' and '
 
     elif t==Assert:
         # Assert(test=..., msg=None)
-        print ('assert ', end='')
-        pprint (node.test)
+        yield 'assert '
+        for i in pprint_inner (node.test): yield i
         # TODO: msg
 
     elif t==Assign:
         # Assign(targets=[Name(id='c', ctx=Store())],
         #        value=...)
-        pprint_seq (node.targets)
-        print ('= ', end='')
-        pprint (node.value)
+        for i in pprint_inner_seq (node.targets): yield i
+        yield '= '
+        for i in pprint_inner (node.value): yield i
+
+    elif t==AsyncFor:
+        yield 'async '
+        # For(target=..., iter=..., body=[...], orelse=[...])
+        node= For (target=node.target, iter=node.iter, body=node.body, orelse=node.orelse)
+        for i in pprint_inner (node): yield i
+
+    elif t==AsyncFunctionDef:
+        yield 'async '
+        # FunctionDef(name='foo', args=arguments(...), body=[ ... ], decorator_list=[], returns=None)
+        node= FunctionDef (name=node.name, args=node.args, body=node.body, decorator_list=node.decorator_list,
+                           returns=node.returns)
+        for i in pprint_inner (node): yield i
+
+    elif t==AsyncWith:
+        yield 'async '
+        # With(items=[...], body=[...])
+        node= With (items=node.items, body=node.body)
+        for i in pprint_inner (node): yield i
 
     elif t==Attribute:
         # Attribute(value=Name(id='node', ctx=Load()), attr='body', ctx=Load())
-        pprint (node.value)
-        print ('.', end='')
-        print (node.attr, end='')
+        for i in pprint_inner (node.value): yield i
+        yield '.'
+        yield node.attr
 
     elif t==AugAssign:
         # AugAssign(target=Name(id='ans', ctx=Store()), op=Add(), value=Name(id='a', ctx=Load()))
-        pprint (node.target)
-        pprint (node.op)
-        print ('= ', end='')
-        pprint (node.value)
+        for i in pprint_inner (node.target): yield i
+        for i in pprint_inner (node.op): yield i
+        yield '= '
+        for i in pprint_inner (node.value): yield i
+
+    elif t==Await:
+        # value=Await(value=...)
+        yield 'await '
+        for i in pprint_inner (node.value): yield i
 
     elif t==BinOp:
         # BUG:
         # m= ast.parse ('5*(3+4)')
         # ayrton.ast_pprinter.pprint (m)
         # 5*3+4
-        pprint (node.left)
-        pprint (node.op)
-        pprint (node.right)
+        for i in pprint_inner (node.left): yield i
+        for i in pprint_inner (node.op): yield i
+        for i in pprint_inner (node.right): yield i
 
     elif t==BitAnd:
-        print (' & ', end='')
+        yield ' & '
 
     elif t==BitOr:
-        print ('|', end='')
+        yield '|'
 
     elif t==BitXor:
-        print ('^', end='')
+        yield '^'
 
     elif t==BoolOp:
         pprint_seq (node.values, node.op)
 
     elif t==Break:
-        print ('break')
+        yield 'break'
 
     elif t==Bytes:
-        print (repr (node.s), end='')
+        yield repr (node.s)
 
     elif t==Call:
         # Call(func=Name(id='foo', ctx=Load()), args=[], keywords=[], starargs=None, kwargs=None)
         # TODO: annotations
-        pprint (node.func)
-        print (' (', end='')
-        pprint_seq (node.args)
+        for i in pprint_inner (node.func): yield i
+        yield ' ('
+        for i in pprint_seq (node.args): yield i
 
         if len (node.args)>0 and (len (node.keywords)>0 or
                                   node.starargs is not None or
                                   node.kwargs is not None):
-            print (', ', end='')
+            yield ', '
 
-        pprint_seq (node.keywords)
+        for i in pprint_seq (node.keywords): yield i
 
         if ((len (node.args)>0 or len (node.keywords)>0) and
             (node.starargs is not None or node.kwargs is not None)):
-            print (', ', end='')
+            yield ', '
 
         if node.starargs is not None:
-            print ('*', end='')
-            pprint (node.starargs)
+            yield '*'
+            for i in pprint_inner (node.starargs): yield i
 
         if ((len (node.args)>0 or
              len (node.keywords)>0 or
              (node.starargs is not None) and node.kwargs is not None)):
-            print (', ', end='')
+            yield ', '
 
         if node.kwargs is not None:
-            print ('**', end='')
-            pprint (node.kwargs)
+            yield '**'
+            for i in pprint_inner (node.kwargs): yield i
 
-        print (')', end='')
+        yield ')'
 
     elif t==ClassDef:
         # ClassDef(name='ToExpand', bases=[Name(id='object', ctx=Load())],
         #          keywords=[], starargs=None, kwargs=None, body=[...]
-        print ('class ', end='')
-        print (node.name, end='')
+        yield 'class '
+        yield node.name
 
         # TODO: more
         if len (node.bases)>0:
-            print (' (', end='')
-            pprint_seq (node.bases)
-            print (')', end='')
+            yield ' ('
+            for i in pprint_seq (node.bases): yield i
+            yield ')'
 
-        print (':')
-        pprint_body (node.body, level+1)
+        yield ':'
+        for i in pprint_body (node.body, level+1): yield i
 
     elif t==Compare:
         # Compare(left=Name(id='t', ctx=Load()), ops=[Eq()], comparators=[Name(id='Module', ctx=Load())])
         # TODO: do properly
-        pprint (node.left)
+        for i in pprint_inner (node.left): yield i
         for op in node.ops:
-            pprint (op)
+            for i in pprint_inner (op): yield i
 
         for comparator in node.comparators:
-            pprint (comparator)
+            for i in pprint_inner (comparator): yield i
 
     elif t==Continue:
-        print ('continue', end='')
+        yield 'continue'
 
     elif t==Delete:
-        print ('delete ', end='')
-        pprint_seq (node.targets)
+        yield 'delete '
+        for i in pprint_seq (node.targets): yield i
 
     elif t==Dict:
-        print ('{ ', end='')
+        yield '{ '
         for k, v in zip (node.keys, node.values):
-            pprint (k)
-            print ('=', end='')
-            pprint (v)
-            print (', ', end='')
-        print (' }', end='')
+            for i in pprint_inner (k): yield i
+            yield '='
+            for i in pprint_inner (v): yield i
+            yield ', '
+        yield ' }'
 
     elif t==DictComp:
         # DictComp(key=Name(id='v', ctx=Load()), value=Name(id='k', ctx=Load()), generators=[comprehension(target=Tuple(elts=[Name(id='k', ctx=Store()), Name(id='v', ctx=Store())], ctx=Store()), iter=Call(func=Name(id='enumerate', ctx=Load()), args=[Name(id='_b32alphabet', ctx=Load())], keywords=[], starargs=None, kwargs=None), ifs=[])])
-        print ('{ ', end='')
-        pprint (node.key)
-        print (': ', end='')
-        pprint (node.value)
-        print (' for ', end='')
+        yield '{ '
+        for i in pprint_inner (node.key): yield i
+        yield ': '
+        for i in pprint_inner (node.value): yield i
+        yield ' for '
         # TODO: more
-        pprint (node.generators[0])
-        print (' }', end='')
+        for i in pprint_inner (node.generators[0]): yield i
+        yield ' }'
 
     elif t==Div:
-        print ('/', end='')
+        yield '/'
 
     elif t==Eq:
-        print ('==', end='')
+        yield '=='
 
     elif t==ExceptHandler:
         # ExceptHandler(type=Name(id='KeyError', ctx=Load()), name=None, body=[Pass()])
-        print ('    '*level+'except ', end='')
+        yield '    '*level+'except '
         if node.type is not None:
-            pprint (node.type)
+            for i in pprint_inner (node.type): yield i
             if node.name is not None:
-                print (' as ', end='')
-                print (node.name, end='')
+                yield ' as '
+                yield node.name
 
-        print (':')
-        pprint_body (node.body, level+1)
+        yield ':'
+        for i in pprint_body (node.body, level+1): yield i
 
     elif t==Expr:
         # Expr(value=...)
-        pprint (node.value, level)
+        for i in pprint_inner (node.value, level): yield i
 
     elif t==FloorDiv:
-        print ('\\\\', end='')
+        yield '\\\\'
 
     elif t==For:
-        # For(target=..., iter=..., body=[...], orelse=[...]
-        print ('for ', end='')
-        pprint (node.target)
-        print (' in ', end='')
-        pprint (node.iter)
-        print (':')
-        pprint_body (node.body, level+1)
-        pprint_orelse (node.orelse, level)
+        # For(target=..., iter=..., body=[...], orelse=[...])
+        yield 'for '
+        for i in pprint_inner (node.target): yield i
+        yield ' in '
+        for i in pprint_inner (node.iter): yield i
+        yield ':\n'
+        for i in pprint_body (node.body, level+1): yield i
+        for i in pprint_orelse (node.orelse, level): yield i
 
     elif t==FunctionDef:
-        #FunctionDef(name='foo', args=arguments(...), body=[ ... ], decorator_list=[], returns=None)
+        # FunctionDef(name='foo', args=arguments(...), body=[ ... ], decorator_list=[], returns=None)
         # TODO: decorator_list
         # TODO: returns
-        print ('def ', node.name, ' (', end='')
-        pprint (node.args)
-        print ('):')
-        pprint_body (node.body, level+1)
+        yield 'def ', node.name, ' ('
+        for i in pprint_inner (node.args): yield i
+        yield '):\n'
+        for i in pprint_body (node.body, level+1): yield i
 
     elif t==GeneratorExp:
         # GeneratorExp(elt=Name(id='line', ctx=Load()), generators=[...])
-        print ('( ', end='')
-        pprint (node.elt)
-        print (' for ', end='')
+        yield '( '
+        for i in pprint_inner (node.elt): yield i
+        yield ' for '
         # TODO: more
-        pprint (node.generators[0])
-        print (' )', end='')
+        for i in pprint_inner (node.generators[0]): yield i
+        yield ' )'
 
     elif t==Global:
-        print ('global ', end='')
-        pprint_seq (node.names)
+        yield 'global '
+        for i in pprint_seq (node.names): yield i
 
     elif t==Gt:
-        print ('>', end='')
+        yield '>'
 
     elif t==GtE:
-        print ('>=', end='')
+        yield '>='
 
     elif t==If:
         # If(test=..., body=[...], orelse=[...]
-        print ('if ', end='')
-        pprint (node.test)
-        print (':')
-        pprint_body (node.body, level+1)
+        yield 'if '
+        for i in pprint_inner (node.test): yield i
+        yield ':\n'
+        for i in pprint_body (node.body, level+1): yield i
 
         if len (node.orelse)>0:
             # special case for elif
             if len (node.orelse)==1 and type (node.orelse[0])==If:
-                print ('    '*level+'el', end='')
-                pprint (node.orelse[0], level)
+                yield '    '*level+'el'
+                for i in pprint_inner (node.orelse[0], level): yield i
             else:
-                pprint_orelse (node.orelse, level)
+                for i in pprint_orelse (node.orelse, level): yield i
 
     elif t==IfExp:
         # IfExp(test=..., body=Str(s=''), orelse=Str(s='s'))
-        pprint (node.body)
-        print (' if ', end='')
-        pprint (node.test)
-        print (' else ', end='')
-        pprint (node.orelse)
+        for i in pprint_inner (node.body): yield i
+        yield ' if '
+        for i in pprint_inner (node.test): yield i
+        yield ' else '
+        for i in pprint_inner (node.orelse): yield i
 
     elif t==Import:
         # Import(names=[alias(name='ayrton', asname=None)])
-        print ("import ", end='')
-        pprint_seq (node.names)
+        yield "import "
+        for i in pprint_seq (node.names): yield i
 
     elif t==ImportFrom:
         # ImportFrom(module='ayrton.execute', names=[alias(name='Command', asname=None)], level=0)
-        print ("from ", end='')
-        print (node.module, end='')
-        print (" import ", end='')
-        pprint_seq (node.names)
+        yield "from "
+        yield node.module
+        yield " import "
+        for i in pprint_seq (node.names): yield i
 
     elif t==In:
-        print (' in ', end='')
+        yield ' in '
 
     elif t==Index:
-        pprint (node.value)
+        for i in pprint_inner (node.value): yield i
 
     elif t==Is:
-        print (' is ', end='')
+        yield ' is '
 
     elif t==IsNot:
-        print (' is not ', end='')
+        yield ' is not '
 
     elif t==LShift:
-        print ('<<', end='')
+        yield '<<'
 
     elif t==Lambda:
         # Lambda(args=arguments(args=[], vararg=None, kwonlyargs=[], kw_defaults=[], kwarg=None, defaults=[]), body=Num(n=0))
-        print ('lambda ', end='')
-        pprint (node.args)
-        print (': ', end='')
-        pprint (node.body)
+        yield 'lambda '
+        for i in pprint_inner (node.args): yield i
+        yield ': '
+        for i in pprint_inner (node.body): yield i
 
     elif t==List:
-        print ('[ ', end='')
-        pprint_seq (node.elts)
-        print (' ]', end='')
+        yield '[ '
+        for i in pprint_seq (node.elts): yield i
+        yield ' ]'
 
     elif t==ListComp:
         # ListComp(elt=Name(id='i', ctx=Load()), generators=[...])
         # [ i for i in self.indexes if i.right is not None ]
-        print ('[ ', end='')
-        pprint (node.elt)
-        print (' for ', end='')
+        yield '[ '
+        for i in pprint_inner (node.elt): yield i
+        yield ' for '
         # TODO: more
-        pprint (node.generators[0])
-        print (' ]', end='')
+        for i in pprint_inner (node.generators[0]): yield i
+        yield ' ]'
 
     elif t==Lt:
-        print ('<', end='')
+        yield '<'
 
     elif t==LtE:
-        print ('<=', end='')
+        yield '<='
 
     elif t==Mod:
-        print (' % ', end='')
+        yield ' % '
 
     elif t==Module:
         # Module(body=[ ... ])
-        pprint_body (node.body, 0)
+        for i in pprint_body (node.body, 0): yield i
 
     elif t==Mult:
-        print ('*', end='')
+        yield '*'
 
     elif t==Name:
-        print (node.id, end='')
+        yield node.id
 
     elif t==NameConstant:
-        print (node.value, end='')
+        yield node.value
 
     elif t==Not:
-        print ('not ', end='')
+        yield 'not '
 
     elif t==NotEq:
-        print ('!=', end='')
+        yield '!='
 
     elif t==NotIn:
-        print (' not in ', end='')
+        yield ' not in '
 
     elif t==Num:
-        print (node.n, end='')
+        yield str (node.n)
 
     elif t==Or:
-        print (' or ', end='')
+        yield ' or '
 
     elif t==Pass:
-        print ('pass')
+        yield 'pass\n'
 
     elif t==Pow:
-        print ('**', end='')
+        yield '**'
 
     elif t==RShift:
-        print ('>>', end='')
+        yield '>>'
 
     elif t==Raise:
         # Raise(exc=Call(func=Name(id='ValueError', ctx=Load()),
         #                args=[Str(s='too many lines')], keywords=[],
         #                starargs=None, kwargs=None),
         #       cause=None)
-        print ('raise ', end='')
+        yield 'raise '
         if node.exc is not None:
-            pprint (node.exc)
+            for i in pprint_inner (node.exc): yield i
         # TODO: cause?
 
     elif t==Return:
-        print ('return ', end='')
+        yield 'return '
         if node.value is not None:
-            pprint (node.value)
+            for i in pprint_inner (node.value): yield i
 
     elif t==Set:
-        print ('{ ', end='')
+        yield '{ '
         pprint_seq (node.elts)
-        print (' }', end='')
+        yield ' }'
 
     elif t==SetComp:
         # SetComp(elt=Name(id='name', ctx=Load()), generators=[...])
-        print ('{ ', end='')
-        pprint (node.elt)
-        print (' for ', end='')
+        yield '{ '
+        for i in pprint_inner (node.elt): yield i
+        yield ' for '
         # TODO: more
-        pprint (node.generators[0])
+        for i in pprint_inner (node.generators[0]): yield i
 
     elif t==Slice:
         # Slice(lower=None, upper=Name(id='left_cb', ctx=Load()), step=None)
         if node.lower is not None:
-            pprint (node.lower)
+            for i in pprint_inner (node.lower): yield i
 
-        print (':', end='')
+        yield ':'
 
         if node.upper is not None:
-            pprint (node.upper)
+            for i in pprint_inner (node.upper): yield i
 
         if node.step is not None:
-            print (':', end='')
-            pprint (node.step)
+            yield ':'
+            for i in pprint_inner (node.step): yield i
 
     elif t==Str:
         # Str(s='true')
-        print (repr (node.s), end='')
+        yield repr (node.s)
 
     elif t==Sub:
-        print ('-', end='')
+        yield '-'
 
     elif t==Subscript:
         # Subscript(value=Attribute(value=Name(id='node', ctx=Load()), attr='orelse', ctx=Load()),
         #           slice=Index(value=Num(n=0)), ctx=Load())
-        pprint (node.value)
-        print ('[', end='')
-        pprint (node.slice)
-        print (']', end='')
+        for i in pprint_inner (node.value): yield i
+        yield '['
+        for i in pprint_inner (node.slice): yield i
+        yield ']'
 
     elif t==Try:
         # Try(body=[...],  handlers=[...], orelse=[], finalbody=[])
-        print ('try:')
+        yield 'try:\n'
         pprint_body (node.body, level+1)
         if len (node.handlers)>0:
             for handler in node.handlers:
-                pprint (handler, level)
+                for i in pprint_inner (handler, level): yield i
 
-        pprint_orelse (node.orelse, level)
+        for i in pprint_orelse (node.orelse, level): yield i
         if len (node.finalbody)>0:
-            print ('    '*level+'finally:')
-            pprint_body (node.finalbody, level+1)
+            yield '    '*level+'finally:\n'
+            for i in pprint_body (node.finalbody, level+1): yield i
 
     elif t==Tuple:
-        print ('( ', end='')
-        pprint_seq (node.elts)
-        print (' )', end='')
+        yield '( '
+        for i in pprint_seq (node.elts): yield i
+        yield ' )'
 
     elif t==UAdd:
-        print ('+', end='')
+        yield '+'
 
     elif t==USub:
-        print ('-', end='')
+        yield '-'
 
     elif t==UnaryOp:
-        pprint (node.op)
-        pprint (node.operand)
+        for i in pprint_inner (node.op): yield i
+        for i in pprint_inner (node.operand): yield i
 
     elif t==While:
-        print ('while ', end='')
-        pprint (node.test)
-        print (':')
-        pprint_body (node.body, level+1)
-        pprint_orelse (node.orelse, level)
+        yield 'while '
+        for i in pprint_inner (node.test): yield i
+        yield ':\n'
+        for i in pprint_body (node.body, level+1): yield i
+        for i in pprint_orelse (node.orelse, level): yield i
 
     elif t==With:
-        print ('with ', end='')
-        pprint_seq (node.items)
-        print (':', end='')
-        pprint_body (node.body, level+1)
+        yield 'with '
+        for i in pprint_seq (node.items): yield i
+        yield ':\n'
+        for i in pprint_body (node.body, level+1): yield i
 
     elif t==Yield:
         # Yield(value=Attribute(value=Name(id='self', ctx=Load()), attr='left', ctx=Load()))
-        print ('yield ', end='')
-        pprint (node.value)
+        yield 'yield '
+        for i in pprint_inner (node.value): yield i
 
     elif t==YieldFrom:
-        print ('yield from ', end='')
-        pprint (node.value)
+        yield 'yield from '
+        for i in pprint_inner (node.value): yield i
 
     elif t==alias_type:
-        print (node.name, end='')
+        yield node.name
         if node.asname is not None:
-            print (" as ", end='')
-            print (node.asname, end= '')
+            yield " as "
+            yield node.asname
 
     elif t==arg_type:
         # arg(arg='node', annotation=None)
         # TODO: annotation
-        print (node.arg, end='')
+        yield node.arg
 
     elif t==arguments:
         # arguments(args=[arg(arg='a', annotation=None), arg(arg='b', annotation=None)],
@@ -519,32 +547,32 @@ def pprint (node, level=0):
 
         # extra keywords is in kwarg
 
-        pprint_args (node.args, node.defaults)
+        for i in pprint_args (node.args, node.defaults): yield i
 
         if len (node.args)>0 and (node.vararg is not None or
                                   len (node.kwonlyargs)>0 or
                                   node.kwarg is not None):
-            print (', ', end='')
+            yield ', '
 
         if node.vararg is not None:
-            print ('*', end='')
-            pprint (node.vararg)
+            yield '*'
+            for i in pprint_inner (node.vararg): yield i
 
         if ((len (node.args)>0 or node.vararg is not None) and
             (len (node.kwonlyargs)>0 or node.kwarg is not None)):
 
-            print (', ', end='')
+            yield ', '
 
-        pprint_args (node.kwonlyargs, node.kw_defaults)
+        for i in pprint_args (node.kwonlyargs, node.kw_defaults): yield i
 
         if ((len (node.args)>0 or
              node.vararg is not None or
              len (node.kwonlyargs)>0) and node.kwarg is not None):
-            print (', ', end='')
+            yield ', '
 
         if node.kwarg is not None:
-            print ('**', end='')
-            pprint (node.kwarg)
+            yield '**'
+            for i in pprint_inner (node.kwarg): yield i
 
     elif t==comprehension:
         # comprehension(target=Name(id='i', ctx=Store()),
@@ -553,28 +581,32 @@ def pprint (node, level=0):
         #               ifs=[Compare(left=..., ops=[IsNot()],
         #                            comparators=[NameConstant(value=None)])])
         # i in self.indexes if i.right is not None
-        pprint (node.target)
-        print (' in ', end='')
-        pprint (node.iter)
+        for i in pprint_inner (node.target): yield i
+        yield ' in '
+        for i in pprint_inner (node.iter): yield i
 
         if len (node.ifs)>0:
             # TODO: more
-            print (' if ', end='')
-            pprint (node.ifs[0])
+            yield ' if '
+            for i in pprint_inner (node.ifs[0]): yield i
 
     elif t==keyword_type:
         # keyword(arg='end', value=Str(s=''))
-        print (node.arg, end='')
-        print ('=', end='')
-        pprint (node.value)
+        yield node.arg
+        yield '='
+        for i in pprint_inner (node.value): yield i
 
     elif t==withitem:
         # withitem(context_expr=..., optional_vars=Name(id='f', ctx=Store()))
-        pprint (node.context_expr)
+        for i in pprint_inner (node.context_expr): yield i
         if node.optional_vars is not None:
-            print (' as ', end='')
-            pprint (node.optional_vars)
+            yield ' as '
+            for i in pprint_inner (node.optional_vars): yield i
+
+    elif t==str:
+        yield node
 
     else:
-        print ()
-        print (dump (node))
+        yield '\n'
+        yield '# unknown construction\n'
+        yield dump (node)

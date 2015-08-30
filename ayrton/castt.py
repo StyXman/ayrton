@@ -20,11 +20,16 @@
 import ast
 from ast import Pass, Module, Bytes, copy_location, Call, Name, Load, Str, BitOr
 from ast import fix_missing_locations, Import, alias, Attribute, ImportFrom
-from ast import keyword, Gt, Lt, GtE, RShift, Tuple
+from ast import keyword, Gt, Lt, GtE, RShift, Tuple, FunctionDef, arguments
+from ast import Store, Assign, Subscript
 import pickle
 from collections import defaultdict
+import logging
+
+logger= logging.getLogger ('ayton.castt')
 
 import ayrton
+from ayrton.ast_pprinter import pprint
 
 def append_to_tuple (t, o):
     l= list (t)
@@ -45,6 +50,9 @@ def is_executable (node):
             type (node.func.func)==Name and
             node.func.func.id=='Command')
 
+def is_option (arg):
+    return type (arg)==Call and type (arg.func)==Name and arg.func.id=='o'
+
 def has_keyword (node, keyword):
     return any ([kw.arg==keyword for kw in node.keywords])
 
@@ -61,10 +69,20 @@ def update_keyword (node, keyword):
     if not found:
         node.keywords.append (keyword)
 
+def func_name2dotted_exec (node):
+    logger.debug (ast.dump (node))
+
+    complete_name= pprint (node)
+
+    while type (node) in (Attribute, Subscript):
+        node= node.value
+
+    return (node.id, complete_name)
+
 class CrazyASTTransformer (ast.NodeTransformer):
-    def __init__ (self, environ):
+    def __init__ (self, environ, file_name=None):
         super ().__init__ ()
-        # the whole ayrton environmen; see ayrton.Environ.
+        # the whole ayrton environment; see ayrton.Environ.
         self.environ= environ
         # names defined in the global namespace
         self.known_names= defaultdict (lambda: 0)
@@ -75,6 +93,33 @@ class CrazyASTTransformer (ast.NodeTransformer):
         # key: the stack so far
         # value: list of names
         self.defined_names= defaultdict (lambda: [])
+        # for testing
+        self.seen_names= set ()
+        self.file_name= file_name
+
+    def modify (self, tree):
+        m= self.visit (tree)
+
+        # convert Module(body=[...]) into
+        # def ayrton_main ():
+        #    [...]
+        # ayrton_return_value= ayrton_main ()
+
+        f= FunctionDef (name='ayrton_main', body=m.body,
+                        args=arguments (args=[], vararg=None, varargannotation=None,
+                                        kwonlyargs=[], kwargs=None, kwargannotation=None,
+                                        defaults=[], kw_defaults=[]),
+                        decorator_list=[], returns=None)
+
+        c= Call (func=Name (id='ayrton_main', ctx=Load ()),
+                 args=[], keywords=[], starargs=None, kwargs=None)
+
+        t= [Name (id='ayrton_return_value', ctx=Store ())]
+
+        m= Module (body= [ f, Assign (targets=t, value=c) ])
+        ast.fix_missing_locations (m)
+
+        return m
 
     # The following constructs bind names:
     # [x] formal parameters to functions,
@@ -85,7 +130,7 @@ class CrazyASTTransformer (ast.NodeTransformer):
     # [x] and targets that are identifiers if occurring in an assignment,
     # [x] for loop header, or
     # [x] after as in a with statement
-    # [ ] or except clause.
+    # [x] or except clause.
     # The import statement of the form from ... import * binds all names defined
     # in the imported module, except those beginning with an underscore.
 
@@ -110,6 +155,35 @@ class CrazyASTTransformer (ast.NodeTransformer):
     # [x] A target occurring in a del statement is also considered bound for this
     #     purpose (though the actual semantics are to unbind the name).
 
+    def bind (self, o):
+        name= None
+
+        if type (o)==Name:
+            # Name(id='a', ctx=Store())
+            name= o.id
+
+        elif type (o)==str:
+            name= o
+
+        elif type (o)==Tuple:
+            # Tuple(elts=[Name(id='a', ctx=Store()), Name(id='b', ctx=Store())])
+            for elt in o.elts:
+                self.bind (elt)
+
+        elif type (o)==list:
+            for e in o:
+                self.bind (e)
+
+        if name is not None:
+            self.known_names[name]+= 1
+            self.defined_names[self.stack].append (name)
+            self.seen_names.add (name)
+
+    def unbind (self, name, remove_from_stack=False):
+        self.known_names[name]-= 1
+        if remove_from_stack:
+            self.defined_names[self.stack].remove (name)
+
     def visit_Import (self, node):
         self.generic_visit (node)
         # Import(names=[alias(name='foo', asname=None)])
@@ -117,9 +191,12 @@ class CrazyASTTransformer (ast.NodeTransformer):
             if name.asname is not None:
                 n= name.asname
             else:
-                n= name.name
-            self.known_names[n]+=1
-            self.defined_names[self.stack].append (n)
+                # 'import os.path' -> only save 'os'
+                # NOTE: why? doesn't this clash with resolving foo.py as executable name?
+                n= name.name.split ('.')[0]
+
+            logger.debug (n)
+            self.bind (n)
 
         return node
 
@@ -129,8 +206,7 @@ class CrazyASTTransformer (ast.NodeTransformer):
     def visit_ClassDef (self, node):
         # ClassDef(name='foo', bases=[], keywords=[], starargs=None, kwargs=None,
         #          body=[Pass()], decorator_list=[])
-        self.known_names[node.name]+= 1
-        self.defined_names[self.stack].append (node.name)
+        self.bind (node.name)
 
         self.stack= append_to_tuple (self.stack, node.name)
         self.generic_visit (node)
@@ -138,9 +214,9 @@ class CrazyASTTransformer (ast.NodeTransformer):
         # take out the function from the stack
         names= self.defined_names[self.stack]
         self.stack= pop_from_tuple (self.stack)
-        # ... and remove the names defined in it from the known_names
+        # ... and unbind the names defined in it from the known_names
         for name in names:
-            self.known_names[name]-= 1
+            self.unbind (name)
 
         return node
 
@@ -155,8 +231,7 @@ class CrazyASTTransformer (ast.NodeTransformer):
         #             body=[Pass()], decorator_list=[], returns=None)
 
         # add the name as local name
-        self.known_names[node.name]+= 1
-        self.defined_names[self.stack].append (node.name)
+        self.bind (node.name)
 
         self.stack= append_to_tuple (self.stack, node.name)
 
@@ -172,56 +247,60 @@ class CrazyASTTransformer (ast.NodeTransformer):
         self.stack= pop_from_tuple (self.stack)
         # ... and remove the names defined in it from the known_names
         for name in names:
-            self.known_names[name]-= 1
+            self.unbind (name)
 
         return node
+
+    visit_AsyncFunctionDef= visit_FunctionDef
 
     def visit_For (self, node):
         # For(target=Name(id='x', ctx=Store()), iter=List(elts=[], ctx=Load()),
         #     body=[Pass()], orelse=[])
-        self.known_names[node.target.id]+= 1
-        self.defined_names[self.stack].append (node.target.id)
-
+        # For(target=Tuple(elts=[Name(id='band', ctx=Store()), Name(id='color', ctx=Store())], ctx=Store()),
+        #     iter=Tuple(elts=[...], ctx=Load()),
+        #     body=[Pass()], orelse=[])
         self.generic_visit (node)
+        self.bind (node.target)
+
+        # if iter is Command, _out=Capture
+        # so this works as expected:
+        # for line in ls(): ...
+
+        # For(target=Name(id='line', ctx=Store()),
+        #     iter=Call(func=Call(func=Name(id='Command', ctx=Load()), ...
+        if (type (node.iter)==Call and type (node.iter.func)==Call and
+            type (node.iter.func.func)==Name and node.iter.func.func.id=='Command'):
+
+            update_keyword (node.iter,
+                            keyword (arg='_out', value=Name (id='Capture', ctx=Load ())))
+            ast.fix_missing_locations (node.iter)
 
         return node
+
+    visit_AsyncFor= visit_For
 
     def visit_ExceptHandler (self, node):
-        # Try(body=[Expr(value=Name(id='fo', ctx=Load()))],
-        #     handlers=[ExceptHandler(type=Name(id='A', ctx=Load()), name='e',
-        #               body=[Pass()])],
-        #     orelse=[], finalbody=[])
-
-        # not sure what/how to do here
-        # self.known_names[name.id]+= 1
-        # self.defined_names[self.stack].append (name.id)
+        # ExceptHandler(type=Name(id='A', ctx=Load()),
+        #               name='e',
+        #               body=[Pass()])
+        self.bind (node.name)
         self.generic_visit (node)
 
         return node
 
-    def assign (self, node):
-        if type (node)==Name:
-            # Assign(targets=[Name(id='a', ctx=Store())], value=Num(n=2))
-            self.known_names[node.id]+= 1
-            self.defined_names[self.stack].append (node.id)
-        elif type (node)==Tuple:
-            # Assign(targets=[Tuple(elts=[Name(id='a', ctx=Store()), Name(id='b', ctx=Store())], ...
-            for elt in node.elts:
-                self.assign (elt)
-
     def visit_Assign (self, node):
+        # Assign(targets=[Tuple(elts=[Name(id='a', ctx=Store()), Name(id='b', ctx=Store())], ctx=Store())],
+        #        value=Tuple(elts=[Num(n=4), Num(n=2)], ctx=Load()))
         self.generic_visit (node)
-        for target in node.targets:
-            self.assign (target)
+        self.bind (node.targets)
 
         return node
 
     def visit_Delete (self, node):
         self.generic_visit (node)
         # Delete(targets=[Name(id='foo', ctx=Del())])
-        for target in node.targets:
-            self.known_names[target.id]-= 1
-            self.defined_names[self.stack].remove (target.id)
+        for name in node.targets:
+            self.unbind (name.id, remove_from_stack=True)
 
         return node
 
@@ -348,34 +427,99 @@ class CrazyASTTransformer (ast.NodeTransformer):
         self.generic_visit (node)
         # Call(func=Name(id='b', ctx=Load()), args=[], keywords=[], starargs=None,
         #      kwargs=None)
-        if type (node.func)==ast.Name:
-            func_name= node.func.id
+        # Call(func=Attribute(value=Name(id='test', ctx=Load()), attr='py', ctx=Load()), ...)
+        # NOTE: what other things can be the func part?
+        name= None
+        unknown= False
+
+        if type (node.func)==Name:
+            name= func_name= node.func.id
             defs= self.known_names[func_name]
             if defs==0:
-                if not func_name in self.environ:
-                    # it's not one of the builtin functions
-                    # I guess I have no other option but to try to execute
-                    # something here...
-                    new_node= Call (func=Name (id='Command', ctx=Load ()),
-                                    args=[Str (s=func_name)], keywords=[],
-                                    starargs=None, kwargs=None)
+                unknown= True
 
-                    # check if the first parameter is a Command; if so, redirect
-                    # its output, remove it from the args and put it in the _in
-                    # kwarg
-                    if len (node.args)>0:
-                        first_arg= node.args[0]
-                        if is_executable (first_arg) and not has_keyword (first_arg, '_err'):
-                            update_keyword (first_arg,
-                                            keyword (arg='_out', value=Name (id='Pipe', ctx=Load ())))
-                            update_keyword (first_arg,
-                                            keyword (arg='_bg', value=Name (id='True', ctx=Load ())))
-                            node.args.pop (0)
-                            update_keyword (node, keyword (arg='_in', value=first_arg))
+        elif type (node.func)==Attribute:
+            name, func_name= func_name2dotted_exec (node.func)
+            defs= self.known_names[name]
+            if defs==0:
+                unknown= True
 
-                    ast.copy_location (new_node, node)
-                    node.func= new_node
-                    ast.fix_missing_locations (node)
+        logger.debug ("%s: %s", name, unknown)
+
+        if unknown:
+            if not name in self.environ:
+                # it's not one of the builtin functions
+                # I guess I have no other option but to try to execute
+                # something here...
+                new_node= Call (func=Name (id='Command', ctx=Load ()),
+                                args=[Str (s=func_name)], keywords=[],
+                                starargs=None, kwargs=None)
+
+                # check if the first parameter is a Command; if so, redirect
+                # its output, remove it from the args and put it in the _in
+                # kwarg
+                if len (node.args)>0:
+                    first_arg= node.args[0]
+                    if is_executable (first_arg) and not has_keyword (first_arg, '_err'):
+                        out= keyword (arg='_out', value=Name (id='Pipe', ctx=Load ()))
+                        update_keyword (first_arg, out)
+                        bg= keyword (arg='_bg', value=Name (id='True', ctx=Load ()))
+                        update_keyword (first_arg, bg)
+                        node.args.pop (0)
+                        update_keyword (node, keyword (arg='_in', value=first_arg))
+
+                    for arg in node.args:
+                        if is_option (arg):
+                            # ast_pprinter takes care of expressions
+                            kw= arg.keywords[0]
+                            logger.debug ("->>>kw: %s", ast.dump (kw))
+                            kw.arg= pprint (kw.arg)
+
+                ast.copy_location (new_node, node)
+                node.func= new_node
+                ast.fix_missing_locations (node)
+            else:
+                # this is a normal function call
+                # Call(func=Name(id='foo', ctx=Load()),
+                #      args=[Call(func=Name(id='o', ctx=Load()),
+                #                 args=[], keywords=[keyword(arg='a', value=Num(n=42))],
+                #                 starargs=None, kwargs=None)],
+                #      keywords=[], starargs=None, kwargs=None))
+                # the parser has converted all the keyword arguments to o(k=v)
+                # we need to convert them back to keywords and apply Python's syntax rules
+                new_args= []
+                used_keywords= set ()
+                first_kw= False
+                for index, arg in enumerate (node.args):
+                    # NOTE: maybe o() can be left in its own namespace so it doesn't pollute
+                    if is_option (arg):
+                        kw_expr= arg.keywords[0].arg
+                        if not isinstance (kw_expr, ast.Name) and not isinstance (kw_expr, str):
+                            raise SyntaxError (self.file_name, node.lineno, node.column,
+                                               "keyword can't be an expression")
+
+                        if isinstance (kw_expr, ast.Name):
+                            kw_name= kw_expr.id
+                        else:
+                            kw_name= kw_expr  # str
+
+                        if kw_name in used_keywords:
+                            raise SyntaxError (self.file_name, node.lineno, node.column,
+                                               "keyword argument repeated")
+
+                        # convert the expr into a str
+                        new_kw= keyword (kw_name, arg.keywords[0].value)
+                        node.keywords.append (new_kw)
+                        used_keywords.add (kw_name)
+                        first_kw= True
+                    else:
+                        if first_kw:
+                            raise SyntaxError (self.file_name, node.lineno, node.column,
+                                               "non-keyword arg after keyword arg")
+
+                        new_args.append (arg)
+
+                node.args= new_args
 
         return node
 
@@ -386,8 +530,7 @@ class CrazyASTTransformer (ast.NodeTransformer):
         #                      optional_vars=Name(id='bar', ctx=Store()))], body=[Pass()])
         for item in node.items:
             if item.optional_vars is not None:
-                self.known_names[item.optional_vars.id]+= 1
-                self.defined_names[self.stack].append (item.optional_vars.id)
+                self.bind (item.optional_vars.id)
 
         self.generic_visit (node)
 
@@ -414,3 +557,5 @@ class CrazyASTTransformer (ast.NodeTransformer):
             node.body= [ p ]
 
         return node
+
+    visit_AsyncWith= visit_With

@@ -20,20 +20,31 @@ import sys
 import io
 import os
 import tempfile
+import os.path
 
 from ayrton.expansion import bash
 import ayrton
 from ayrton.execute import CommandNotFound
+
+import logging
+
+logger= logging.getLogger ('ayton.tests.ayrton')
 
 # create one of these
 ayrton.runner= ayrton.Ayrton ()
 
 class Bash(unittest.TestCase):
     def test_simple_string (self):
-        self.assertEqual (bash ('s'), 's')
+        self.assertEqual (bash ('s'), [ 's' ])
+
+    def test_simple_string_single (self):
+        self.assertEqual (bash ('s', single=True), 's')
 
     def test_glob1 (self):
-        self.assertEqual (bash ('*.py'), 'setup.py')
+        self.assertEqual (bash ('*.py'), [ 'setup.py' ])
+
+    def test_glob1_single (self):
+        self.assertEqual (bash ('*.py', single=True), 'setup.py')
 
     def test_glob2 (self):
         self.assertEqual (sorted (bash ([ '*.py', '*.txt' ])), [ 'LICENSE.txt', 'setup.py', ])
@@ -42,7 +53,7 @@ class Bash(unittest.TestCase):
         self.assertEqual (sorted (bash ('s{a,*.py}')), [ 'sa', 'setup.py' ])
 
     def test_glob_brace2 (self):
-        self.assertEqual (sorted (bash ('ayrton/tests/data/{a,*.py}')), [ 'ayrton/tests/data/a', 'ayrton/tests/data/test.py' ])
+        self.assertEqual (sorted (bash ('ayrton/tests/data/{a,*.py}')), [ 'ayrton/tests/data/a', 'ayrton/tests/data/test.me.py' ])
 
     def test_simple1_brace (self):
         self.assertEqual (bash ('{acde,b}'), [ 'acde', 'b' ])
@@ -51,10 +62,16 @@ class Bash(unittest.TestCase):
         self.assertEqual (bash ('a{b,ce}d'), [ 'abd', 'aced' ])
 
     def test_simple3_brace (self):
-        self.assertEqual (bash ('{a}'), '{a}')
+        self.assertEqual (bash ('{a}'), [ '{a}' ])
+
+    def test_simple3_brace_single (self):
+        self.assertEqual (bash ('{a}', single=True), '{a}')
 
     def test_simple4_brace (self):
-        self.assertEqual (bash ('a}'), 'a}')
+        self.assertEqual (bash ('a}'), [ 'a}' ])
+
+    def test_simple4_brace_single (self):
+        self.assertEqual (bash ('a}', single=True), 'a}')
 
     def test_simple5_brace (self):
         self.assertEqual (bash ('a{bfgh,{ci,djkl}e'), [ 'a{bfgh,cie', 'a{bfgh,djkle' ])
@@ -73,14 +90,20 @@ class Bash(unittest.TestCase):
         self.assertEqual (bash ('{c{a,b}d,e{f,g}h}'), [ 'cad', 'cbd', 'efh', 'egh' ])
 
     def test_escaped_brace (self):
-        self.assertEqual (bash ('\{a,b}'), '{a,b}')
+        self.assertEqual (bash ('\{a,b}'), [ '{a,b}' ])
+
+    def test_escaped_brace_single (self):
+        self.assertEqual (bash ('\{a,b}', single=True), '{a,b}')
 
     def test_real_example1 (self):
         # tiles/{legend*,Elevation.dgml,preview.png,Makefile}
         pass
 
     def test_tilde (self):
-        self.assertEqual (bash ('~'), os.environ['HOME'])
+        self.assertEqual (bash ('~'), [ os.environ['HOME'] ])
+
+    def test_tilde_single (self):
+        self.assertEqual (bash ('~', single=True), os.environ['HOME'])
 
 def setUpMockStdout (self):
     # due to the interaction between file descriptors,
@@ -181,6 +204,12 @@ false ()''')
         ayrton.main ('''option ('-e')
 false (_fails=True)''')
 
+    def testDotInExecutables (self):
+        # add ayrton/tests/data to $PATH
+        os.environ['PATH']+= os.pathsep+os.path.join (os.getcwd (), 'ayrton/tests/data')
+        logger.debug (os.environ['PATH'])
+        ayrton.main ('''test.me.py ()''')
+
 class PipingRedirection (unittest.TestCase):
     setUp=    setUpMockStdout
     tearDown= tearDownMockStdout
@@ -192,7 +221,7 @@ class PipingRedirection (unittest.TestCase):
         self.assertEqual (self.r.read (), b'setup.py\n')
 
     def testLongPipe (self):
-        ayrton.main ('ls () | grep ("setup") | wc (l=True)')
+        ayrton.main ('ls () | grep ("setup") | wc (-l=True)')
         # close stdout as per the description of setUpMockStdout()
         os.close (1)
         self.assertEqual (self.r.read (), b'1\n')
@@ -312,13 +341,6 @@ print (a)''', argv=['test_script.ay', '42', '27'])
         os.close (1)
         self.assertEqual (self.r.read (), b"['42', '27']\n")
 
-    def testSource (self):
-        ayrton.main ('''source ("ayrton/tests/data/source.ay");
-print (a)''')
-        # close stdout as per the description of setUpMockStdout()
-        os.close (1)
-        self.assertEqual (self.r.read (), b'42\n')
-
     def testO (self):
         # this should not explode
         ayrton.main ('''ls (o (full_time=True))''')
@@ -328,6 +350,7 @@ print (a)''')
     def testComposing (self):
         # equivalent to testPipe()
         ayrton.main ('grep (ls (), "setup")')
+        # close stdout as per the description of setUpMockStdout()
         os.close (1)
         self.assertEqual (self.r.read (), b'setup.py\n')
 
@@ -340,21 +363,86 @@ echo (a.exit_code ())''')
         self.assertEqual (self.r.read (), b'yes!\n0\n')
         # ayrton.runner.wait_for_pending_children ()
 
+class RemoteTests (unittest.TestCase):
+    def __testRemote (self):
+        """This test only succeeds if you you have password/passphrase-less access
+        to localhost"""
+        output= ayrton.main ('''with remote ('127.0.0.1', allow_agent=False) as s:
+    print (USER)
+
+value= s[1].readlines ()
+
+# close the fd's, otherwise the test does not finish because the paramiko.Client() is waiting
+# this means even more that the current remote() API sucks
+s[0].close ()
+s[1].close ()
+s[2].close ()
+
+return value''')
+
+        self.assertEqual ( output, [ ('%s\n' % os.environ['USER']) ] )
+
 # SSH_CLIENT='127.0.0.1 55524 22'
 # SSH_CONNECTION='127.0.0.1 55524 127.0.0.1 22'
 # SSH_TTY=/dev/pts/14
-
-    def Remote (self):
+    def __testRemoteEnv (self):
         """This test only succeeds if you you have password/passphrase-less access
         to localhost"""
-        ayrton.main ('''with remote ('localhost', allow_agent=False) as s:
+        output= ayrton.main ('''with remote ('127.0.0.1', allow_agent=False) as s:
     print (SSH_CLIENT)
-print (s[1].readlines ())''')
-        expected1= b'''[b'127.0.0.1 '''
-        expected2= b''' 22\\n']\n'''
-        output= self.r.read ()
-        self.assertEqual (output[:len (expected1)], expected1)
-        self.assertEqual (output[-len (expected2):], expected2)
+
+value= s[1].readlines ()
+
+# close the fd's, otherwise the test does not finish because the paramiko.Client() is waiting
+# this means even more that the current remote() API sucks
+s[0].close ()
+s[1].close ()
+s[2].close ()
+
+return value''')
+
+        expected1= '''127.0.0.1 '''
+        expected2= ''' 22\n'''
+        self.assertEqual (output[0][:len (expected1)], expected1)
+        self.assertEqual (output[0][-len (expected2):], expected2)
+
+    def __testRemoteVar (self):
+        """This test only succeeds if you you have password/passphrase-less access
+        to localhost"""
+        output= ayrton.main ('''with remote ('127.0.0.1', allow_agent=False, _debug=True) as s:
+    foo= 42
+
+# close the fd's, otherwise the test does not finish because the paramiko.Client() is waiting
+# this means even more that the current remote() API sucks
+s[0].close ()
+s[1].close ()
+s[2].close ()
+
+try:
+    return foo
+except Exception as e:
+    return e''')
+
+        self.assertEqual (output, '''42\n''')
+
+    def __testRemoteReturn (self):
+        """This test only succeeds if you you have password/passphrase-less access
+        to localhost"""
+        output= ayrton.main ('''with remote ('127.0.0.1', allow_agent=False, _debug=True) as s:
+    return 42
+
+# close the fd's, otherwise the test does not finish because the paramiko.Client() is waiting
+# this means even more that the current remote() API sucks
+s[0].close ()
+s[1].close ()
+#s[2].close ()
+
+try:
+    return foo
+except Exception as e:
+    return e''')
+
+        self.assertEqual (output, '''42\n''')
 
 class CommandDetection (unittest.TestCase):
 
@@ -448,6 +536,16 @@ def foo ():
 
 foo ()''')
 
+    def testUnknown (self):
+        try:
+            ayrton.main ('''foo''')
+        except CommandNotFound:
+            raise
+        except NameError:
+            pass
+        self.assertRaises (NameError, ayrton.main, '''fff()''')
+        self.assertRaises (CommandNotFound, ayrton.main, '''fff()''')
+
 class ParsingErrors (unittest.TestCase):
 
     def testTupleAssign (self):
@@ -455,3 +553,11 @@ class ParsingErrors (unittest.TestCase):
 
     def testSimpleFor (self):
         ayrton.main ('''for a in (1, 2): pass''')
+
+class ReturnValues (unittest.TestCase):
+
+    def testSimpleReturn (self):
+        self.assertEqual (ayrton.main ('''return 42'''), 42)
+
+    def testException (self):
+        self.assertRaises (SystemError, ayrton.main, '''raise SystemError''')

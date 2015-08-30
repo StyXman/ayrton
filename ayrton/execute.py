@@ -19,6 +19,7 @@ import os
 import sys
 import io
 from collections.abc import Iterable
+import signal
 
 # import logging
 
@@ -44,12 +45,18 @@ class o (object):
         self.value= option[1]
 
 class CommandFailed (Exception):
-    def __init__ (self, code):
-        self.code= code
+    def __init__ (self, command):
+        self.command= command
 
-class CommandNotFound (Exception):
-    def __init__ (self, path):
-        self.path= path
+    def __str__ (self):
+        return "%s: %d" % (' '.join ([ repr (arg) for arg in self.command.args]), self.command._exit_code)
+
+class CommandNotFound (NameError):
+    def __init__ (self, name):
+        self.name= name
+
+    def __str__ (self):
+        return "CommandNotFound or NameError: command %(name)s not found or name %(name)s is not defined" % self.__dict__
 
 def which(program):
     def is_exe(fpath):
@@ -104,6 +111,7 @@ class Command:
     def __init__ (self, path):
         self.path= path
         self.exe= resolve_program (path)
+        self.command= None
 
         self.stdin_pipe= None
         self.stdout_pipe= None
@@ -175,7 +183,7 @@ class Command:
                 # logging.debug ("prepare_fds: _err==Pipe creates a pipe()")
                 self.stderr_pipe= os.pipe ()
 
-    def child (self, cmd, *args, **kwargs):
+    def child (self):
         if '_in' in self.options:
             i= self.options['_in']
             if i is None:
@@ -255,10 +263,12 @@ class Command:
                     os.dup2 (w, 2)
                     os.close (r)
 
-        # args is a tuple
-        args= self.prepare_args (cmd, args, kwargs)
+        # restore some signals
+        for i in (signal.SIGPIPE, signal.SIGINT):
+            signal.signal (i, signal.SIG_DFL)
+
         try:
-            os.execvpe (cmd, args, self.options['_env'])
+            os.execvpe (self.exe, self.args, self.options['_env'])
         except FileNotFoundError:
             os._exit (127)
 
@@ -278,16 +288,15 @@ class Command:
 
     def prepare_arg (self, seq, name, value):
         if value!=False:
-            if len (name)==1:
-                arg="-%s" % name
-            else:
-                # TODO: longopt_prefix
-                # and/or simply subclass find(Command)
-                arg="--%s" % name
-            seq.append (arg)
+            seq.append (name)
 
+            # this is not the same as 'not value'
+            # because value can have any, well, value of any kind
             if value!=True:
                 seq.append (str (value))
+        else:
+            # TODO: --no-option?
+            pass
 
     def parent (self):
         if self.stdin_pipe is not None:
@@ -345,6 +354,7 @@ class Command:
             self.capture_file= open (r)
 
         if self._exit_code==127:
+            # NOTE: when running bash, it returns 127 when it can't find the script to run
             raise CommandNotFound (self.path)
 
         if (ayrton.runner.options.get ('errexit', False) and
@@ -374,6 +384,7 @@ class Command:
                 pass
 
         self.options['_env'].update (os.environ)
+        self.args= self.prepare_args (self.exe, args, kwargs)
 
         self.stdin_pipe= None
         self.stdout_pipe= None
@@ -389,7 +400,7 @@ class Command:
 
         r= os.fork ()
         if r==0:
-            self.child (self.exe, *args, **kwargs)
+            self.child ()
         else:
             self.child_pid= r
             self.parent ()

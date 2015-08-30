@@ -6,23 +6,22 @@ option ('-e')
 
 if make ('tests'):
     # this command might fail if it wants to
-    uncommited= git ('status', '--short') | grep ('^ M', _out=Capture, _fails=True)
+    uncommited= git ('status', --short=True) | grep ('^ M', _out=Capture, _fails=True)
     if uncommited:
         print ("The following files are not commited, I can't release like this")
         print (str (uncommited))
         exit (1)
 
-    dch (newversion=ayrton.__version__, changelog='ChangeLog.rst')
+    dch (--newversion=ayrton.__version__, --changelog='ChangeLog.rst')
 
     # docs
     make ('docs')
-    # rsync --archive --verbose --compress --rsh ssh doc/build/html/ www.grulic.org.ar:www/projects/ayrton/
-    rsync ('--archive', '--verbose', '--compress', '--rsh', 'ssh',
+    rsync (--archive=True, --verbose=True, --compress=True, --rsh='ssh',
            'doc/build/html/', 'www.grulic.org.ar:www/projects/ayrton/')
 
     # release
     python3 ('setup.py', 'sdist', 'upload')
     nvie ('release', ayrton.__version__)
-    git ('push', 'github')
+    git ('push')
     # TODO: does github have an API for making a release?
     # no they don't yet

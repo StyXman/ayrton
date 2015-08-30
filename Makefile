@@ -11,6 +11,11 @@ docs:
 install: tests
 	python3 setup.py install --prefix=$(INSTALL_DIR)
 
+unsafe-install:
+	echo "unsafe install, are you sure?"
+	read foo
+	python3 setup.py install --prefix=$(INSTALL_DIR)
+
 upload: tests upload-docs
 	python3 setup.py sdist upload
 
@@ -18,4 +23,4 @@ upload-docs: docs
 	rsync --archive --verbose --compress --rsh ssh doc/build/html/ www.grulic.org.ar:www/projects/ayrton/
 
 push: tests
-	git push github
+	git push

@@ -22,50 +22,93 @@
 import ayrton
 
 # well, actually, it can :)
-import argparse
 import sys
 import os.path
 import traceback
 
-parser= argparse.ArgumentParser (prog=os.path.split (sys.argv[0])[-1],
-                                 description='Python-based shell-like scripting language.')
-parser.add_argument ('-c', '--script', help='''If this option is present, the
-script is read from its argument.''')
-parser.add_argument ('-v', '--version', action='version',
-                     version="%%(prog)s v%s" % ayrton.__version__)
-# parser.add_argument ('-x', '--trace', help='enable execution tracing.')
-parser.add_argument ('file', nargs='?', help='''Name of the file from which the
-script is read.''')
-parser.add_argument ('argv', nargs='*', help='''Arguments to be passed to the
-script.''')
+usage="""ayrton - A Python-based shell-like scripting language.
+
+Usage:
+
+    ayrton -h
+    ayrton -v
+    ayrton [-c|--script] SCRIPT [argv ...]
+    ayrton [-f|--file] file [argv ...]
+
+Options:
+  -h, --help            show this help message and exit
+  -c SCRIPT, --script SCRIPT
+                        If this option is present, the script is read from its
+                        argument.
+  -v, --version         show program's version number and exit
+  [-f, --file] FILE     Name of the file from which the script is read.
+
+Arguments:
+  argv                  Arguments to be passed to the script."""
+
+# argument parsing has to be done by hand, so arguments can be given to the script
+# it *is* kinda idiotic, but I can't tell any of the parsing modules to just parse those options
+# and the options are not many and are simple to handle, anyways
 
 script= None
 file= None
 args= sys.argv[1:]
+reason= None
 
-opts= parser.parse_args (args)
-
-# juggle the script and file parameters
-if opts.script is not None:
-    # prepend a fake script name
-    opts.argv.insert (0, '<script_from_command_line>')
-    if opts.file is not None:
-        # argparse gets confused with the script/file alternative
-        # and thinks the first argument for the script is actually a file
-        # so we readd it as the first argument
-        opts.argv.insert (1, opts.file)
-        del opts.file
-else:
-    # prepend file as argv[0]
-    opts.argv.insert (0, opts.file)
+# special case so I can boot fast
+if len (args)==0:
+    print (usage)
+    sys.exit (0)
 
 try:
-    ayrton.run_file_or_script (**vars (opts))
+    for index, arg in enumerate (args):
+        if arg in ('-h', '--help'):
+            print (usage)
+            sys.exit (0)
+
+        if arg in ('-v', '--version'):
+            print (ayrton.version)
+            sys.exit (0)
+
+        if arg in ('-c', '--script'):
+            reason= 'Missing argument to option %s' % arg
+            script= args[index+1]
+            # fake argv[0]
+            script_args= [ '<script_from_command_line>' ]+args[index+2:]
+            # stop parsing, anything else is passed to the script
+            break
+
+        if arg in ('-f', '--file'):
+            reason= 'Missing argument to option %s' % arg
+            # -f|--file is optional (because idiot /usr/bin/env ayrton -f does not work)
+            # we could let it fallback to the last case,
+            # but this way we can handle the actual argument to the option
+            file= args[index+1]
+            script_args= args[index+1:]
+            # stop parsing, anything else is passed to the script
+            break
+
+        # as every branch either exit()s, break's or continue's,
+        # here we're in the situation where the next argument is the script name
+        file= arg
+        script_args= args[index:]
+        # stop parsing, anything else is passed to the script
+        break
+
+except IndexError:
+    print (reason)
+    print (usage)
+    sys,exit (1)
+
+try:
+    # fake argv
+    sys.argv= script_args
+    ayrton.run_file_or_script (file=file, script=script)
 except Exception:
     t, e, tb= sys.exc_info ()
     # skip ayrton's stack
     # TODO: if the script has a syntax error, the stack is shorter
-    if opts.script is not None:
+    if script is not None:
         for i in range (5):
             tb= tb.tb_next
     else:
