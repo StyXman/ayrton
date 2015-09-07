@@ -14,7 +14,7 @@ Nothing fancy, right? Let's try something slightly different:
 
     echo ('Hello, World!')
 
-Not interested yet? What if I tell you that that `echo` function just
+Not interested yet? What if I tell you that `echo` function just
 executed `/bin/echo`?:
 
     mdione@diablo:~/src/projects/ayrton$ strace -e process -ff ayrton doc/examples/hw.ay
