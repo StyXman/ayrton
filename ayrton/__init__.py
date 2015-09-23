@@ -24,7 +24,7 @@ import ast
 import logging
 
 log_format= "%(asctime)s %(name)s:%(lineno)-4d %(levelname)-8s %(message)s"
-date_format= "%H:%M:%S.%f"
+date_format= "%H:%M:%S"
 
 # uncomment one of these for way too much debugging :)
 logging.basicConfig(filename='ayrton.%d.log' % os.getpid (), level=logging.DEBUG, format=log_format, datefmt=date_format)
