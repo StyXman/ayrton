@@ -92,7 +92,7 @@ class CrazyASTTransformer (ast.NodeTransformer):
         # holds the temporary namespaces in function and class definitions
         # key: the stack so far
         # value: list of names
-        self.defined_names= defaultdict (lambda: [])
+        self.defined_names= defaultdict (list)
         # for testing
         self.seen_names= set ()
         self.file_name= file_name
