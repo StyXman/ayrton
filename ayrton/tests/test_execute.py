@@ -110,9 +110,9 @@ class MockedStdOut (unittest.TestCase):
         self.mock_stdout.close ()
 
     def testOrderedOptions (self):
-        ayrton.main ("""echo (-l=True, --more=42, --ordered_options='yes!')""")
+        ayrton.main ("""echo (-l=True, --more=55, --ordered_options='yes!')""")
         tearDownMockStdOut (self)
-        self.assertEqual (self.mock_stdout.read (), '-l --more 42 --ordered_options yes!\n')
+        self.assertEqual (self.mock_stdout.read (), '-l --more 55 --ordered_options yes!\n')
         self.mock_stdout.close ()
 
     def testEnvironment (self):

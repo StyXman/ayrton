@@ -250,7 +250,7 @@ class PipingRedirection (unittest.TestCase):
 
     def testLtGt (self):
         fd, fn1= tempfile.mkstemp ()
-        os.write (fd, b'42\n')
+        os.write (fd, b'43\n')
         os.close (fd)
         fn2= tempfile.mkstemp ()[1]
 
@@ -258,7 +258,7 @@ class PipingRedirection (unittest.TestCase):
 
         contents= open (fn2).read ()
         # read() does not return bytes!
-        self.assertEqual (contents, '42\n')
+        self.assertEqual (contents, '43\n')
 
         os.unlink (fn1)
         os.unlink (fn2)
@@ -280,14 +280,14 @@ class MiscTests (unittest.TestCase):
     tearDown= tearDownMockStdout
 
     def testEnviron (self):
-        ayrton.main ('''export (TEST_ENV=42);
+        ayrton.main ('''export (TEST_ENV=44);
 run ("./ayrton/tests/data/test_environ.sh")''')
         # close stdout as per the description of setUpMockStdout()
         os.close (1)
-        self.assertEqual (self.r.read (), b'42\n')
+        self.assertEqual (self.r.read (), b'44\n')
 
     def testUnset (self):
-        ayrton.main ('''export (TEST_ENV=42)
+        ayrton.main ('''export (TEST_ENV=45)
 print (TEST_ENV)
 unset ("TEST_ENV")
 try:
@@ -296,21 +296,21 @@ except NameError:
     print ("yes")''')
         # close stdout as per the description of setUpMockStdout()
         os.close (1)
-        self.assertEqual (self.r.read (), b'42\nyes\n')
+        self.assertEqual (self.r.read (), b'45\nyes\n')
 
     def testEnvVarAsGlobalVar (self):
-        os.environ['testEnvVarAsLocalVar'] = '42' # envvars are strings only
+        os.environ['testEnvVarAsLocalVar'] = '46' # envvars are strings only
         ayrton.main ('print (testEnvVarAsLocalVar)')
         # close stdout as per the description of setUpMockStdout()
         os.close (1)
-        self.assertEqual (self.r.read (), b'42\n')
+        self.assertEqual (self.r.read (), b'46\n')
 
     def testExportSetsGlobalVar (self):
-        ayrton.main ('''export (foo=42);
+        ayrton.main ('''export (foo=47);
 print (foo)''')
         # close stdout as per the description of setUpMockStdout()
         os.close (1)
-        self.assertEqual (self.r.read (), b'42\n')
+        self.assertEqual (self.r.read (), b'47\n')
 
     def testCwdPwdRename (self):
         ayrton.main ('''import os.path;
@@ -329,17 +329,17 @@ with cd ("bin"):
 
     def testShift (self):
         ayrton.main ('''a= shift ();
-print (a)''', argv=['test_script.ay', '42'])
+print (a)''', argv=['test_script.ay', '48'])
         # close stdout as per the description of setUpMockStdout()
         os.close (1)
-        self.assertEqual (self.r.read (), b'42\n')
+        self.assertEqual (self.r.read (), b'48\n')
 
     def testShifts (self):
         ayrton.main ('''a= shift (2);
-print (a)''', argv=['test_script.ay', '42', '27'])
+print (a)''', argv=['test_script.ay', '49', '27'])
         # close stdout as per the description of setUpMockStdout()
         os.close (1)
-        self.assertEqual (self.r.read (), b"['42', '27']\n")
+        self.assertEqual (self.r.read (), b"['49', '27']\n")
 
     def testO (self):
         # this should not explode
@@ -483,13 +483,13 @@ false ()''')
 
     def testDefFun1 (self):
         ayrton.main ('''def foo ():
-    true= 42
+    true= 40
 true ()''')
 
     def testDefFun2 (self):
         self.assertRaises (ayrton.CommandFailed, ayrton.main, '''option ('errexit')
 def foo ():
-    false= 42
+    false= 41
 false ()''')
 
     def testDefFunFails1 (self):
@@ -557,7 +557,7 @@ class ParsingErrors (unittest.TestCase):
 class ReturnValues (unittest.TestCase):
 
     def testSimpleReturn (self):
-        self.assertEqual (ayrton.main ('''return 42'''), 42)
+        self.assertEqual (ayrton.main ('''return 50'''), 50)
 
     def testException (self):
         self.assertRaises (SystemError, ayrton.main, '''raise SystemError''')

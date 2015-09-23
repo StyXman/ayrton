@@ -68,7 +68,7 @@ class TestVisits (unittest.TestCase):
 
     def testFunctionKeywords (self):
         c= castt.CrazyASTTransformer ({ 'dict': dict, 'o': o})
-        t= ast.parse ("""dict (a=42)""")
+        t= ast.parse ("""dict (a=51)""")
 
         node= c.visit_Call (t.body[0].value)
 
@@ -77,7 +77,7 @@ class TestVisits (unittest.TestCase):
 
     def testFunctionOKeywords (self):
         c= castt.CrazyASTTransformer ({ 'dict': dict, 'o': o})
-        t= ast.parse ("""dict (o (a=42))""")
+        t= ast.parse ("""dict (o (a=52))""")
 
         node= c.visit_Call (t.body[0].value)
 
@@ -88,7 +88,7 @@ class TestVisits (unittest.TestCase):
         # NOTE: I need to give the implementation for o();
         # otherwise it will also be converted to Command()
         c= castt.CrazyASTTransformer ({ 'o': o})
-        t= ast.parse ("""dict (o (a=42))""")
+        t= ast.parse ("""dict (o (a=53))""")
 
         node= c.visit_Call (t.body[0].value)
 
