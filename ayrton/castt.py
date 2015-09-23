@@ -495,7 +495,7 @@ class CrazyASTTransformer (ast.NodeTransformer):
                     if is_option (arg):
                         kw_expr= arg.keywords[0].arg
                         if not isinstance (kw_expr, ast.Name) and not isinstance (kw_expr, str):
-                            raise SyntaxError (self.file_name, node.lineno, node.column,
+                            raise SyntaxError (self.file_name, node.lineno, node.col_offset,
                                                "keyword can't be an expression")
 
                         if isinstance (kw_expr, ast.Name):
@@ -504,7 +504,7 @@ class CrazyASTTransformer (ast.NodeTransformer):
                             kw_name= kw_expr  # str
 
                         if kw_name in used_keywords:
-                            raise SyntaxError (self.file_name, node.lineno, node.column,
+                            raise SyntaxError (self.file_name, node.lineno, node.col_offset,
                                                "keyword argument repeated")
 
                         # convert the expr into a str
@@ -514,7 +514,7 @@ class CrazyASTTransformer (ast.NodeTransformer):
                         first_kw= True
                     else:
                         if first_kw:
-                            raise SyntaxError (self.file_name, node.lineno, node.column,
+                            raise SyntaxError (self.file_name, node.lineno, node.col_offset,
                                                "non-keyword arg after keyword arg")
 
                         new_args.append (arg)

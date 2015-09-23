@@ -44,14 +44,14 @@ class Grammar(object):
 
 class Node(object):
 
-    __slots__ = "type value children lineno column".split()
+    __slots__ = "type value children lineno col_offset".split()
 
     def __init__(self, type, value, children, lineno, column):
         self.type = type
         self.value = value
         self.children = children
         self.lineno = lineno
-        self.column = column
+        self.col_offset = column
 
     def __eq__(self, other):
         # For tests.
@@ -74,7 +74,7 @@ class ParseError(Exception):
         self.token_type = token_type
         self.value = value
         self.lineno = lineno
-        self.column = column
+        self.col_offset = column
         self.line = line
         self.expected = expected
 

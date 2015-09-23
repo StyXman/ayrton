@@ -210,7 +210,7 @@ class PythonParser(parser.Parser):
                 else:
                     new_err = error.SyntaxError
                     msg = "invalid syntax"
-                raise new_err(msg, e.lineno, e.column, e.line,
+                raise new_err(msg, e.lineno, e.col_offset, e.line,
                               compile_info.filename)
             else:
                 tree = self.root
