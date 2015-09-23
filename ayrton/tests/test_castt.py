@@ -28,7 +28,7 @@ import ayrton
 
 flow_stmt= [ Break, Continue, Return, Raise, Yield, ]
 expr_stmt= [  ]
-small_stmt= expr_stmt + [ Del, Pass ] + flow_stmt + [ Import, ImportFrom, Global, 
+small_stmt= expr_stmt + [ Del, Pass ] + flow_stmt + [ Import, ImportFrom, Global,
             Assert ]
 
 def check_attrs (self, node):
@@ -36,7 +36,7 @@ def check_attrs (self, node):
         if type (n) in small_stmt:
             self.assertTrue (hasattr(node, 'lineno'), "%s.lineno not present" % ast.dump (node))
             self.assertTrue (hasattr(node, 'col_offset'), "%s.col_offset not present" % ast.dump (node))
-            
+
 
 class TestBinding (unittest.TestCase):
 
@@ -165,7 +165,7 @@ class TestVisits (unittest.TestCase):
 
         self.assertEqual (node.args[0].keywords[0].arg, '--long-option')
         self.check_attrs (node)
-        
+
 class TestHelperFunctions (unittest.TestCase):
 
     def testName (self):
@@ -202,16 +202,16 @@ class TestHelperFunctions (unittest.TestCase):
 
 class TestWeirdErrors (unittest.TestCase):
     check_attrs= check_attrs
-    
+
     def testWithCd (self):
         code= """with cd() as e: pass"""
         t= ast.parse (code)
         self.check_attrs (t.body[0])
-        
+
         c= castt.CrazyASTTransformer ({ 'o': o, 'cd': cd})
         t= ayrton.parse (code)
         self.check_attrs (t.body[0])
-        
+
         node= c.visit_With (t.body[0])
 
         self.assertEqual (node.items[0].context_expr.func.id, 'cd')
