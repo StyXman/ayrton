@@ -199,3 +199,20 @@ class TestHelperFunctions (unittest.TestCase):
         self.assertEqual (single, 'argv')
         # this is a very strange but possible executable name
         self.assertEqual (combined, 'argv[3].split[:54]')
+
+class TestWeirdErrors (unittest.TestCase):
+    check_attrs= check_attrs
+    
+    def testWithCd (self):
+        code= """with cd() as e: pass"""
+        t= ast.parse (code)
+        self.check_attrs (t.body[0])
+        
+        c= castt.CrazyASTTransformer ({ 'o': o, 'cd': cd})
+        t= ayrton.parse (code)
+        self.check_attrs (t.body[0])
+        
+        node= c.visit_With (t.body[0])
+
+        self.assertEqual (node.items[0].context_expr.func.id, 'cd')
+        self.check_attrs (node)
