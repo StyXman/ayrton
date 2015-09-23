@@ -23,8 +23,12 @@ import importlib
 import ast
 import logging
 
-# logging.basicConfig(filename='ayrton.%d.log' % os.getpid (),level=logging.DEBUG)
-# logging.basicConfig(filename='ayrton.log',level=logging.DEBUG)
+log_format= "%(asctime)s %(name)s:%(lineno)-4d %(levelname)-8s %(message)s"
+date_format= "%H:%M:%S.%f"
+
+# uncomment one of these for way too much debugging :)
+logging.basicConfig(filename='ayrton.%d.log' % os.getpid (), level=logging.DEBUG, format=log_format, datefmt=date_format)
+# logging.basicConfig(filename='ayrton.log', level=logging.DEBUG, format=log_format, datefmt=date_format)
 logger= logging.getLogger ('ayrton')
 
 # things that have to be defined before importing ayton.execute :(
