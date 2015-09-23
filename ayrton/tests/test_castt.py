@@ -172,8 +172,8 @@ class TestHelperFunctions (unittest.TestCase):
         self.assertEqual (combined, 'argv[3].split')
 
     def testDottedSubscriptComplex (self):
-        single, combined= castt.func_name2dotted_exec (parse_expression ('argv[3].split[:42]'))
+        single, combined= castt.func_name2dotted_exec (parse_expression ('argv[3].split[:54]'))
 
         self.assertEqual (single, 'argv')
         # this is a very strange but possible executable name
-        self.assertEqual (combined, 'argv[3].split[:42]')
+        self.assertEqual (combined, 'argv[3].split[:54]')
