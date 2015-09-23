@@ -82,7 +82,7 @@ def func_name2dotted_exec (node):
 class CrazyASTTransformer (ast.NodeTransformer):
     def __init__ (self, environ, file_name=None):
         super ().__init__ ()
-        # the whole ayrton environment; see ayrton.Environ.
+        # the whole ayrton instace globals
         self.environ= environ
         # names defined in the global namespace
         self.known_names= defaultdict (lambda: 0)

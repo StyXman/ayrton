@@ -1,16 +1,21 @@
-ayrton (0.5) UNRELEASED; urgency=medium
+ayrton (0.5) unstable; urgency=medium
 
-  * source() is out. use python's import system.
-  * Support executing foo.py().
   * Much better command detection.
-  * CommandNotFound exception is now a subclass of NameError.
-  * Allow Command keywords be named like '-l' and '--long-option', so it supports options with dashes.
+  * `CommandNotFound` exception is now a subclass of `NameError`.
+  * Allow `Command` keywords be named like `-l` and `--long-option`, so it supports options with single dashes (`-long-option`, à la `find`).
   * This also means that long-option is no longer passed as --long-option; you have to put the dashes explicitly.
   * bash() does not return a single string by default; override with single=True.
   * Way more tests.
   * Updated docs.
 
  -- Marcos Dione <mdione@grulic.org.ar>  Sun, 30 Aug 2015 15:13:30 +0200
+
+ayrton (0.4.4) unstable; urgency=low
+
+  * `source()` is out. use Python's import system.
+  * Support executing `foo.py()`.
+
+ -- Marcos Dione <mdione@grulic.org.ar>  Wed, 20 May 2015 23:44:42 +0200
 
 ayrton (0.4.3) unstable; urgency=medium
 
@@ -24,7 +29,7 @@ ayrton (0.4.3) unstable; urgency=medium
 ayrton (0.4.2) unstable; urgency=low
 
   * _bg allows running a command in the background.
-  * _fails allows a Command to fail even when option('-e') is on. 
+  * _fails allows a Command to fail even when option('-e') is on.
   * Try program_name as program-name if the first failed the path lookup.
   * Convert all arguments to commands to str().
   * chdir() is an alias of cd().
@@ -41,7 +46,7 @@ ayrton (0.4.2) unstable; urgency=low
 ayrton (0.4) unstable; urgency=low
 
   * >= can redirect stederr to stdout.
-  * o(option=argument) can be used to declare keyword params among/before 
+  * o(option=argument) can be used to declare keyword params among/before
     positional ones.
   * bash() now returns a single string if there is only one result.
   * Slightly better error reporting: don't print a part of the stacktrace

@@ -151,6 +151,8 @@ ayrton.run_tree (ast, g)"''' % (len (self.ast), len (global_env))
 
             (i, o, e)= self.client.exec_command (command)
         else:
+            # to debug, run
+            # nc -l -s 127.0.0.1 -p 2233 -vv -e /bin/bash
             self.client= socket ()
             self.client.connect ((self.hostname, 2233))
             i= open (self.client.fileno (), 'wb')

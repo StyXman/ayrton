@@ -111,17 +111,22 @@ def setUpMockStdout (self):
 
     # I save the old stdout in a new fd
     self.old_stdout= os.dup (1)
+
     # create a pipe; this gives me a read and write fd
     r, w= os.pipe ()
+
     # I replace the stdout with the write fd
     # this closes 1, but the original stdout is saved in old_stdout
     os.dup2 (w, 1)
-    # now I have to fds pointing to the write end of the pipe, stdout and w
+
+    # now I have two fds pointing to the write end of the pipe, stdout and w
     # close w
     os.close (w)
-    # create me a file() from the reading fd
+
+    # create a file() from the reading fd
     # this DOES NOT create a new fd or file
     self.r= open (r, mode='rb')
+
     # the test will have to close stdin after performing what's testing
     # that's because otherwise the test locks at reading from the read end
     # because there's still that fd available for writing in the pipe
