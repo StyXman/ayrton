@@ -570,7 +570,8 @@ def pprint_inner (node, level=0):
              len (node.kwonlyargs)>0) and node.kwarg is not None):
             yield ', '
 
-        if node.kwarg is not None:
+        # empty arguments() (from a lambda) do not have this attr (!!!)
+        if hasattr (node, 'kwarg') and node.kwarg is not None:
             yield '**'
             yield from pprint_inner (node.kwarg)
 
