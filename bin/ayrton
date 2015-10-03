@@ -115,3 +115,4 @@ except Exception:
         for i in range (6):
             tb= tb.tb_next
     traceback.print_exception (t, e, tb)
+    sys.exit (1)
