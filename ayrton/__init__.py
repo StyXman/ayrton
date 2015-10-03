@@ -39,6 +39,7 @@ from ayrton.castt import CrazyASTTransformer
 from ayrton.execute import o, Command, Capture, CommandFailed
 from ayrton.parser.pyparser.pyparse import CompileInfo, PythonParser
 from ayrton.parser.astcompiler.astbuilder import ast_from_node
+from ayrton.ast_pprinter import pprint
 
 __version__= '0.5'
 
@@ -72,6 +73,7 @@ class Ayrton (object):
 
     def run_tree (self, tree, file_name):
         logger.debug (ast.dump (tree))
+        logger.debug (pprint (tree))
         return self.run_code (compile (tree, file_name, 'exec'))
 
     def run_code (self, code):
@@ -91,6 +93,7 @@ def polute (d, more):
     for weed in ('copyright', '__doc__', 'help', '__package__', 'credits', 'license', '__name__'):
         del d[weed]
 
+    # envars as gobal vars, shell like
     d.update (os.environ)
 
     # these functions will be loaded from each module and put in the globals
