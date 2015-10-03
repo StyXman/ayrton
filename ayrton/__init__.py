@@ -132,13 +132,14 @@ def run_tree (tree, globals):
     runner= Ayrton (globals=globals)
     runner.run_tree (tree, 'unknown_tree')
 
-def run_file_or_script (script=None, file=None, **kwargs):
+def run_file_or_script (script=None, file='script_from_command_line', **kwargs):
+    """Main entry point for bin/ayrton and unittests."""
     global runner
     runner= Ayrton (**kwargs)
     if script is None:
         v= runner.run_file (file)
     else:
-        v= runner.run_script (script, 'script_from_command_line')
+        v= runner.run_script (script, file)
 
     return v
 
