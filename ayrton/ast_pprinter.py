@@ -267,7 +267,9 @@ def pprint_inner (node, level=0):
         # FunctionDef(name='foo', args=arguments(...), body=[ ... ], decorator_list=[], returns=None)
         # TODO: decorator_list
         # TODO: returns
-        yield 'def ', node.name, ' ('
+        yield 'def '
+        yield node.name
+        yield ' ('
         yield from pprint_inner (node.args)
         yield '):\n'
         yield from pprint_body (node.body, level+1)
