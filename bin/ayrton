@@ -103,7 +103,16 @@ except IndexError:
 try:
     # fake argv
     sys.argv= script_args
-    ayrton.run_file_or_script (file=file, script=script)
+    v= ayrton.run_file_or_script (file=file, script=script)
+
+    try:
+        v= int (v)
+    execpt ValueError:
+        # I can only assume it's ok
+        v= 0
+
+    sys.exit (v)
+
 except Exception:
     t, e, tb= sys.exc_info ()
     # skip ayrton's stack
