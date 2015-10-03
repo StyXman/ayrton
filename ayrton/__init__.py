@@ -128,9 +128,10 @@ def polute (d, more):
     d.update (more)
 
 def run_tree (tree, globals):
+    """main entry point for remote()"""
     global runner
     runner= Ayrton (globals=globals)
-    runner.run_tree (tree, 'unknown_tree')
+    return runner.run_tree (tree, 'unknown_tree')
 
 def run_file_or_script (script=None, file='script_from_command_line', **kwargs):
     """Main entry point for bin/ayrton and unittests."""
