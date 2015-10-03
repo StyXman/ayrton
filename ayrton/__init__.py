@@ -57,6 +57,7 @@ class Ayrton (object):
 
         self.options= {}
         self.pending_children= []
+        self.locals= {}
 
     def run_file (self, file):
         # it's a pity that parse() does not accept a file as input
@@ -74,10 +75,10 @@ class Ayrton (object):
         return self.run_code (compile (tree, file_name, 'exec'))
 
     def run_code (self, code):
-        locals= {}
-        exec (code, self.globals, locals)
-
-        return locals['ayrton_return_value']
+        exec (code, self.globals, self.locals)
+        result= self.locals.get ('ayrton_return_value', None)
+        logger.debug (result)
+        return result
 
     def wait_for_pending_children (self):
         for i in range (len (self.pending_children)):
