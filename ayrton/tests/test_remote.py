@@ -31,95 +31,69 @@ import logging
 
 logger= logging.getLogger ('ayton.tests.remote')
 
-# create one of these
-ayrton.runner= ayrton.Ayrton ()
 
 class RemoteTests (unittest.TestCase):
-    def testRemote (self):
-        """This test only succeeds if you you have password/passphrase-less access
-        to localhost"""
-        output= ayrton.main ('''with remote ('127.0.0.1', allow_agent=False) as s:
-    print (USER)
 
-value= s[1].readlines ()
+    def setUp (self):
+        # create one of these
+        # self.runner= ayrton.Ayrton ()
+        pass
 
-# close the fd's, otherwise the test does not finish because the paramiko.Client() is waiting
-# this means even more that the current remote() API sucks
-s[0].close ()
-s[1].close ()
-#s[2].close ()
-
-return value''')
-
-        self.assertEqual ( output, [ ('%s\n' % os.environ['USER']) ] )
+    def tearDown (self):
         # give time for nc to recover
         time.sleep (0.25)
 
-# SSH_CLIENT='127.0.0.1 55524 22'
-# SSH_CONNECTION='127.0.0.1 55524 127.0.0.1 22'
-# SSH_TTY=/dev/pts/14
     def testRemoteEnv (self):
-        """This test only succeeds if you you have password/passphrase-less access
-        to localhost"""
-        output= ayrton.main ('''with remote ('127.0.0.1', allow_agent=False) as s:
-    print (SSH_CLIENT)
-
-value= s[1].readlines ()
+        output= ayrton.main ('''with remote ('127.0.0.1', allow_agent=False, _debug=True) as s:
+    user= USER
 
 # close the fd's, otherwise the test does not finish because the paramiko.Client() is waiting
 # this means even more that the current remote() API sucks
-s[0].close ()
-s[1].close ()
-s[2].close ()
+s.close ()
 
-return value''')
+return user''', 'testRemoteEnv')
 
-        expected1= '''127.0.0.1 '''
-        expected2= ''' 22\n'''
-        self.assertEqual (output[0][:len (expected1)], expected1)
-        self.assertEqual (output[0][-len (expected2):], expected2)
-        # give time for nc to recover
-        time.sleep (0.25)
+        self.assertEqual (output, os.environ['USER'])
 
-    def testRemoteVar (self):
-        """This test only succeeds if you you have password/passphrase-less access
-        to localhost"""
+    def testVar (self):
         output= ayrton.main ('''with remote ('127.0.0.1', allow_agent=False, _debug=True) as s:
     foo= 56
 
 # close the fd's, otherwise the test does not finish because the paramiko.Client() is waiting
 # this means even more that the current remote() API sucks
-s[0].close ()
-s[1].close ()
-s[2].close ()
+s.close ()
 
-try:
-    return foo
-except Exception as e:
-    return e''')
+return foo''', 'testRemoteVar')
 
-        self.assertEqual (output, '''56\n''')
-        # give time for nc to recover
-        time.sleep (0.25)
+        self.assertEqual (ayrton.runner.globals['foo'], 56)
+        # self.assertEqual (ayrton.runner.locals['foo'], 56)
 
-    def testRemoteReturn (self):
-        """This test only succeeds if you you have password/passphrase-less access
-        to localhost"""
+    def testReturn (self):
         output= ayrton.main ('''with remote ('127.0.0.1', allow_agent=False, _debug=True) as s:
     return 57
 
 # close the fd's, otherwise the test does not finish because the paramiko.Client() is waiting
 # this means even more that the current remote() API sucks
-s[0].close ()
-s[1].close ()
-#s[2].close ()
+s.close ()
 
-try:
-    return foo
-except Exception as e:
-    return e''')
+return foo''', 'testRemoteReturn')
 
         self.assertEqual (output, '''57\n''')
-        # give time for nc to recover
-        time.sleep (0.25)
 
+    def testRaisesInternal (self):
+        ayrton.main ('''raised= False
+try:
+    with remote ('127.0.0.1', allow_agent=False, _debug=True) as s:
+        raise Exception()
+except Exception:
+    raised= True
+
+# close the fd's, otherwise the test does not finish because the paramiko.Client() is waiting
+# this means even more that the current remote() API sucks
+s.close ()''', 'testRaisesInternal')
+
+        self.assertEqual (ayrton.runner.globals['raised'], True)
+
+    def testRaisesExternal (self):
+        self.assertRaises (Exception, ayrton.main, '''with remote ('127.0.0.1', allow_agent=False, _debug=True):
+    raise Exception()''', 'testRaisesExternal')
