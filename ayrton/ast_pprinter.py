@@ -243,7 +243,7 @@ def pprint_inner (node, level=0):
                 yield ' as '
                 yield node.name
 
-        yield ':'
+        yield ':\n'
         yield from pprint_body (node.body, level+1)
 
     elif t==Expr:
