@@ -140,10 +140,14 @@ class remote:
         # the imports and hold them in another ayrton.Environment attribute
         # or we just weed them out here. so far this is the simpler option
         # but forces the user to reimport what's going to be used in the remote
-        g= dict ([ (k, v) for (k, v) in ayrton.runner.globals.items ()
-                   if type (v)!=types.ModuleType and k not in ('stdin', 'stdout', 'stderr') ])
+        g= dict ([ (k, v) for k, v in ayrton.runner.globals.items ()
+                          if type (v)!=types.ModuleType and k not in ('stdin', 'stdout', 'stderr') ])
         # special treatment for argv
         g['argv']= ayrton.runner.globals['argv']
+        # also locals!
+        g.update ( dict ([ (k, v) for k, v in ayrton.runner.locals.items ()
+                                  if k not in ('ayrton_main',) ]) )
+        logger.debug ('globals passed to remote: %s', g)
         global_env= pickle.dumps (g)
 
         if self._python_only:
