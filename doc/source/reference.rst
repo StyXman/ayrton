@@ -69,7 +69,7 @@ Functions
       If set, any command that exits with a code which is not 0 will raise a
       :py:exc:`CommandFailed` exception.
 
-.. py:function:: remote (..., [_python_only=False])
+.. py:function:: remote (..., )
 
     This function is better used as a context manager::
 
@@ -87,10 +87,6 @@ Functions
     about them, see ``paramiko``'s
     `ChannelFile <https://github.com/nischu7/paramiko/blob/master/paramiko/channel.py#L1233>`_
     (there doesn't seem to be an official doc for this class).
-
-    *_python_only* declares that the body is pure Python code, so we don't try
-    to run it under `ayrton`. This allows remotely executing code without needing
-    `ayrton` installed in the remote.
 
     For the moment imports are weeded out from the remote environment, so you
     will need to reimport them.

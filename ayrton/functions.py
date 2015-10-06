@@ -128,7 +128,6 @@ class remote:
         self.args= args
         self.python_only= False
 
-        param ('_python_only', kwargs)
         param ('_debug', kwargs)
         self.kwargs= kwargs
 
@@ -166,18 +165,7 @@ class remote:
         logger.debug ('locals passed to remote: %s', l)
         local_env= pickle.dumps (l)
 
-        if self._python_only:
-            command= '''python3 -c "import pickle
-# names needed for unpickling
-from ast import Module, Assign, Name, Store, Call, Load, Expr
-import sys
-ast= pickle.loads (sys.stdin.buffer.read (%d))
-code= compile (ast, 'remote', 'exec')
-g= pickle.loads (sys.stdin.buffer.read (%d))
-l= pickle.loads (sys.stdin.buffer.read (%d))
-exec (code, g, l)"''' % (len (self.ast), len (global_env), len (local_env))
-        else:
-            command= '''python3 -c "import pickle                           #  1
+        command= '''python3 -c "import pickle                               #  1
 # names needed for unpickling                                               #  2
 from ast import Module, Assign, Name, Store, Call, Load, Expr               #  3
 import sys                                                                  #  4
