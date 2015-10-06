@@ -72,14 +72,14 @@ class Ayrton (object):
         return self.run_tree (tree, file_name)
 
     def run_tree (self, tree, file_name):
-        logger.debug (ast.dump (tree))
-        logger.debug (pprint (tree))
+        logger.debug ('AST: %s', ast.dump (tree))
+        logger.debug ('code: \n%s', pprint (tree))
         return self.run_code (compile (tree, file_name, 'exec'))
 
     def run_code (self, code):
         exec (code, self.globals, self.locals)
         result= self.locals.get ('ayrton_return_value', None)
-        logger.debug (result)
+        logger.debug ('ayrton_return_value: %r', result)
         return result
 
     def wait_for_pending_children (self):
