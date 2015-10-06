@@ -103,3 +103,17 @@ s.close ()''', 'testRaisesInternal')
         self.assertRaises (Foo, ayrton.main, '''class Foo (Exception): pass
 with remote ('127.0.0.1', _debug=True):
     raise Foo()''', 'testRaisesExternal')
+
+    def testLocalVarToRemote (self):
+        ayrton.main ('''testLocalVarToRemote= True
+with remote ('127.0.0.1', _debug=True):
+    testLocalVarToRemote''', 'testLocalVarToRemote')
+
+    def __testLocals (self):
+        ayrton.main ('''import ayrton
+a= True
+l= locals()['a']
+# r= ayrton.runner.locals['a']
+# ayrton.main() creates a new Ayrton instance and ****s up everything
+r= ayrton.runner.run_script ("""return locals()['a']""", 'inception_locals')
+assert (l==r)''', 'testLocals')
