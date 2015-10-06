@@ -109,6 +109,16 @@ with remote ('127.0.0.1', _debug=True):
 with remote ('127.0.0.1', _debug=True):
     testLocalVarToRemote''', 'testLocalVarToRemote')
 
+    def __testLocalFunToRemote (self):
+        ayrton.main ('''def testLocalFunToRemote(): pass
+with remote ('127.0.0.1', _debug=True):
+    testLocalFunToRemote''', 'testLocalFunToRemote')
+
+    def __testLocalClassToRemote (self):
+        ayrton.main ('''class TestLocalClassToRemote: pass
+with remote ('127.0.0.1', _debug=True):
+    TestLocalClassToRemote''', 'testLocalClassToRemote')
+
     def __testLocals (self):
         ayrton.main ('''import ayrton
 a= True
