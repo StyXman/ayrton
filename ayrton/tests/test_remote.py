@@ -44,7 +44,7 @@ class RemoteTests (unittest.TestCase):
         time.sleep (0.25)
 
     def testRemoteEnv (self):
-        output= ayrton.main ('''with remote ('127.0.0.1', allow_agent=False, _debug=True) as s:
+        output= ayrton.main ('''with remote ('127.0.0.1', _debug=True) as s:
     user= USER
 
 # close the fd's, otherwise the test does not finish because the paramiko.Client() is waiting
@@ -56,7 +56,7 @@ return user''', 'testRemoteEnv')
         self.assertEqual (output, os.environ['USER'])
 
     def testVar (self):
-        output= ayrton.main ('''with remote ('127.0.0.1', allow_agent=False, _debug=True) as s:
+        output= ayrton.main ('''with remote ('127.0.0.1', _debug=True) as s:
     foo= 56
 
 # close the fd's, otherwise the test does not finish because the paramiko.Client() is waiting
@@ -69,7 +69,7 @@ return foo''', 'testRemoteVar')
         # self.assertEqual (ayrton.runner.locals['foo'], 56)
 
     def testReturn (self):
-        output= ayrton.main ('''with remote ('127.0.0.1', allow_agent=False, _debug=True) as s:
+        output= ayrton.main ('''with remote ('127.0.0.1', _debug=True) as s:
     return 57
 
 # close the fd's, otherwise the test does not finish because the paramiko.Client() is waiting
@@ -83,7 +83,7 @@ return foo''', 'testRemoteReturn')
     def testRaisesInternal (self):
         ayrton.main ('''raised= False
 try:
-    with remote ('127.0.0.1', allow_agent=False, _debug=True) as s:
+    with remote ('127.0.0.1', _debug=True) as s:
         raise Exception()
 except Exception:
     raised= True
