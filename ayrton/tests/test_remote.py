@@ -64,10 +64,10 @@ return foo''', 'testRemoteVar')
         self.assertEqual (ayrton.runner.globals['foo'], 56)
         # self.assertEqual (ayrton.runner.locals['foo'], 56)
 
-    def testReturn (self):
-        output= ayrton.main ('''with remote ('127.0.0.1', _debug=True) as s:
-    return 57
 
+    def __testReturn (self):
+        output= ayrton.main ('''with remote ('127.0.0.1', _debug=True):
+    return 57
 
 return foo''', 'testRemoteReturn')
 
@@ -75,18 +75,22 @@ return foo''', 'testRemoteReturn')
 
 
     def testRaisesInternal (self):
-        ayrton.main ('''raised= False
+        result= ayrton.main ('''raised= False
 try:
     with remote ('127.0.0.1', _debug=True) as s:
         raise SystemError()
 except SystemError:
     raised= True
 
+return raised''', 'testRaisesInternal')
 
-        self.assertEqual (ayrton.runner.globals['raised'], True)
+        # self.assertTrue (ayrton.runner.globals['raised'])
+        self.assertTrue (result)
+
 
     def testRaisesExternal (self):
-        self.assertRaises (SystemError, ayrton.main, '''with remote ('127.0.0.1', _debug=True):
+        self.assertRaises (SystemError, ayrton.main,
+                           '''with remote ('127.0.0.1', _debug=True):
     raise SystemError()''', 'testRaisesExternal')
 
 
@@ -112,6 +116,34 @@ with remote ('127.0.0.1', _debug=True):
         ayrton.main ('''with remote ('127.0.0.1', _debug=True):
     testRemoteVarToLocal= True
 testRemoteVarToLocal''', 'testRemoteVarToLocal')
+
+
+    def testLocalVarToRemoteToLocal (self):
+        result= ayrton.main ('''testLocalVarToRemoteToLocal= False
+with remote ('127.0.0.1', _debug=True):
+    testLocalVarToRemoteToLocal= True
+
+return testLocalVarToRemoteToLocal''', 'testLocalVarToRemoteToLocal')
+
+        self.assertTrue (ayrton.runner.globals['testLocalVarToRemoteToLocal'])
+        self.assertTrue (result)
+
+
+    def __testLocalVarToRealRemoteToLocal (self):
+        """This test only succeeds if you you have password/passphrase-less access
+        to localhost"""
+        ayrton.main ('''testLocalVarToRealRemote= False
+with remote ('127.0.0.1', allow_agent=False) as s:
+    testLocalVarToRealRemote= True
+
+# close the fd's, otherwise the test does not finish because the paramiko.Client() is waiting
+# this means even more that the current remote() API sucks
+s.close ()
+
+return testLocalVarToRealRemoteToLocal''', 'testLocalVarToRealRemoteToLocal')
+
+        self.assertTrue (ayrton.runner.globals['testLocalVarToRealRemoteToLocal'])
+
 
     def __testLocals (self):
         ayrton.main ('''import ayrton
