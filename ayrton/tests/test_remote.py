@@ -81,14 +81,11 @@ return foo''', 'testRemoteReturn')
         self.assertEqual (output, '''57\n''')
 
     def testRaisesInternal (self):
-        class Foo (Exception): pass
-
-        ayrton.main ('''class Foo (Exception): pass
-raised= False
+        ayrton.main ('''raised= False
 try:
     with remote ('127.0.0.1', _debug=True) as s:
-        raise Foo()
-except Foo:
+        raise SystemError()
+except SystemError:
     raised= True
 
 # close the fd's, otherwise the test does not finish because the paramiko.Client() is waiting
@@ -98,11 +95,8 @@ s.close ()''', 'testRaisesInternal')
         self.assertEqual (ayrton.runner.globals['raised'], True)
 
     def testRaisesExternal (self):
-        class Foo (Exception): pass
-
-        self.assertRaises (Foo, ayrton.main, '''class Foo (Exception): pass
-with remote ('127.0.0.1', _debug=True):
-    raise Foo()''', 'testRaisesExternal')
+        self.assertRaises (SystemError, ayrton.main, '''with remote ('127.0.0.1', _debug=True):
+    raise SystemError()''', 'testRaisesExternal')
 
     def testLocalVarToRemote (self):
         ayrton.main ('''testLocalVarToRemote= True
