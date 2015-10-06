@@ -23,7 +23,7 @@ import importlib
 import ast
 import logging
 
-log_format= "%(asctime)s %(name)16s:%(lineno)-4d (%(funcName)-18s) %(levelname)-8s %(message)s"
+log_format= "%(asctime)s %(name)16s:%(lineno)-4d (%(funcName)-21s) %(levelname)-8s %(message)s"
 date_format= "%H:%M:%S"
 
 # uncomment one of these for way too much debugging :)
@@ -93,13 +93,18 @@ def polute (d, more):
     d.update (more)
 
 class Ayrton (object):
-    def __init__ (self, globals=None, **kwargs):
-        if globals is None:
+    def __init__ (self, g=None, l=None, **kwargs):
+        logger.debug ('new interpreter: %s, %s', g, l)
+        if g is None:
             self.globals= {}
         else:
-            self.globals= globals
+            self.globals= g
         polute (self.globals, kwargs)
-        self.locals= {}
+
+        if l is None:
+            self.locals= {}
+        else:
+            self.locals= l
 
         self.options= {}
         self.pending_children= []
@@ -111,6 +116,7 @@ class Ayrton (object):
 
     def run_script (self, script, file_name):
         tree= parse (script, file_name)
+        # TODO: self.locals?
         tree= CrazyASTTransformer (self.globals, file_name).modify (tree)
 
         return self.run_tree (tree, file_name)
@@ -118,10 +124,39 @@ class Ayrton (object):
     def run_tree (self, tree, file_name):
         logger.debug ('AST: %s', ast.dump (tree))
         logger.debug ('code: \n%s', pprint (tree))
+
         return self.run_code (compile (tree, file_name, 'exec'))
 
     def run_code (self, code):
+        '''
+        exec(): If only globals is provided, it must be a dictionary, which will
+        be used for both the global and the local variables. If globals and locals
+        are given, they are used for the global and local variables, respectively.
+        If provided, locals can be any mapping object. Remember that at module
+        level, globals and locals are the same dictionary. If exec gets two
+        separate objects as globals and locals, the code will be executed as if
+        it were embedded in a class definition.
+
+        If the globals dictionary does not contain a value for the key __builtins__,
+        a reference to the dictionary of the built-in module builtins is inserted
+        under that key. That way you can control what builtins are available to
+        the executed code by inserting your own __builtins__ dictionary into
+        globals before passing it to exec().
+
+        The default locals act as described for function locals() below:
+        modifications to the default locals dictionary should not be attempted.
+        Pass an explicit locals dictionary if you need to see effects of the code
+        on locals after function exec() returns.
+
+        locals(): Update and return a dictionary representing the current local
+        symbol table. Free variables are returned by locals() when it is called
+        in function blocks, but not in class blocks.
+
+        The contents of this dictionary should not be modified; changes may not
+        affect the values of local and free variables used by the interpreter.
+        '''
         exec (code, self.globals, self.locals)
+
         result= self.locals.get ('ayrton_return_value', None)
         logger.debug ('ayrton_return_value: %r', result)
         return result
@@ -131,10 +166,10 @@ class Ayrton (object):
             child= self.pending_children.pop (0)
             child.wait ()
 
-def run_tree (tree, globals):
+def run_tree (tree, g, l):
     """main entry point for remote()"""
     global runner
-    runner= Ayrton (globals=globals)
+    runner= Ayrton (g=g, l=l)
     return runner.run_tree (tree, 'unknown_tree')
 
 def run_file_or_script (script=None, file='script_from_command_line', **kwargs):

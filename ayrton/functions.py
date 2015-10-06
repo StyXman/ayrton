@@ -142,13 +142,25 @@ class remote:
         # but forces the user to reimport what's going to be used in the remote
         g= dict ([ (k, v) for k, v in ayrton.runner.globals.items ()
                           if type (v)!=types.ModuleType and k not in ('stdin', 'stdout', 'stderr') ])
+
+        # get the locals from the runtime
+        # this is not so easy: for some reason, ayrton.runner.locals is not up to
+        # date in the middle of the execution (remember *this* code is executed
+        # via exec() in Ayrton.run_code())
+        # another option is go go through the frames
+        inception_locals= sys._getframe().f_back.f_locals
+
+        l= dict ([ (k, v) for (k, v) in inception_locals.items ()
+                          if type (v)!=types.ModuleType and k not in ('ayrton_main', )])
+
         # special treatment for argv
         g['argv']= ayrton.runner.globals['argv']
-        # also locals!
-        g.update ( dict ([ (k, v) for k, v in ayrton.runner.locals.items ()
-                                  if k not in ('ayrton_main',) ]) )
+        # l['argv']= ayrton.runner.globals['argv']
+
         logger.debug ('globals passed to remote: %s', g)
         global_env= pickle.dumps (g)
+        logger.debug ('locals passed to remote: %s', l)
+        local_env= pickle.dumps (l)
 
         if self._python_only:
             command= '''python3 -c "import pickle
@@ -158,7 +170,8 @@ import sys
 ast= pickle.loads (sys.stdin.buffer.read (%d))
 code= compile (ast, 'remote', 'exec')
 g= pickle.loads (sys.stdin.buffer.read (%d))
-exec (code, g, {})"''' % (len (self.ast), len (global_env))
+l= pickle.loads (sys.stdin.buffer.read (%d))
+exec (code, g, l)"''' % (len (self.ast), len (global_env), len (local_env))
         else:
             command= '''python3 -c "import pickle                           #  1
 # names needed for unpickling                                               #  2
@@ -171,12 +184,13 @@ import logging                                                              #  8
 logger= logging.getLogger ('ayrton.remote')                                 #  9
                                                                             # 10
 ast= pickle.loads (sys.stdin.buffer.read (%d))                              # 11
-g= pickle.loads (sys.stdin.buffer.read (%d))                                # 12
-                                                                            # 13
-logger.debug ('code to run:\\n%%s', ayrton.ast_pprinter.pprint (ast))       # 14
-logger.debug ('globals received: %%s', g)                                   # 15
+logger.debug ('code to run:\\n%%s', ayrton.ast_pprinter.pprint (ast))       # 12
+g= pickle.loads (sys.stdin.buffer.read (%d))                                # 13
+logger.debug ('globals received: %%s', g)                                   # 14
+l= pickle.loads (sys.stdin.buffer.read (%d))                                # 15
+logger.debug ('locals received: %%s', l)                                    # 15
                                                                             # 16
-runner= ayrton.Ayrton (g)                                                   # 17
+runner= ayrton.Ayrton (g, l)                                                # 17
 caught= None                                                                # 18
 result= None                                                                # 19
                                                                             # 20
@@ -192,7 +206,9 @@ client= socket ()                                                           # 29
 client.connect (('127.0.0.1', 4227))                                        # 30
 client.sendall (pickle.dumps ( (runner.locals, result, caught) ))           # 31
 client.close ()                                                             # 32
-"''' % (len (self.ast), len (global_env))
+"
+''' % (len (self.ast), len (global_env), len (local_env))
+
         logger.debug ('code to execute remote: %s', command)
 
         if not self._debug:
@@ -208,12 +224,13 @@ client.close ()                                                             # 32
             # nc -l -s 127.0.0.1 -p 2233 -vv -e /bin/bash
             self.client= socket ()
             self.client.connect ((self.hostname, 2233))
-            i= open (self.client.fileno (), 'wb')
-            o= open (self.client.fileno (), 'rb')
-            e= open (self.client.fileno (), 'rb')
+            # unbuffered
+            i= open (self.client.fileno (), 'wb', 0)
+            o= open (self.client.fileno (), 'rb', 0)
+            e= open (self.client.fileno (), 'rb', 0)
 
             i.write (command.encode ())
-            i.write (b'\n')
+
             self.result_channel= socket ()
             # self.result_channel.setsockopt (SO_REUSEADDR, )
             self.result_channel.bind (('', 4227))
@@ -221,7 +238,10 @@ client.close ()                                                             # 32
 
         i.write (self.ast)
         i.write (global_env)
+        i.write (local_env)
+
         # TODO: setup threads with sendfile() to fix i,o,e API
+
         return RemoteStub(i, o, e)
 
     def __exit__ (self, *args):
