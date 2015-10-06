@@ -169,8 +169,8 @@ logger= logging.getLogger ('ayrton.remote')                                 #  9
 ast= pickle.loads (sys.stdin.buffer.read (%d))                              # 11
 g= pickle.loads (sys.stdin.buffer.read (%d))                                # 12
                                                                             # 13
-logger.debug (ayrton.ast_pprinter.pprint (ast))                             # 14
-logger.debug (g)                                                            # 15
+logger.debug ('code to run:\\n%%s', ayrton.ast_pprinter.pprint (ast))       # 14
+logger.debug ('globals received: %%s', g)                                   # 15
                                                                             # 16
 runner= ayrton.Ayrton (g)                                                   # 17
 caught= None                                                                # 18
@@ -179,15 +179,17 @@ result= None                                                                # 19
 try:                                                                        # 21
     result= runner.run_tree (ast, 'from_remote')                            # 22
 except Exception as e:                                                      # 23
-    caught= e                                                               # 24
-                                                                            # 25
-logger.debug (runner.locals)                                                # 26
-                                                                            # 27
-client= socket ()                                                           # 28
-client.connect (('127.0.0.1', 4227))                                        # 29
-client.sendall (pickle.dumps ( (runner.locals, result, caught) ))           # 30
-client.close ()                                                             # 31
+    logger.debug ('run raised: %%r', e)                                     # 24
+    caught= e                                                               # 25
+                                                                            # 26
+logger.debug ('runner.locals: %%s', runner.locals)                          # 27
+                                                                            # 28
+client= socket ()                                                           # 29
+client.connect (('127.0.0.1', 4227))                                        # 30
+client.sendall (pickle.dumps ( (runner.locals, result, caught) ))           # 31
+client.close ()                                                             # 32
 "''' % (len (self.ast), len (global_env))
+        logger.debug ('code to execute remote: %s', command)
 
         if not self._debug:
             self.client= paramiko.SSHClient ()
@@ -229,13 +231,14 @@ client.close ()                                                             # 31
             partial= conn.recv (8196)
 
         (locals, result, e)= pickle.loads (data)
-        logger.debug (locals)
+        logger.debug ('locals returned from remote: %s', locals)
         conn.close ()
         ayrton.runner.globals.update (locals)
         # ayrton.runner.locals.update (locals)
-        logger.debug (ayrton.runner.globals)
-        logger.debug (ayrton.runner.locals)
+        logger.debug ('globals after remote: %s', ayrton.runner.globals)
+        logger.debug ('locals  after remote: %s', ayrton.runner.locals)
         if e is not None:
+            logger.debug ('raised from remote: %r', e)
             raise e
 
 def run (path, *args, **kwargs):
