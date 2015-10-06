@@ -34,17 +34,20 @@ logger= logging.getLogger ('ayton.tests.remote')
 
 class RemoteTests (unittest.TestCase):
 
+
     def setUp (self):
         # create one of these
         # self.runner= ayrton.Ayrton ()
         pass
 
+
     def tearDown (self):
         # give time for nc to recover
         time.sleep (0.25)
 
+
     def testRemoteEnv (self):
-        output= ayrton.main ('''with remote ('127.0.0.1', _debug=True) as s:
+        output= ayrton.main ('''with remote ('127.0.0.1', _debug=True):
     user= USER
 
 # close the fd's, otherwise the test does not finish because the paramiko.Client() is waiting
@@ -55,8 +58,9 @@ return user''', 'testRemoteEnv')
 
         self.assertEqual (output, os.environ['USER'])
 
+
     def testVar (self):
-        output= ayrton.main ('''with remote ('127.0.0.1', _debug=True) as s:
+        output= ayrton.main ('''with remote ('127.0.0.1', _debug=True):
     foo= 56
 
 # close the fd's, otherwise the test does not finish because the paramiko.Client() is waiting
@@ -80,6 +84,7 @@ return foo''', 'testRemoteReturn')
 
         self.assertEqual (output, '''57\n''')
 
+
     def testRaisesInternal (self):
         ayrton.main ('''raised= False
 try:
@@ -98,20 +103,24 @@ s.close ()''', 'testRaisesInternal')
         self.assertRaises (SystemError, ayrton.main, '''with remote ('127.0.0.1', _debug=True):
     raise SystemError()''', 'testRaisesExternal')
 
+
     def testLocalVarToRemote (self):
         ayrton.main ('''testLocalVarToRemote= True
 with remote ('127.0.0.1', _debug=True):
     testLocalVarToRemote''', 'testLocalVarToRemote')
+
 
     def __testLocalFunToRemote (self):
         ayrton.main ('''def testLocalFunToRemote(): pass
 with remote ('127.0.0.1', _debug=True):
     testLocalFunToRemote''', 'testLocalFunToRemote')
 
+
     def __testLocalClassToRemote (self):
         ayrton.main ('''class TestLocalClassToRemote: pass
 with remote ('127.0.0.1', _debug=True):
     TestLocalClassToRemote''', 'testLocalClassToRemote')
+
 
     def testRemoteVarToLocal (self):
         ayrton.main ('''with remote ('127.0.0.1', _debug=True):
