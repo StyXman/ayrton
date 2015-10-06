@@ -50,10 +50,6 @@ class RemoteTests (unittest.TestCase):
         output= ayrton.main ('''with remote ('127.0.0.1', _debug=True):
     user= USER
 
-# close the fd's, otherwise the test does not finish because the paramiko.Client() is waiting
-# this means even more that the current remote() API sucks
-s.close ()
-
 return user''', 'testRemoteEnv')
 
         self.assertEqual (output, os.environ['USER'])
@@ -62,10 +58,6 @@ return user''', 'testRemoteEnv')
     def testVar (self):
         output= ayrton.main ('''with remote ('127.0.0.1', _debug=True):
     foo= 56
-
-# close the fd's, otherwise the test does not finish because the paramiko.Client() is waiting
-# this means even more that the current remote() API sucks
-s.close ()
 
 return foo''', 'testRemoteVar')
 
@@ -76,9 +68,6 @@ return foo''', 'testRemoteVar')
         output= ayrton.main ('''with remote ('127.0.0.1', _debug=True) as s:
     return 57
 
-# close the fd's, otherwise the test does not finish because the paramiko.Client() is waiting
-# this means even more that the current remote() API sucks
-s.close ()
 
 return foo''', 'testRemoteReturn')
 
@@ -93,9 +82,6 @@ try:
 except SystemError:
     raised= True
 
-# close the fd's, otherwise the test does not finish because the paramiko.Client() is waiting
-# this means even more that the current remote() API sucks
-s.close ()''', 'testRaisesInternal')
 
         self.assertEqual (ayrton.runner.globals['raised'], True)
 
