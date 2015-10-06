@@ -105,11 +105,17 @@ try:
     sys.argv= script_args
     v= ayrton.run_file_or_script (file=file, script=script)
 
-    try:
-        v= int (v)
-    execpt ValueError:
-        # I can only assume it's ok
-        v= 0
+    if type(v)==bool:
+        if v:
+            v= 0 # success in shellspeak
+        else:
+            v= 1 # 'some' error
+    else:
+        try:
+            v= int (v)
+        execpt ValueError:
+            # I can only assume it's ok
+            v= 0
 
     sys.exit (v)
 
