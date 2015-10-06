@@ -48,45 +48,6 @@ def parse (script, file_name=''):
     info= CompileInfo (file_name, 'exec')
     return ast_from_node (None, parser.parse_source (script, info), info)
 
-class Ayrton (object):
-    def __init__ (self, globals=None, **kwargs):
-        if globals is None:
-            self.globals= {}
-        else:
-            self.globals= globals
-        polute (self.globals, kwargs)
-
-        self.options= {}
-        self.pending_children= []
-        self.locals= {}
-
-    def run_file (self, file):
-        # it's a pity that parse() does not accept a file as input
-        # so we could avoid reading the whole file
-        return self.run_script (open (file).read (), file)
-
-    def run_script (self, script, file_name):
-        tree= parse (script, file_name)
-        tree= CrazyASTTransformer (self.globals, file_name).modify (tree)
-
-        return self.run_tree (tree, file_name)
-
-    def run_tree (self, tree, file_name):
-        logger.debug ('AST: %s', ast.dump (tree))
-        logger.debug ('code: \n%s', pprint (tree))
-        return self.run_code (compile (tree, file_name, 'exec'))
-
-    def run_code (self, code):
-        exec (code, self.globals, self.locals)
-        result= self.locals.get ('ayrton_return_value', None)
-        logger.debug ('ayrton_return_value: %r', result)
-        return result
-
-    def wait_for_pending_children (self):
-        for i in range (len (self.pending_children)):
-            child= self.pending_children.pop (0)
-            child.wait ()
-
 def polute (d, more):
     d.update (__builtins__)
     # weed out some stuff
@@ -131,6 +92,45 @@ def polute (d, more):
 
     d.update (more)
 
+class Ayrton (object):
+    def __init__ (self, globals=None, **kwargs):
+        if globals is None:
+            self.globals= {}
+        else:
+            self.globals= globals
+        polute (self.globals, kwargs)
+        self.locals= {}
+
+        self.options= {}
+        self.pending_children= []
+
+    def run_file (self, file):
+        # it's a pity that parse() does not accept a file as input
+        # so we could avoid reading the whole file
+        return self.run_script (open (file).read (), file)
+
+    def run_script (self, script, file_name):
+        tree= parse (script, file_name)
+        tree= CrazyASTTransformer (self.globals, file_name).modify (tree)
+
+        return self.run_tree (tree, file_name)
+
+    def run_tree (self, tree, file_name):
+        logger.debug ('AST: %s', ast.dump (tree))
+        logger.debug ('code: \n%s', pprint (tree))
+        return self.run_code (compile (tree, file_name, 'exec'))
+
+    def run_code (self, code):
+        exec (code, self.globals, self.locals)
+        result= self.locals.get ('ayrton_return_value', None)
+        logger.debug ('ayrton_return_value: %r', result)
+        return result
+
+    def wait_for_pending_children (self):
+        for i in range (len (self.pending_children)):
+            child= self.pending_children.pop (0)
+            child.wait ()
+
 def run_tree (tree, globals):
     """main entry point for remote()"""
     global runner
@@ -139,6 +139,7 @@ def run_tree (tree, globals):
 
 def run_file_or_script (script=None, file='script_from_command_line', **kwargs):
     """Main entry point for bin/ayrton and unittests."""
+    logger.debug ('===========================================================')
     global runner
     runner= Ayrton (**kwargs)
     if script is None:
