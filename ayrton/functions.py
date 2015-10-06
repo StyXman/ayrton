@@ -173,19 +173,19 @@ logger.debug (ayrton.ast_pprinter.pprint (ast))                             # 14
 logger.debug (g)                                                            # 15
                                                                             # 16
 runner= ayrton.Ayrton (g)                                                   # 17
-e= None                                                                     # 18
+caught= None                                                                # 18
 result= None                                                                # 19
                                                                             # 20
 try:                                                                        # 21
     result= runner.run_tree (ast, 'from_remote')                            # 22
 except Exception as e:                                                      # 23
-    pass                                                                    # 24
+    caught= e                                                               # 24
                                                                             # 25
 logger.debug (runner.locals)                                                # 26
                                                                             # 27
 client= socket ()                                                           # 28
 client.connect (('127.0.0.1', 4227))                                        # 29
-client.sendall (pickle.dumps ( (runner.locals, result, e) ))                # 30
+client.sendall (pickle.dumps ( (runner.locals, result, caught) ))           # 30
 client.close ()                                                             # 31
 "''' % (len (self.ast), len (global_env))
 
