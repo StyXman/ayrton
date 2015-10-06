@@ -471,7 +471,7 @@ def pprint_inner (node, level=0):
     elif t==Try:
         # Try(body=[...],  handlers=[...], orelse=[], finalbody=[])
         yield 'try:\n'
-        pprint_body (node.body, level+1)
+        yield from pprint_body (node.body, level+1)
         if len (node.handlers)>0:
             for handler in node.handlers:
                 yield from pprint_inner (handler, level)
