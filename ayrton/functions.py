@@ -112,11 +112,15 @@ class RemoteStub:
 class remote:
     "Uses the same arguments as paramiko.SSHClient.connect ()"
     def __init__ (self, ast, hostname, *args, **kwargs):
-        def param (p, d, v=False):
-            if p in d:
-                v= d[p]
-                del d[p]
-            setattr (self, p, v)
+        def param (param, kwargs, default_value=False):
+            """gets a param from kwargs, or uses a default_value. if found, it's
+            removed from kwargs"""
+            if param in kwargs:
+                value= kwargs[param]
+                del kwargs[param]
+            else:
+                value= default_value
+            setattr (self, param, value)
 
         # actually, it's not a proper ast, it's the pickle of such thing
         self.ast= ast
@@ -147,7 +151,7 @@ class remote:
         # this is not so easy: for some reason, ayrton.runner.locals is not up to
         # date in the middle of the execution (remember *this* code is executed
         # via exec() in Ayrton.run_code())
-        # another option is go go through the frames
+        # another option is to go through the frames
         inception_locals= sys._getframe().f_back.f_locals
 
         l= dict ([ (k, v) for (k, v) in inception_locals.items ()
