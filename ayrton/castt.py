@@ -26,7 +26,7 @@ import pickle
 from collections import defaultdict
 import logging
 
-logger= logging.getLogger ('ayton.castt')
+logger= logging.getLogger ('ayrton.castt')
 
 import ayrton
 from ayrton.ast_pprinter import pprint
