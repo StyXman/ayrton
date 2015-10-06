@@ -113,6 +113,11 @@ with remote ('127.0.0.1', _debug=True):
 with remote ('127.0.0.1', _debug=True):
     TestLocalClassToRemote''', 'testLocalClassToRemote')
 
+    def testRemoteVarToLocal (self):
+        ayrton.main ('''with remote ('127.0.0.1', _debug=True):
+    testRemoteVarToLocal= True
+testRemoteVarToLocal''', 'testRemoteVarToLocal')
+
     def __testLocals (self):
         ayrton.main ('''import ayrton
 a= True
