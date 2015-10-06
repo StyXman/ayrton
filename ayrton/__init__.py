@@ -23,7 +23,7 @@ import importlib
 import ast
 import logging
 
-log_format= "%(asctime)s %(name)s:%(lineno)-4d %(levelname)-8s %(message)s"
+log_format= "%(asctime)s %(name)16s:%(lineno)-4d (%(funcName)-18s) %(levelname)-8s %(message)s"
 date_format= "%H:%M:%S"
 
 # uncomment one of these for way too much debugging :)
