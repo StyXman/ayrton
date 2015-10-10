@@ -22,6 +22,8 @@ import sys
 import importlib
 import ast
 import logging
+# patch logging so we have debug2 and debug3
+import ayrton.utils
 
 log_format= "%(asctime)s %(name)16s:%(lineno)-4d (%(funcName)-21s) %(levelname)-8s %(message)s"
 date_format= "%H:%M:%S"
