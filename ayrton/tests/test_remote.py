@@ -84,7 +84,6 @@ except SystemError:
 
 return raised''', 'testRaisesInternal')
 
-        # self.assertTrue (ayrton.runner.globals['raised'])
         self.assertTrue (result)
 
 
@@ -97,7 +96,7 @@ return raised''', 'testRaisesInternal')
     def testLocalVarToRemote (self):
         ayrton.main ('''testLocalVarToRemote= True
 with remote ('127.0.0.1', _debug=True):
-    testLocalVarToRemote''', 'testLocalVarToRemote')
+    assert (testLocalVarToRemote)''', 'testLocalVarToRemote')
 
 
     def __testLocalFunToRemote (self):
@@ -113,10 +112,12 @@ with remote ('127.0.0.1', _debug=True):
 
 
     def testRemoteVarToLocal (self):
-        ayrton.main ('''with remote ('127.0.0.1', _debug=True):
+        result= ayrton.main ('''with remote ('127.0.0.1', _debug=True):
     testRemoteVarToLocal= True
-testRemoteVarToLocal''', 'testRemoteVarToLocal')
 
+return testRemoteVarToLocal''', 'testRemoteVarToLocal')
+
+        self.assertTrue (result)
 
     def testLocalVarToRemoteToLocal (self):
         result= ayrton.main ('''testLocalVarToRemoteToLocal= False
@@ -134,7 +135,6 @@ assert sys._getframe().f_locals['testLocalVarToRemoteToLocal']
 
 return testLocalVarToRemoteToLocal''', 'testLocalVarToRemoteToLocal')
 
-        self.assertTrue (ayrton.runner.globals['testLocalVarToRemoteToLocal'])
         self.assertTrue (result)
 
 
