@@ -22,6 +22,8 @@ import sys
 import importlib
 import ast
 import logging
+import dis
+
 # patch logging so we have debug2 and debug3
 import ayrton.utils
 
@@ -96,7 +98,9 @@ def polute (d, more):
 
 class Ayrton (object):
     def __init__ (self, g=None, l=None, **kwargs):
-        logger.debug ('new interpreter: %s, %s', g, l)
+        logger.debug ('new interpreter')
+        logger.debug2 ('globals: %s', g)
+        logger.debug ('locals: %s', l)
         if g is None:
             self.globals= {}
         else:
@@ -157,8 +161,17 @@ class Ayrton (object):
         The contents of this dictionary should not be modified; changes may not
         affect the values of local and free variables used by the interpreter.
         '''
+        logger.debug ('code dissasembled:')
+        if logger.parent.level==logging.DEBUG:
+            handler= logger.parent.handlers[0]
+            handler.acquire ()
+            dis.dis (code, file=handler.stream)
+            handler.release ()
+
         exec (code, self.globals, self.locals)
 
+        logger.debug ('locals at script exit: %s', self.locals)
+        logger.debug2 ('locals: %d', id (self.locals))
         result= self.locals.get ('ayrton_return_value', None)
         logger.debug ('ayrton_return_value: %r', result)
         return result

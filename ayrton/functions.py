@@ -228,6 +228,7 @@ client.close ()                                                             # 32
             self.result_channel.bind (('', 4227))
             self.result_channel.listen (1)
 
+        logger.debug ('sending ast, globals, locals')
         i.write (self.ast)
         i.write (global_env)
         i.write (local_env)
@@ -247,12 +248,16 @@ client.close ()                                                             # 32
             partial= conn.recv (8196)
 
         (locals, result, e)= pickle.loads (data)
+        logger.debug ('result from remote: %r', result)
         logger.debug ('locals returned from remote: %s', locals)
         conn.close ()
         ayrton.runner.globals.update (locals)
         # ayrton.runner.locals.update (locals)
-        logger.debug ('globals after remote: %s', ayrton.runner.globals)
-        logger.debug ('locals  after remote: %s', ayrton.runner.locals)
+        logger.debug ('caller name: %s', sys._getframe().f_back.f_code.co_name)
+
+        logger.debug2 ('globals after remote: %s', ayrton.runner.globals)
+        logger.debug ('locals after remote: %s', inception_locals)
+        logger.debug2 ('locals: %d', id (ayrton.runner.locals))
         if e is not None:
             logger.debug ('raised from remote: %r', e)
             raise e
