@@ -29,6 +29,7 @@ from threading import Thread
 import sys
 import subprocess
 import errno
+import ctypes
 
 import logging
 logger= logging.getLogger ('ayrton.functions')
@@ -247,16 +248,22 @@ client.close ()                                                             # 32
             data+= partial
             partial= conn.recv (8196)
 
-        (locals, result, e)= pickle.loads (data)
+        (l, result, e)= pickle.loads (data)
         logger.debug ('result from remote: %r', result)
-        logger.debug ('locals returned from remote: %s', locals)
+        logger.debug ('locals returned from remote: %s', l)
         conn.close ()
-        ayrton.runner.globals.update (locals)
-        # ayrton.runner.locals.update (locals)
-        logger.debug ('caller name: %s', sys._getframe().f_back.f_code.co_name)
+
+        # update locals
+        callers_frame= sys._getframe().f_back
+        logger.debug ('caller name: %s', callers_frame.f_code.co_name)
+        callers_frame.f_locals.update (l)
+        # see https://mail.python.org/pipermail/python-dev/2005-January/051018.html
+        ctypes.pythonapi.PyFrame_LocalsToFast(ctypes.py_object(callers_frame), 0)
+
+        # TODO: (and globals?)
 
         logger.debug2 ('globals after remote: %s', ayrton.runner.globals)
-        logger.debug ('locals after remote: %s', inception_locals)
+        logger.debug ('locals after remote: %s', callers_frame.f_locals)
         logger.debug2 ('locals: %d', id (ayrton.runner.locals))
         if e is not None:
             logger.debug ('raised from remote: %r', e)
