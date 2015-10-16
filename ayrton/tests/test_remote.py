@@ -43,8 +43,7 @@ class RemoteTests (unittest.TestCase):
 
     def tearDown (self):
         # give time for nc to recover
-        time.sleep (0.25)
-
+        time.sleep (1)
 
     def testRemoteEnv (self):
         output= ayrton.main ('''with remote ('127.0.0.1', _debug=True):
@@ -76,8 +75,9 @@ return foo''', 'testRemoteReturn')
 
     def testRaisesInternal (self):
         result= ayrton.main ('''raised= False
+
 try:
-    with remote ('127.0.0.1', _debug=True) as s:
+    with remote ('127.0.0.1', _debug=True):
         raise SystemError()
 except SystemError:
     raised= True
@@ -95,18 +95,21 @@ return raised''', 'testRaisesInternal')
 
     def testLocalVarToRemote (self):
         ayrton.main ('''testLocalVarToRemote= True
+
 with remote ('127.0.0.1', _debug=True):
     assert (testLocalVarToRemote)''', 'testLocalVarToRemote')
 
 
     def __testLocalFunToRemote (self):
         ayrton.main ('''def testLocalFunToRemote(): pass
+
 with remote ('127.0.0.1', _debug=True):
     testLocalFunToRemote''', 'testLocalFunToRemote')
 
 
     def __testLocalClassToRemote (self):
         ayrton.main ('''class TestLocalClassToRemote: pass
+
 with remote ('127.0.0.1', _debug=True):
     TestLocalClassToRemote''', 'testLocalClassToRemote')
 
@@ -121,6 +124,7 @@ return testRemoteVarToLocal''', 'testRemoteVarToLocal')
 
     def testLocalVarToRemoteToLocal (self):
         result= ayrton.main ('''testLocalVarToRemoteToLocal= False
+
 with remote ('127.0.0.1', _debug=True):
     testLocalVarToRemoteToLocal= True
 
