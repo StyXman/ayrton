@@ -213,6 +213,10 @@ client.close ()"                                                            # 34
             self.client.set_missing_host_key_policy (paramiko.WarningPolicy ())
             self.client.connect (self.hostname, *self.args, **self.kwargs)
 
+            # create the backchannel
+            self.result_channel= self.client.get_transport ()
+            self.result_channel.request_port_forward ('localhost', port)
+
             (i, o, e)= self.client.exec_command (command)
         else:
             # to debug, run
@@ -241,8 +245,11 @@ client.close ()"                                                            # 34
         return RemoteStub(i, o, e)
 
     def __exit__ (self, *args):
-        (conn, addr)= self.result_channel.accept ()
-        self.result_channel.close ()
+        if self._debug:
+            (conn, addr)= self.result_channel.accept ()
+            self.result_channel.close ()
+        else:
+            conn= self.result_channel.accept ()
 
         data= b''
         partial= conn.recv (8196)
