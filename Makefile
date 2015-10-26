@@ -4,9 +4,9 @@ INSTALL_DIR=$(HOME)/local
 
 tests:
 	bash -c 'while true; do nc -l -s 127.0.0.1 -p 2233 -e /bin/bash; done' & \
-	pid=$!; \
+	pid=$$!; \
 	LC_ALL=C python3 -m unittest discover -v ayrton; \
-	kill $pid
+	kill $$pid
 
 docs:
 	PYTHONPATH=${PWD} make -C doc html
