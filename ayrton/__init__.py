@@ -202,11 +202,20 @@ class Ayrton (object):
         The contents of this dictionary should not be modified; changes may not
         affect the values of local and free variables used by the interpreter.
         '''
+        error= None
+        try:
+            exec (code, self.globals, self.locals)
+        except Exception as e:
+            error= e
 
         logger.debug2 ('globals at script exit: %s', self.globals)
         logger.debug ('locals at script exit: %s', self.locals)
         result= self.locals.get ('ayrton_return_value', None)
         logger.debug ('ayrton_return_value: %r', result)
+
+        if error is not None:
+            raise error
+
         return result
 
     def wait_for_pending_children (self):
