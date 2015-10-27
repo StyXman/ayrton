@@ -47,7 +47,7 @@ class Bash(unittest.TestCase):
         self.assertEqual (bash ('*.py', single=True), 'setup.py')
 
     def test_glob2 (self):
-        self.assertEqual (sorted (bash ([ '*.py', '*.txt' ])), [ 'LICENSE.txt', 'setup.py', ])
+        self.assertEqual (sorted (bash ([ '*.py', '*.txt' ])), [ 'LICENSE.txt', 'requirements.txt', 'setup.py', ])
 
     def test_glob_brace1 (self):
         self.assertEqual (sorted (bash ('s{a,*.py}')), [ 'sa', 'setup.py' ])
