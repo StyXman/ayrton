@@ -447,7 +447,7 @@ math.floor (1.1)''')
 def foo ():
     math.floor (1.1)
 
-foo ()''')
+foo ()''', 'testImportCallFromFunc')
 
     def testImportFrom (self):
         ayrton.main ('''from math import floor
@@ -458,7 +458,7 @@ floor (1.1)''')
 def foo ():
     floor (1.1)
 
-foo ()''')
+foo ()''', 'testImportFromCallFromFunc')
 
     def testUnknown (self):
         try:
