@@ -99,24 +99,6 @@ class CrazyASTTransformer (ast.NodeTransformer):
 
     def modify (self, tree):
         m= self.visit (tree)
-
-        # convert Module(body=[...]) into
-        # def ayrton_main ():
-        #    [...]
-        # ayrton_return_value= ayrton_main ()
-
-        f= FunctionDef (name='ayrton_main', body=m.body,
-                        args=arguments (args=[], vararg=None, varargannotation=None,
-                                        kwonlyargs=[], kwargs=None, kwargannotation=None,
-                                        defaults=[], kw_defaults=[]),
-                        decorator_list=[], returns=None)
-
-        c= Call (func=Name (id='ayrton_main', ctx=Load ()),
-                 args=[], keywords=[], starargs=None, kwargs=None)
-
-        t= [Name (id='ayrton_return_value', ctx=Store ())]
-
-        m= Module (body= [ f, Assign (targets=t, value=c) ])
         ast.fix_missing_locations (m)
 
         return m
@@ -136,7 +118,7 @@ class CrazyASTTransformer (ast.NodeTransformer):
 
     # A block is a piece of Python program text that is executed as a unit.
     # The following are blocks:
-    # [ ] a module,
+    # [x] a module,
     # [x] a function body, and
     # [x] a class definition.
     # [ ] A script file is a code block.
