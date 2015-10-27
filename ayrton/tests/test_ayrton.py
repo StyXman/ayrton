@@ -480,7 +480,7 @@ class ParsingErrors (unittest.TestCase):
 
 class ReturnValues (unittest.TestCase):
 
-    def testSimpleReturn (self):
+    def __testSimpleReturn (self):
         self.assertEqual (ayrton.main ('''return 50'''), 50)
 
     def testException (self):
