@@ -108,7 +108,29 @@ class Ayrton (object):
         polute (self.globals, kwargs)
 
         if l is None:
-            self.locals= {}
+            # If exec gets two separate objects as globals and locals,
+            # the code will be executed as if it were embedded in a class definition.
+            # and this happens:
+            """
+            In [7]: source='''import math
+            ...: def foo ():
+            ...:     math.floor (1.1, )
+            ...:
+            ...: foo()'''
+
+            In [8]: import ast
+            In [9]: t= ast.parse (source)
+            In [10]: c= compile (t, 'foo.py', 'exec')
+            In [11]: exec (c, {}, {})
+            ---------------------------------------------------------------------------
+            NameError                                 Traceback (most recent call last)
+            <ipython-input-11-3a2844c232c1> in <module>()
+            ----> 1 exec (c, {}, {})
+            /home/mdione/src/projects/ayrton/foo.py in <module>()
+            /home/mdione/src/projects/ayrton/foo.py in foo()
+            NameError: name 'math' is not defined
+            """
+            self.locals= self.globals
         else:
             self.locals= l
 
