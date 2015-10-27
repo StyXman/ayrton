@@ -156,6 +156,25 @@ class Ayrton (object):
         return self.run_code (compile (tree, file_name, 'exec'))
 
     def run_code (self, code):
+        if logger.parent.level<=logging.DEBUG2:
+            logger.debug ('------------------')
+            logger.debug ('main (gobal) code:')
+            handler= logger.parent.handlers[0]
+
+            handler.acquire ()
+            dis.dis (code, file=handler.stream)
+            handler.release ()
+
+            for inst in dis.Bytecode (code):
+                if inst.opname=='LOAD_CONST':
+                    if type (inst.argval)==type (code):
+                        logger.debug ('------------------')
+                        handler.acquire ()
+                        dis.dis (inst.argval, file=handler.stream)
+                        handler.release ()
+                    elif type (inst.argval)==str:
+                        logger.debug ("last function is called: %s", inst.argval)
+
         '''
         exec(): If only globals is provided, it must be a dictionary, which will
         be used for both the global and the local variables. If globals and locals
@@ -183,17 +202,9 @@ class Ayrton (object):
         The contents of this dictionary should not be modified; changes may not
         affect the values of local and free variables used by the interpreter.
         '''
-        logger.debug ('code dissasembled:')
-        if logger.parent.level==logging.DEBUG:
-            handler= logger.parent.handlers[0]
-            handler.acquire ()
-            dis.dis (code, file=handler.stream)
-            handler.release ()
 
-        exec (code, self.globals, self.locals)
-
+        logger.debug2 ('globals at script exit: %s', self.globals)
         logger.debug ('locals at script exit: %s', self.locals)
-        logger.debug2 ('locals: %d', id (self.locals))
         result= self.locals.get ('ayrton_return_value', None)
         logger.debug ('ayrton_return_value: %r', result)
         return result
