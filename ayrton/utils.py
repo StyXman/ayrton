@@ -48,15 +48,19 @@ def patch_logging ():
 
 patch_logging ()
 
-def dump_dict (d, level=0):
+def dump_dict (d, level=1):
     strings= []
 
-    strings.append ("%s%r: {\n"   % ( '    '*level, k))
+    if level==0:
+        strings.append ("{\n")
     for k, v in d.items ():
         if type (v)!=dict:
-            strings.append ("%s%r: %r,\n" % ( '    '*(level+1), k, v ))
+            strings.append ("%s%r: %r,\n" % ( '    '*level, k, v ))
         else:
+            strings.append ("%s%r: {\n"   % ( '    '*level, k))
             strings.extend (dump_dict (v, level+1))
-    strings.append ("%s},\n"       % ( '    '*level, ))
+            strings.append ("%s},\n"      % ( '    '*level, ))
+    if level==0:
+        strings.cappend ("}\n")
 
     return ''.join (strings)
