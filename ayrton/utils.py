@@ -47,3 +47,16 @@ def patch_logging ():
     logging.Logger.debug3= debug3
 
 patch_logging ()
+
+def dump_dict (d, level=0):
+    strings= []
+
+    strings.append ("%s%r: {\n"   % ( '    '*level, k))
+    for k, v in d.items ():
+        if type (v)!=dict:
+            strings.append ("%s%r: %r,\n" % ( '    '*(level+1), k, v ))
+        else:
+            strings.extend (dump_dict (v, level+1))
+    strings.append ("%s},\n"       % ( '    '*level, ))
+
+    return ''.join (strings)
