@@ -37,7 +37,7 @@ class RemoteTests (unittest.TestCase):
 
     def setUp (self):
         # create one of these
-        # self.runner= ayrton.Ayrton ()
+        self.runner= ayrton.Ayrton ()
         pass
 
 
@@ -49,81 +49,76 @@ class RemoteTests (unittest.TestCase):
         output= ayrton.main ('''with remote ('127.0.0.1', _debug=True):
     user= USER
 
-return user''', 'testRemoteEnv')
+    def testRemoteEnv (self):
+        self.runner.run_script ('''with remote ('127.0.0.1', _debug=True):
+    user= USER''', 'testRemoteEnv.py')
 
-        self.assertEqual (output, os.environ['USER'])
+        self.assertEqual (self.runner.locals['user'], os.environ['USER'])
 
 
     def testRemoteVar (self):
-        output= ayrton.main ('''with remote ('127.0.0.1', _debug=True):
-    testRemoteVar= 56
+        self.runner.run_script ('''with remote ('127.0.0.1', _debug=True):
+    testRemoteVar= 56''', 'testRemoteVar.py')
 
-return testRemoteVar''', 'testRemoteVar')
-
-        self.assertEqual (ayrton.runner.globals['foo'], 56)
-        # self.assertEqual (ayrton.runner.locals['foo'], 56)
+        self.assertEqual (self.runner.locals['testRemoteVar'], 56)
 
 
     def __testReturn (self):
-        output= ayrton.main ('''with remote ('127.0.0.1', _debug=True):
+        self.runner.run_script ('''with remote ('127.0.0.1', _debug=True):
     return 57
 
-return foo''', 'testRemoteReturn')
+return foo''', 'testRemoteReturn.py')
 
-        self.assertEqual (output, '''57\n''')
+        self.assertEqual (self.runner.locals['foo'], 57)
 
 
     def testRaisesInternal (self):
-        result= ayrton.main ('''raised= False
+        self.runner.run_script ('''raised= False
 
 try:
     with remote ('127.0.0.1', _debug=True):
         raise SystemError()
 except SystemError:
-    raised= True
+    raised= True''', 'testRaisesInternal.py')
 
-return raised''', 'testRaisesInternal')
-
-        self.assertTrue (result)
+        self.assertTrue (self.runner.locals['raised'])
 
 
     def testRaisesExternal (self):
-        self.assertRaises (SystemError, ayrton.main,
+        self.assertRaises (SystemError, self.runner.run_script,
                            '''with remote ('127.0.0.1', _debug=True):
-    raise SystemError()''', 'testRaisesExternal')
+    raise SystemError()''', 'testRaisesExternal.py')
 
 
     def testLocalVarToRemote (self):
-        ayrton.main ('''testLocalVarToRemote= True
+        self.runner.run_script ('''testLocalVarToRemote= True
 
 with remote ('127.0.0.1', _debug=True):
     assert (testLocalVarToRemote)''', 'testLocalVarToRemote')
 
 
     def __testLocalFunToRemote (self):
-        ayrton.main ('''def testLocalFunToRemote(): pass
+        self.runner.run_script ('''def testLocalFunToRemote(): pass
 
 with remote ('127.0.0.1', _debug=True):
     testLocalFunToRemote''', 'testLocalFunToRemote')
 
 
     def __testLocalClassToRemote (self):
-        ayrton.main ('''class TestLocalClassToRemote: pass
+        self.runner.run_script ('''class TestLocalClassToRemote: pass
 
 with remote ('127.0.0.1', _debug=True):
     TestLocalClassToRemote''', 'testLocalClassToRemote')
 
 
     def testRemoteVarToLocal (self):
-        result= ayrton.main ('''with remote ('127.0.0.1', _debug=True):
-    testRemoteVarToLocal= True
+        self.runner.run_script ('''with remote ('127.0.0.1', _debug=True):
+    testRemoteVarToLocal= True''', 'testRemoteVarToLocal.py')
 
-return testRemoteVarToLocal''', 'testRemoteVarToLocal')
-
-        self.assertTrue (result)
+        self.assertTrue (self.runner.locals['testRemoteVarToLocal'])
 
     def testLocalVarToRemoteToLocal (self):
-        result= ayrton.main ('''testLocalVarToRemoteToLocal= False
+        self.runner.run_script ('''testLocalVarToRemoteToLocal= False
 
 with remote ('127.0.0.1', _debug=True):
     testLocalVarToRemoteToLocal= True
@@ -135,17 +130,15 @@ logger= logging.getLogger ('ayrton.tests.testLocalVarToRemoteToLocal')
 logger.debug ('my name: %s', sys._getframe().f_code.co_name)
 logger.debug ('my locals: %s', sys._getframe().f_locals)
 
-assert sys._getframe().f_locals['testLocalVarToRemoteToLocal']
+assert sys._getframe().f_locals['testLocalVarToRemoteToLocal']''', 'testLocalVarToRemoteToLocal')
 
-return testLocalVarToRemoteToLocal''', 'testLocalVarToRemoteToLocal')
-
-        self.assertTrue (result)
+        self.assertTrue (self.runner.locals['testLocalVarToRemoteToLocal'])
 
 
     def __testLocalVarToRealRemoteToLocal (self):
         """This test only succeeds if you you have password/passphrase-less access
         to localhost"""
-        ayrton.main ('''testLocalVarToRealRemote= False
+        self.runner.run_script ('''testLocalVarToRealRemote= False
 with remote ('127.0.0.1', allow_agent=False) as s:
     testLocalVarToRealRemote= True
 
@@ -155,11 +148,11 @@ s.close ()
 
 return testLocalVarToRealRemoteToLocal''', 'testLocalVarToRealRemoteToLocal')
 
-        self.assertTrue (ayrton.runner.globals['testLocalVarToRealRemoteToLocal'])
+        self.assertTrue (self.runner.locals['testLocalVarToRealRemoteToLocal'])
 
 
     def __testLocals (self):
-        ayrton.main ('''import ayrton
+        self.runner.run_script ('''import ayrton
 a= True
 l= locals()['a']
 # r= ayrton.runner.locals['a']
