@@ -49,18 +49,21 @@ def patch_logging ():
 patch_logging ()
 
 def dump_dict (d, level=1):
-    strings= []
+    if d is not None:
+        strings= []
 
-    if level==0:
-        strings.append ("{\n")
-    for k, v in d.items ():
-        if type (v)!=dict:
-            strings.append ("%s%r: %r,\n" % ( '    '*level, k, v ))
-        else:
-            strings.append ("%s%r: {\n"   % ( '    '*level, k))
-            strings.extend (dump_dict (v, level+1))
-            strings.append ("%s},\n"      % ( '    '*level, ))
-    if level==0:
-        strings.cappend ("}\n")
+        if level==0:
+            strings.append ("{\n")
+        for k, v in d.items ():
+            if type (v)!=dict:
+                strings.append ("%s%r: %r,\n" % ( '    '*level, k, v ))
+            else:
+                strings.append ("%s%r: {\n"   % ( '    '*level, k))
+                strings.extend (dump_dict (v, level+1))
+                strings.append ("%s},\n"      % ( '    '*level, ))
+        if level==0:
+            strings.cappend ("}\n")
 
-    return ''.join (strings)
+        return ''.join (strings)
+    else:
+        return 'None'
