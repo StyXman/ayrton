@@ -242,12 +242,11 @@ client.close ()"                                                            # 34
 
         # TODO: setup threads with sendfile() to fix i,o,e API
 
-        return RemoteStub(i, o, e)
+        self.connection= RemoteStub(i, o, e)
 
     def __exit__ (self, *args):
         if self._debug:
             (conn, addr)= self.result_channel.accept ()
-            self.result_channel.close ()
         else:
             conn= self.result_channel.accept ()
 
@@ -277,6 +276,10 @@ client.close ()"                                                            # 34
         logger.debug2 ('globals after remote: %s', ayrton.utils.dump_dict (ayrton.runner.globals))
         logger.debug ('locals after remote: %s', ayrton.utils.dump_dict (callers_frame.f_locals))
         logger.debug ('co_varnames: %s', callers_frame.f_code.co_varnames)
+
+        self.result_channel.close ()
+        self.connection.close ()
+
         if e is not None:
             logger.debug ('raised from remote: %r', e)
             raise e
