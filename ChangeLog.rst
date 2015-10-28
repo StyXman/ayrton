@@ -1,3 +1,18 @@
+ayrton (0.6) UNRELEASED; urgency=medium
+
+  * Great improvements in `remote()`'s API and sematics:
+    * Made sure local varaibles go to and come back from the remote.
+    * Code block is executes syncronically.
+    * For the moment the streams are no longer returned.
+    * _python_only option is gone.
+    * Most tests actually connect to a listening netcat, only one test uses `ssh`.
+  * Fixed bugs in the new parser.
+  * Fixed globals/locals mix up.
+  * Scripts are no longer wrapped in a function. This means that you can't return values and that module semantics are restored.
+  * `ayrton` exits with status 1 when the script fails to run (SyntaxError, etc).
+
+ -- Marcos Dione <mdione@grulic.org.ar>  Wed, 28 Oct 2015 20:57:19 +0100
+
 ayrton (0.5) unstable; urgency=medium
 
   * Much better command detection.
