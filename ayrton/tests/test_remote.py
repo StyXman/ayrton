@@ -43,11 +43,8 @@ class RemoteTests (unittest.TestCase):
 
     def tearDown (self):
         # give time for nc to recover
-        time.sleep (1)
+        time.sleep (0.2)
 
-    def testRemoteEnv (self):
-        output= ayrton.main ('''with remote ('127.0.0.1', _debug=True):
-    user= USER
 
     def testRemoteEnv (self):
         self.runner.run_script ('''with remote ('127.0.0.1', _debug=True):
