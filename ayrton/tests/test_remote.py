@@ -132,18 +132,16 @@ assert sys._getframe().f_locals['testLocalVarToRemoteToLocal']''', 'testLocalVar
         self.assertTrue (self.runner.locals['testLocalVarToRemoteToLocal'])
 
 
-    def __testLocalVarToRealRemoteToLocal (self):
+    def testLocalVarToRealRemoteToLocal (self):
         """This test only succeeds if you you have password/passphrase-less access
         to localhost"""
-        self.runner.run_script ('''testLocalVarToRealRemote= False
+        self.runner.run_script ('''testLocalVarToRealRemoteToLocal= False
 with remote ('127.0.0.1', allow_agent=False) as s:
-    testLocalVarToRealRemote= True
+    testLocalVarToRealRemoteToLocal= True
 
 # close the fd's, otherwise the test does not finish because the paramiko.Client() is waiting
 # this means even more that the current remote() API sucks
-s.close ()
-
-return testLocalVarToRealRemoteToLocal''', 'testLocalVarToRealRemoteToLocal')
+s.close ()''', 'testLocalVarToRealRemoteToLocal.py')
 
         self.assertTrue (self.runner.locals['testLocalVarToRealRemoteToLocal'])
 
