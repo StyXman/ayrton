@@ -159,7 +159,6 @@ class remote:
 
         # special treatment for argv
         g['argv']= ayrton.runner.globals['argv']
-        # l['argv']= ayrton.runner.globals['argv']
 
         logger.debug2 ('globals passed to remote: %s', ayrton.utils.dump_dict (g))
         global_env= pickle.dumps (g)
@@ -219,8 +218,6 @@ client.close ()"                                                            # 34
 
             (i, o, e)= self.client.exec_command (command)
         else:
-            # to debug, run
-            # nc -l -s 127.0.0.1 -p 2233 -vv -e /bin/bash
             self.client= socket ()
             self.client.connect ((self.hostname, 2233))
             # unbuffered

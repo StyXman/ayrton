@@ -36,7 +36,7 @@ date_format= "%H:%M:%S"
 logger= logging.getLogger ('ayrton')
 
 # things that have to be defined before importing ayton.execute :(
-# singleton
+# singleton needed so the functions can access the runner
 runner= None
 
 from ayrton.castt import CrazyASTTransformer
