@@ -114,6 +114,7 @@ with remote ('127.0.0.1', _debug=True):
 
         self.assertTrue (self.runner.locals['testRemoteVarToLocal'])
 
+
     def testLocalVarToRemoteToLocal (self):
         self.runner.run_script ('''testLocalVarToRemoteToLocal= False
 
