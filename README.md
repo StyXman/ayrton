@@ -14,7 +14,7 @@ Nothing fancy, right? Let's try something slightly different:
 
     echo ('Hello, World!')
 
-Not interested yet? What if I tell you that that `echo` function just
+Not interested yet? What if I tell you that `echo` function just
 executed `/bin/echo`?:
 
     mdione@diablo:~/src/projects/ayrton$ strace -e process -ff ayrton doc/examples/hw.ay
@@ -153,20 +153,15 @@ The cherry on top of the cake, or more like the melon of top of the cupcake, is
 (semi) transparent remote execution. This is achieved with the following construct:
 
     a= 42
-    with remote ('localhost') as streams:
-        foo= input ()
-        print (foo)
+    with remote ('localhost'):
         # we can also access variables already in the scope
         # even when we're actually running in another machine
         print (a)
+        # we can modify those variables
+        a= 27
 
-    # streams returns 3 streams: stdin, stdout, stderr
-    (i, o, e)= streams
-    # notice that we must include the \n at the end so input() finishes
-    # and that you must transmit bytes only, no strings
-    i.write (b'bar\n')
-    print (o.readlines ())
-
+    # and those modifications are reflected locally
+    assert (a, 27)
 
 The body of the `with remote(): ...` statement is actually executed in a remote
 machine after connecting via `ssh`. The `remote()` context manager accepts the

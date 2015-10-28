@@ -26,7 +26,7 @@ import pickle
 from collections import defaultdict
 import logging
 
-logger= logging.getLogger ('ayton.castt')
+logger= logging.getLogger ('ayrton.castt')
 
 import ayrton
 from ayrton.ast_pprinter import pprint
@@ -82,7 +82,7 @@ def func_name2dotted_exec (node):
 class CrazyASTTransformer (ast.NodeTransformer):
     def __init__ (self, environ, file_name=None):
         super ().__init__ ()
-        # the whole ayrton environment; see ayrton.Environ.
+        # the whole ayrton instace globals
         self.environ= environ
         # names defined in the global namespace
         self.known_names= defaultdict (lambda: 0)
@@ -92,31 +92,13 @@ class CrazyASTTransformer (ast.NodeTransformer):
         # holds the temporary namespaces in function and class definitions
         # key: the stack so far
         # value: list of names
-        self.defined_names= defaultdict (lambda: [])
+        self.defined_names= defaultdict (list)
         # for testing
         self.seen_names= set ()
         self.file_name= file_name
 
     def modify (self, tree):
         m= self.visit (tree)
-
-        # convert Module(body=[...]) into
-        # def ayrton_main ():
-        #    [...]
-        # ayrton_return_value= ayrton_main ()
-
-        f= FunctionDef (name='ayrton_main', body=m.body,
-                        args=arguments (args=[], vararg=None, varargannotation=None,
-                                        kwonlyargs=[], kwargs=None, kwargannotation=None,
-                                        defaults=[], kw_defaults=[]),
-                        decorator_list=[], returns=None)
-
-        c= Call (func=Name (id='ayrton_main', ctx=Load ()),
-                 args=[], keywords=[], starargs=None, kwargs=None)
-
-        t= [Name (id='ayrton_return_value', ctx=Store ())]
-
-        m= Module (body= [ f, Assign (targets=t, value=c) ])
         ast.fix_missing_locations (m)
 
         return m
@@ -136,7 +118,7 @@ class CrazyASTTransformer (ast.NodeTransformer):
 
     # A block is a piece of Python program text that is executed as a unit.
     # The following are blocks:
-    # [ ] a module,
+    # [x] a module,
     # [x] a function body, and
     # [x] a class definition.
     # [ ] A script file is a code block.
@@ -495,7 +477,7 @@ class CrazyASTTransformer (ast.NodeTransformer):
                     if is_option (arg):
                         kw_expr= arg.keywords[0].arg
                         if not isinstance (kw_expr, ast.Name) and not isinstance (kw_expr, str):
-                            raise SyntaxError (self.file_name, node.lineno, node.column,
+                            raise SyntaxError (self.file_name, node.lineno, node.col_offset,
                                                "keyword can't be an expression")
 
                         if isinstance (kw_expr, ast.Name):
@@ -504,7 +486,7 @@ class CrazyASTTransformer (ast.NodeTransformer):
                             kw_name= kw_expr  # str
 
                         if kw_name in used_keywords:
-                            raise SyntaxError (self.file_name, node.lineno, node.column,
+                            raise SyntaxError (self.file_name, node.lineno, node.col_offset,
                                                "keyword argument repeated")
 
                         # convert the expr into a str
@@ -514,7 +496,7 @@ class CrazyASTTransformer (ast.NodeTransformer):
                         first_kw= True
                     else:
                         if first_kw:
-                            raise SyntaxError (self.file_name, node.lineno, node.column,
+                            raise SyntaxError (self.file_name, node.lineno, node.col_offset,
                                                "non-keyword arg after keyword arg")
 
                         new_args.append (arg)

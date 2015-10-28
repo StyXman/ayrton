@@ -69,7 +69,7 @@ Functions
       If set, any command that exits with a code which is not 0 will raise a
       :py:exc:`CommandFailed` exception.
 
-.. py:function:: remote (..., [_python_only=False])
+.. py:function:: remote (..., )
 
     This function is better used as a context manager::
 
@@ -79,18 +79,6 @@ Functions
     The function accepts the same arguments as ``paramiko``'s
     `SSHClient.connect() <http://docs.paramiko.org/paramiko.SSHClient-class.html#connect)>`_
     method. The body of the construct is executed in the remote machine.
-
-    The function returns 3 streams that represent ``stdin``, ``stdout`` and
-    ``stderr``. These streams have ``write()``, ``read(n)``, ``readline()`` and
-    ``readlines()`` methods that can be used to interact with the remote. They
-    only accept or return ``bytes``, not ``strings``. For more information
-    about them, see ``paramiko``'s
-    `ChannelFile <https://github.com/nischu7/paramiko/blob/master/paramiko/channel.py#L1233>`_
-    (there doesn't seem to be an official doc for this class).
-
-    *_python_only* declares that the body is pure Python code, so we don't try
-    to run it under `ayrton`. This allows remotely executing code without needing
-    `ayrton` installed in the remote.
 
     For the moment imports are weeded out from the remote environment, so you
     will need to reimport them.

@@ -103,7 +103,22 @@ except IndexError:
 try:
     # fake argv
     sys.argv= script_args
-    ayrton.run_file_or_script (file=file, script=script)
+    v= ayrton.run_file_or_script (file=file, script=script)
+
+    if type(v)==bool:
+        if v:
+            v= 0 # success in shellspeak
+        else:
+            v= 1 # 'some' error
+    else:
+        try:
+            v= int (v)
+        except ValueError:
+            # I can only assume it's ok
+            v= 0
+
+    sys.exit (v)
+
 except Exception:
     t, e, tb= sys.exc_info ()
     # skip ayrton's stack
@@ -115,3 +130,4 @@ except Exception:
         for i in range (6):
             tb= tb.tb_next
     traceback.print_exception (t, e, tb)
+    sys.exit (1)

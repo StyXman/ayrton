@@ -14,6 +14,8 @@ Really do:
 
 * becareful with if cat () | grep (); error codes must be carried too
 
+* exit code of last Command should be used as return code of functions
+
 * process substitution
 
    * https://github.com/amoffat/sh/issues/66
@@ -46,4 +48,3 @@ Think deeply about:
     * -f vs (-)f vs _f
 * commands in keywords should also be _out=Capture
 * which is the sanest default, bash (..., single=True) or otherwise
-* foo(-l, --long-option)?
