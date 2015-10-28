@@ -99,8 +99,8 @@ def polute (d, more):
 class Ayrton (object):
     def __init__ (self, g=None, l=None, **kwargs):
         logger.debug ('new interpreter')
-        logger.debug2 ('globals: %s', g)
-        logger.debug ('locals: %s', l)
+        logger.debug3 ('globals: %s', ayrton.utils.dump_dict (g))
+        logger.debug3 ('locals: %s', ayrton.utils.dump_dict (l))
         if g is None:
             self.globals= {}
         else:
@@ -150,15 +150,15 @@ class Ayrton (object):
         return self.run_tree (tree, file_name)
 
     def run_tree (self, tree, file_name):
-        logger.debug ('AST: %s', ast.dump (tree))
-        logger.debug ('code: \n%s', pprint (tree))
+        logger.debug2 ('AST: %s', ast.dump (tree))
+        logger.debug2 ('code: \n%s', pprint (tree))
 
         return self.run_code (compile (tree, file_name, 'exec'))
 
     def run_code (self, code):
         if logger.parent.level<=logging.DEBUG2:
-            logger.debug ('------------------')
-            logger.debug ('main (gobal) code:')
+            logger.debug2 ('------------------')
+            logger.debug2 ('main (gobal) code:')
             handler= logger.parent.handlers[0]
 
             handler.acquire ()
@@ -208,8 +208,8 @@ class Ayrton (object):
         except Exception as e:
             error= e
 
-        logger.debug2 ('globals at script exit: %s', ayrton.utils.dump_dict (self.globals))
-        logger.debug ('locals at script exit: %s', ayrton.utils.dump_dict (self.locals))
+        logger.debug3 ('globals at script exit: %s', ayrton.utils.dump_dict (self.globals))
+        logger.debug3 ('locals at script exit: %s', ayrton.utils.dump_dict (self.locals))
         result= self.locals.get ('ayrton_return_value', None)
         logger.debug ('ayrton_return_value: %r', result)
 

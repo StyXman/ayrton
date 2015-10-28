@@ -120,14 +120,15 @@ with remote ('127.0.0.1', _debug=True):
 with remote ('127.0.0.1', _debug=True):
     testLocalVarToRemoteToLocal= True
 
+import ayrton.utils
 import logging
 import sys
 
 logger= logging.getLogger ('ayrton.tests.testLocalVarToRemoteToLocal')
-logger.debug ('my name: %s', sys._getframe().f_code.co_name)
-logger.debug ('my locals: %s', sys._getframe().f_locals)
+logger.debug3 ('my name: %s', sys._getframe().f_code.co_name)
+logger.debug3 ('my locals: %s', ayrton.utils.dump_dict (sys._getframe().f_locals))
 
-assert sys._getframe().f_locals['testLocalVarToRemoteToLocal']''', 'testLocalVarToRemoteToLocal')
+assert sys._getframe().f_locals['testLocalVarToRemoteToLocal']''', 'testLocalVarToRemoteToLocal.py')
 
         self.assertTrue (self.runner.locals['testLocalVarToRemoteToLocal'])
 
