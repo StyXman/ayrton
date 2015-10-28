@@ -223,7 +223,7 @@ client.close ()"                                                             # 3
             (i, o, e)= self.client.exec_command (command)
         else:
             self.client= socket ()
-            self.client.connect ((self.hostname, 2233))
+            self.client.connect ((self.hostname, 2233)) # nc listening here
             # unbuffered
             i= open (self.client.fileno (), 'wb', 0)
             o= open (self.client.fileno (), 'rb', 0)

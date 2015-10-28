@@ -113,7 +113,7 @@ try:
     else:
         try:
             v= int (v)
-        execpt ValueError:
+        except ValueError:
             # I can only assume it's ok
             v= 0
 

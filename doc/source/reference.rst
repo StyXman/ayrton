@@ -80,14 +80,6 @@ Functions
     `SSHClient.connect() <http://docs.paramiko.org/paramiko.SSHClient-class.html#connect)>`_
     method. The body of the construct is executed in the remote machine.
 
-    The function returns 3 streams that represent ``stdin``, ``stdout`` and
-    ``stderr``. These streams have ``write()``, ``read(n)``, ``readline()`` and
-    ``readlines()`` methods that can be used to interact with the remote. They
-    only accept or return ``bytes``, not ``strings``. For more information
-    about them, see ``paramiko``'s
-    `ChannelFile <https://github.com/nischu7/paramiko/blob/master/paramiko/channel.py#L1233>`_
-    (there doesn't seem to be an official doc for this class).
-
     For the moment imports are weeded out from the remote environment, so you
     will need to reimport them.
 
