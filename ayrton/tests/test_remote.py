@@ -54,11 +54,11 @@ return user''', 'testRemoteEnv')
         self.assertEqual (output, os.environ['USER'])
 
 
-    def testVar (self):
+    def testRemoteVar (self):
         output= ayrton.main ('''with remote ('127.0.0.1', _debug=True):
-    foo= 56
+    testRemoteVar= 56
 
-return foo''', 'testRemoteVar')
+return testRemoteVar''', 'testRemoteVar')
 
         self.assertEqual (ayrton.runner.globals['foo'], 56)
         # self.assertEqual (ayrton.runner.locals['foo'], 56)
