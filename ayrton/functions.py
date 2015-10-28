@@ -155,15 +155,15 @@ class remote:
         inception_locals= sys._getframe().f_back.f_locals
 
         l= dict ([ (k, v) for (k, v) in inception_locals.items ()
-                          if type (v)!=types.ModuleType and k not in ('ayrton_main', )])
+                          if type (v)!=types.ModuleType and k not in ('stdin', 'stdout', 'stderr') ])
 
         # special treatment for argv
         g['argv']= ayrton.runner.globals['argv']
         # l['argv']= ayrton.runner.globals['argv']
 
-        logger.debug2 ('globals passed to remote: %s', g)
+        logger.debug2 ('globals passed to remote: %s', ayrton.utils.dump_dict (g))
         global_env= pickle.dumps (g)
-        logger.debug ('locals passed to remote: %s', l)
+        logger.debug ('locals passed to remote: %s', ayrton.utils.dump_dict (l))
         local_env= pickle.dumps (l)
 
         port= 4227
@@ -182,9 +182,9 @@ logger= logging.getLogger ('ayrton.remote')                                 # 10
 ast= pickle.loads (sys.stdin.buffer.read (%d))                              # 12
 logger.debug ('code to run:\\n%%s', ayrton.ast_pprinter.pprint (ast))       # 13
 g= pickle.loads (sys.stdin.buffer.read (%d))                                # 14
-logger.debug2 ('globals received: %%s', g)                                  # 15
+logger.debug2 ('globals received: %%s', ayrton.utils.dump_dict (g))         # 15
 l= pickle.loads (sys.stdin.buffer.read (%d))                                # 16
-logger.debug ('locals received: %%s', l)                                    # 17
+logger.debug ('locals received: %%s', ayrton.utils.dump_dict (l))           # 17
                                                                             # 18
 runner= ayrton.Ayrton (g, l)                                                # 19
 caught= None                                                                # 20
@@ -259,7 +259,7 @@ client.close ()"                                                            # 34
 
         (l, result, e)= pickle.loads (data)
         logger.debug ('result from remote: %r', result)
-        logger.debug ('locals returned from remote: %s', l)
+        logger.debug ('locals returned from remote: %s', ayrton.utils.dump_dict (l))
         conn.close ()
 
         # update locals
@@ -268,12 +268,15 @@ client.close ()"                                                            # 34
         callers_frame.f_locals.update (l)
         # see https://mail.python.org/pipermail/python-dev/2005-January/051018.html
         ctypes.pythonapi.PyFrame_LocalsToFast(ctypes.py_object(callers_frame), 0)
+        if self._debug:
+            # this makes sure that remote locals were properly store in the fast locals
+            ctypes.pythonapi.PyFrame_FastToLocals(ctypes.py_object(callers_frame))
 
         # TODO: (and globals?)
 
-        logger.debug2 ('globals after remote: %s', ayrton.runner.globals)
-        logger.debug ('locals after remote: %s', callers_frame.f_locals)
-        logger.debug2 ('locals: %d', id (ayrton.runner.locals))
+        logger.debug2 ('globals after remote: %s', ayrton.utils.dump_dict (ayrton.runner.globals))
+        logger.debug ('locals after remote: %s', ayrton.utils.dump_dict (callers_frame.f_locals))
+        logger.debug ('co_varnames: %s', callers_frame.f_code.co_varnames)
         if e is not None:
             logger.debug ('raised from remote: %r', e)
             raise e

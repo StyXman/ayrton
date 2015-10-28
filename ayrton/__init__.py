@@ -208,8 +208,8 @@ class Ayrton (object):
         except Exception as e:
             error= e
 
-        logger.debug2 ('globals at script exit: %s', self.globals)
-        logger.debug ('locals at script exit: %s', self.locals)
+        logger.debug2 ('globals at script exit: %s', ayrton.utils.dump_dict (self.globals))
+        logger.debug ('locals at script exit: %s', ayrton.utils.dump_dict (self.locals))
         result= self.locals.get ('ayrton_return_value', None)
         logger.debug ('ayrton_return_value: %r', result)
 
