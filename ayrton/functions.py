@@ -181,6 +181,11 @@ class remote:
 
         port= 4227
 
+        if not self._debug:
+            precommand= ''
+        else:
+            precommand= '''import os; os.chdir (%r)''' % os.getcwd ()
+
         command= '''python3 -c "#!                                        #  1
 import pickle                                                             #  2
 # names needed for unpickling                                             #  3
@@ -192,6 +197,10 @@ import ayrton #  this means that ayrton has to be installed in the remote #  7
 import logging                                                            # 10
 logger= logging.getLogger ('ayrton.remote')                               # 11
                                                                           # 12
+# precommand, used by tests to change to the proper directory             # 13
+# so it picks up the current versoin of the code.                         # 14
+%s                                                                        # 15
+                                                                          # 16
 client= socket ()                                                         # 17
 client.connect (('127.0.0.1', %d))                                        # 18
 ast= pickle.loads (client.recv (%d))                                      # 19
