@@ -100,8 +100,10 @@ class CopyThread (Thread):
 
         # self.close ()
 
+    def close (self):
         self.src.close ()
-        self.dst.close ()
+        # self.dst.close ()
+        pass
 
 class RemoteStub:
     def __init__ (self, i, o, e):
