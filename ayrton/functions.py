@@ -211,20 +211,20 @@ l= pickle.loads (client.recv (%d))                                        # 23
 logger.debug2 ('locals received: %%s', ayrton.utils.dump_dict (l))        # 24
                                                                           # 25
 # set the global runner so functions and Commands work                    # 26
-runner= ayrton.Ayrton (g, l)                                       # 27
+ayrton.runner= ayrton.Ayrton (g, l)                                       # 27
 caught= None                                                              # 28
 result= None                                                              # 29
                                                                           # 30
 try:                                                                      # 31
-    result= runner.run_tree (ast, 'from_remote')                   # 32
+    result= ayrton.runner.run_tree (ast, 'from_remote')                   # 32
 except Exception as e:                                                    # 33
     logger.debug ('run raised: %%r', e)                                   # 34
     caught= e                                                             # 36
                                                                           # 37
-logger.debug2 ('runner.locals: %%s', ayrton.utils.dump_dict (runner.locals)) # 38
+logger.debug2 ('runner.locals: %%s', ayrton.utils.dump_dict (ayrton.runner.locals)) # 38
                                                                           # 39
 logger.debug ('about to send exit status')                                # 40
-data = pickle.dumps ( (runner.locals, result, caught) )            # 41
+data = pickle.dumps ( (ayrton.runner.locals, result, caught) )            # 41
 logger.debug ('sending %%d bytes', len (data))                            # 42
 client.sendall (data)                                                     # 43
 logger.debug ('exit status sent')                                         # 44
