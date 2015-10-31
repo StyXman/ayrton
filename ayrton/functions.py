@@ -193,6 +193,7 @@ from ast import Module, Assign, Name, Store, Call, Load, Expr             #  4
 import sys                                                                #  5
 from socket import socket                                                 #  6
 import ayrton #  this means that ayrton has to be installed in the remote #  7
+import traceback                                                          #  8
                                                                           #  9
 import logging                                                            # 10
 logger= logging.getLogger ('ayrton.remote')                               # 11
@@ -219,6 +220,7 @@ try:                                                                      # 31
     result= ayrton.runner.run_tree (ast, 'from_remote')                   # 32
 except Exception as e:                                                    # 33
     logger.debug ('run raised: %%r', e)                                   # 34
+    logger.debug (traceback.format_exc())                                 # 35
     caught= e                                                             # 36
                                                                           # 37
 logger.debug2 ('runner.locals: %%s', ayrton.utils.dump_dict (ayrton.runner.locals)) # 38
