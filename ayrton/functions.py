@@ -97,9 +97,13 @@ class CopyThread (Thread):
 
 class RemoteStub:
     def __init__ (self, i, o, e):
+        # TODO: handle _in, _out, _err
+        # TODO: handle stdin
         self.i= i
-        self.o= o
-        self.e= e
+        self.o= CopyThread (o, sys.stdout)
+        self.o.start ()
+        self.e= CopyThread (e, sys.stderr)
+        self.e.start ()
 
     def close (self):
         for attr in ('i', 'o', 'e'):
