@@ -181,45 +181,46 @@ class remote:
 
         port= 4227
 
-        command= '''python3 -c "#!                                           #  1
-import pickle                                                                #  2
-# names needed for unpickling                                                #  3
-from ast import Module, Assign, Name, Store, Call, Load, Expr                #  4
-import sys                                                                   #  5
-from socket import socket                                                    #  6
-import ayrton #  this means that ayrton has to be installed in the remote    #  7
-                                                                             #  8
-import logging                                                               #  9
-logger= logging.getLogger ('ayrton.remote')                                  # 10
-                                                                             # 11
-ast= pickle.loads (sys.stdin.buffer.read (%d))                               # 12
-logger.debug ('code to run:\\n%%s', ayrton.ast_pprinter.pprint (ast))        # 13
-g= pickle.loads (sys.stdin.buffer.read (%d))                                 # 14
-logger.debug2 ('globals received: %%s', ayrton.utils.dump_dict (g))          # 15
-l= pickle.loads (sys.stdin.buffer.read (%d))                                 # 16
-logger.debug2 ('locals received: %%s', ayrton.utils.dump_dict (l))           # 17
-                                                                             # 18
-runner= ayrton.Ayrton (g, l)                                                 # 19
-caught= None                                                                 # 20
-result= None                                                                 # 21
-                                                                             # 22
-try:                                                                         # 23
-    result= runner.run_tree (ast, 'from_remote')                             # 24
-except Exception as e:                                                       # 25
-    logger.debug ('run raised: %%r', e)                                      # 26
-    caught= e                                                                # 27
-                                                                             # 28
-logger.debug2 ('runner.locals: %%s', ayrton.utils.dump_dict (runner.locals)) # 29
-                                                                             # 30
-client= socket ()                                                            # 31
-client.connect (('127.0.0.1', %d))                                           # 32
-logger.debug ('about to send exit status')                                   # 33
-data = pickle.dumps ( (runner.locals, result, caught) )                      # 34
-logger.debug ('sending %%d bytes', len (data))                               # 35
-client.sendall (data)                                                        # 36
-logger.debug ('exit status sent')                                            # 37
-client.close ()"                                                             # 38
-''' % (len (self.ast), len (global_env), len (local_env), port)
+        command= '''python3 -c "#!                                        #  1
+import pickle                                                             #  2
+# names needed for unpickling                                             #  3
+from ast import Module, Assign, Name, Store, Call, Load, Expr             #  4
+import sys                                                                #  5
+from socket import socket                                                 #  6
+import ayrton #  this means that ayrton has to be installed in the remote #  7
+                                                                          #  9
+import logging                                                            # 10
+logger= logging.getLogger ('ayrton.remote')                               # 11
+                                                                          # 12
+client= socket ()                                                         # 17
+client.connect (('127.0.0.1', %d))                                        # 18
+ast= pickle.loads (client.recv (%d))                                      # 19
+logger.debug ('code to run:\\n%%s', ayrton.ast_pprinter.pprint (ast))     # 20
+g= pickle.loads (client.recv (%d))                                        # 21
+logger.debug2 ('globals received: %%s', ayrton.utils.dump_dict (g))       # 22
+l= pickle.loads (client.recv (%d))                                        # 23
+logger.debug2 ('locals received: %%s', ayrton.utils.dump_dict (l))        # 24
+                                                                          # 25
+# set the global runner so functions and Commands work                    # 26
+runner= ayrton.Ayrton (g, l)                                       # 27
+caught= None                                                              # 28
+result= None                                                              # 29
+                                                                          # 30
+try:                                                                      # 31
+    result= runner.run_tree (ast, 'from_remote')                   # 32
+except Exception as e:                                                    # 33
+    logger.debug ('run raised: %%r', e)                                   # 34
+    caught= e                                                             # 36
+                                                                          # 37
+logger.debug2 ('runner.locals: %%s', ayrton.utils.dump_dict (runner.locals)) # 38
+                                                                          # 39
+logger.debug ('about to send exit status')                                # 40
+data = pickle.dumps ( (runner.locals, result, caught) )            # 41
+logger.debug ('sending %%d bytes', len (data))                            # 42
+client.sendall (data)                                                     # 43
+logger.debug ('exit status sent')                                         # 44
+client.close ()                                                           # 45"
+''' % (precommand, port, len (self.ast), len (global_env), len (local_env))
 
         logger.debug ('code to execute remote: %s', command)
 
@@ -235,6 +236,8 @@ client.close ()"                                                             # 3
             self.result_channel.request_port_forward ('localhost', port)
 
             (i, o, e)= self.client.exec_command (command)
+
+            self.conn= self.result_channel.accept ()
         else:
             self.client= socket ()
             self.client.connect ((self.hostname, 2233)) # nc listening here
@@ -243,39 +246,34 @@ client.close ()"                                                             # 3
             o= open (self.client.fileno (), 'rb', 0)
             e= open (self.client.fileno (), 'rb', 0)
 
-            i.write (command.encode ())
-
             self.result_channel= socket ()
             # self.result_channel.setsockopt (SO_REUSEADDR, )
             self.result_channel.bind (('', port))
             self.result_channel.listen (1)
 
-        logger.debug ('sending ast, globals, locals')
-        i.write (self.ast)
-        i.write (global_env)
-        i.write (local_env)
+            i.write (command.encode ())
 
-        # TODO: setup threads with sendfile() to fix i,o,e API
+            (self.conn, addr)= self.result_channel.accept ()
+
+        logger.debug ('sending ast, globals, locals')
+        self.conn.sendall (self.ast)
+        self.conn.sendall (global_env)
+        self.conn.sendall (local_env)
 
         self.connection= RemoteStub(i, o, e)
 
     def __exit__ (self, *args):
-        if self._debug:
-            (conn, addr)= self.result_channel.accept ()
-        else:
-            conn= self.result_channel.accept ()
-
         data= b''
-        partial= conn.recv (8196)
+        partial= self.conn.recv (8196)
         while len(partial)>0:
             data+= partial
-            partial= conn.recv (8196)
+            partial= self.conn.recv (8196)
 
         logger.debug ('recieved %d bytes', len (data))
         (l, result, e)= pickle.loads (data)
         logger.debug ('result from remote: %r', result)
         logger.debug3 ('locals returned from remote: %s', ayrton.utils.dump_dict (l))
-        conn.close ()
+        self.conn.close ()
 
         # update locals
         callers_frame= sys._getframe().f_back
