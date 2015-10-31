@@ -127,27 +127,27 @@ class RemoteStub:
 class remote:
     "Uses the same arguments as paramiko.SSHClient.connect ()"
     def __init__ (self, ast, hostname, *args, **kwargs):
-        def param (param, kwargs, default_value=False):
-            """gets a param from kwargs, or uses a default_value. if found, it's
-            removed from kwargs"""
-            if param in kwargs:
-                value= kwargs[param]
-                del kwargs[param]
-            else:
-                value= default_value
-            setattr (self, param, value)
-
         # actually, it's not a proper ast, it's the pickle of such thing
         self.ast= ast
         self.hostname= hostname
         self.args= args
         self.python_only= False
 
-        param ('_debug', kwargs)
+        self.param ('_debug', kwargs)
         self.kwargs= kwargs
 
         # socket/transport where the result is going to come back
         self.result_channel= None
+
+    def param (self, param, kwargs, default_value=False):
+        """gets a param from kwargs, or uses a default_value. if found, it's
+        removed from kwargs"""
+        if param in kwargs:
+            value= kwargs[param]
+            del kwargs[param]
+        else:
+            value= default_value
+        setattr (self, param, value)
 
     def __enter__ (self):
         # get the globals from the runtime
