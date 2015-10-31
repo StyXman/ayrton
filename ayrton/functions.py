@@ -86,11 +86,19 @@ class CopyThread (Thread):
         # and splice() is not available
         # so, copy by hand
         while True:
-            data= self.src.read (10240)
-            if len (data)==0:
+            try:
+                data= self.src.read (10240)
+            # ValueError: read of closed file
+            except (OSError, ValueError):
                 break
             else:
-                self.dst.write (data)
+                if len (data)==0:
+                    break
+                else:
+                    # self.dst.write (data.decode ())
+                    self.dst.write (data)
+
+        # self.close ()
 
         self.src.close ()
         self.dst.close ()
