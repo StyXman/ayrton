@@ -260,6 +260,8 @@ client.close ()                                                           # 45"
             self.result_channel.bind (('', port))
             self.result_channel.listen (1)
 
+            # so bash does not hang waiting from more input
+            command+= 'exit\n'
             i.write (command.encode ())
 
             (self.conn, addr)= self.result_channel.accept ()
