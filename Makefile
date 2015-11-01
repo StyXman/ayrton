@@ -29,3 +29,6 @@ upload-docs: docs
 
 push: tests
 	git push
+
+check:
+	flake8 --ignore E201,E211,E225,E221,E226,E202 --show-source --statistics --max-line-length 130 ayrton/*.py
