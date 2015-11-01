@@ -73,10 +73,11 @@ def polute (d, more):
                               '_k', '_p', '_r', '_s', '_u', '_w', '_x', '_L',
                               '_N', '_S', '_nt', '_ot' ],
         'ayrton.expansion': [ 'bash', ],
-        'ayrton.functions': [ 'cd', ('cd', 'chdir'), 'export', 'option', 'remote', 'run',
+        'ayrton.functions': [ 'cd', ('cd', 'chdir'), 'export', 'option', 'run',
                                'shift', 'unset', ],
         'ayrton.execute': [ 'o', 'Capture', 'CommandFailed', 'CommandNotFound',
                             'Pipe', 'Command'],
+        'ayrton.remote': [ 'remote' ]
         }
 
     for module, functions in builtins.items ():
