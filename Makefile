@@ -3,12 +3,12 @@ all: docs
 INSTALL_DIR=$(HOME)/local
 
 tests:
-	python3 -m unittest discover -v ayrton
+	LC_ALL=C python3 -m unittest discover -v ayrton
 
 quicktest: fasttest
 
 fasttest:
-	python3 -m unittest discover -f -v ayrton
+	LC_ALL=C python3 -m unittest discover -f -v ayrton
 
 docs:
 	PYTHONPATH=${PWD} make -C doc html
