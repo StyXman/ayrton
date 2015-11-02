@@ -1,14 +1,17 @@
+# DEBUG_MULTI=strace -tt -T -ff -o runner -s 128
+# DEBUG_SIMPLE=strace -tt -T -f -o runner -s 128
+
 all: docs
 
 INSTALL_DIR=$(HOME)/local
 
 tests:
-	LC_ALL=C python3 -m unittest discover -v ayrton
+	LC_ALL=C $(DEBUG_MULTI) python3 -m unittest discover -v ayrton
 
 quicktest: fasttest
 
 fasttest:
-	LC_ALL=C python3 -m unittest discover -f -v ayrton
+	LC_ALL=C $(DEBUG_SIMPLE) python3 -m unittest discover -f -v ayrton
 
 docs:
 	PYTHONPATH=${PWD} make -C doc html
