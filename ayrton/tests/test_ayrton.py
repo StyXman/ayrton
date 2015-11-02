@@ -111,16 +111,20 @@ def setUpMockStdout (self):
 
     # I save the old stdout in a new fd
     self.old_stdout= os.dup (1)
+    logger.debug ('stdout saved in %s', self.old_stdout)
 
     # create a pipe; this gives me a read and write fd
     r, w= os.pipe ()
+    logger.debug ('pipe for stdout: %d -> %d', w, r)
 
     # I replace the stdout with the write fd
     # this closes 1, but the original stdout is saved in old_stdout
     os.dup2 (w, 1)
+    logger.debug ('redirecting stdout 1 -> %d', w)
 
     # now I have two fds pointing to the write end of the pipe, stdout and w
     # close w
+    logger.debug ('closing %d', w)
     os.close (w)
 
     # create a file() from the reading fd
@@ -137,8 +141,11 @@ def setUpMockStdout (self):
 def tearDownMockStdout (self):
     # restore sanity
     # original stdout into 1, even if we're leaking fd's
+    logger.debug ('restoring stdout -> %d', self.old_stdout)
     os.dup2 (self.old_stdout, 1)
+    logger.debug ('closing %d', self.old_stdout)
     os.close (self.old_stdout)
+    logger.debug ('closing %d', self.r.fileno ())
     self.r.close ()
     ayrton.runner.wait_for_pending_children ()
 
@@ -146,14 +153,14 @@ class CommandExecution (unittest.TestCase):
     setUp=    setUpMockStdout
     tearDown= tearDownMockStdout
 
-    def testStdOut (self):
+    def testStdout (self):
         # do the test
         ayrton.main ('echo ("foo")')
         # close stdout as per the description of setUpMockStdout()
         os.close (1)
         self.assertEqual (self.r.read (), b'foo\n')
 
-    def testStdEqNone (self):
+    def testStdoutEqNone (self):
         # do the test
         ayrton.main ('echo ("foo", _out=None)')
         # close stdout as per the description of setUpMockStdout()
@@ -161,13 +168,12 @@ class CommandExecution (unittest.TestCase):
         # the output is empty, as it went to /dev/null
         self.assertEqual (self.r.read (), b'')
 
-    def testStdEqCapture (self):
+    def testStdoutEqCapture (self):
         # do the test
         ayrton.main ('''f= echo ("foo", _out=Capture);
 print ("echo: %s" % f)''')
         # close stdout as per the description of setUpMockStdout()
         os.close (1)
-        # the output is empty, as it went to /dev/null
         # BUG: check why there's a second \n
         # ANS: because echo adds the first one and print adds the second one
         self.assertEqual (self.r.read (), b'echo: foo\n\n')
@@ -360,6 +366,7 @@ print (a)''', argv=['test_script.ay', '49', '27'])
         self.assertEqual (self.r.read (), b'setup.py\n')
 
     def testBg (self):
+        '''This test takes some time...'''
         ayrton.main ('''a= find ("/usr", _bg=True, _out=None);
 echo ("yes!");
 echo (a.exit_code ())''')

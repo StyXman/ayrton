@@ -20,12 +20,12 @@ import sys
 import io
 from collections.abc import Iterable
 import signal
-
-# import logging
-
-# logging.basicConfig(filename='tmp/bar.log',level=logging.DEBUG)
+import errno
 
 import ayrton
+
+import logging
+logger= logging.getLogger ('ayrton.execute')
 
 encoding= sys.getdefaultencoding ()
 
@@ -125,47 +125,58 @@ class Command:
     def prepare_fds (self):
         if '_in' in self.options:
             i= self.options['_in']
-            if ( not isinstance (i, io.IOBase) and
-                 type (i)!=int and
-                 i is not None and
-                 not isinstance (i, Command) ):
+            logger.debug ('_in: %r', i)
+
+            # this condition is complex, but basically handles any type of input
+            # that is not going to be handled later in client()
+            if ( not isinstance (i, io.IOBase) and  # file and such objects
+                 type (i)!=int and                  # fd's
+                 i is not None and                  # special value for /dev/null
+                 not isinstance (i, Command) ):     # Command's
                 if self.options['_in_tty']:
                     # TODO: no support yet for input from file when _in_tty
                     # NOTE: os.openpty() returns (master, slave)
                     # but when writing master=w, slave=r
+                    logger.debug ('_in: using tty')
                     (master, slave)= os.openpty ()
                     self.stdin_pipe= (slave, master)
                 else:
-                    # logging.debug ("prepare_fds: _in::%s creates a pipe()", type (i))
+                    logger.debug ("_in:%s creates a pipe()", type (i))
                     self.stdin_pipe= os.pipe ()
             elif isinstance (i, Command):
                 if i.options.get ('_out', None)==Capture:
                     # if it's a captured command, create a pipe to feed the data
-                    # logging.debug ("prepare_fds: _in::Command, _in._out==Capture creates a pipe()")
+                    logger.debug ("_in::Command, _in._out==Capture creates a pipe()")
                     self.stdin_pipe= os.pipe ()
                 elif i.options.get ('_out', None)==Pipe:
                     # if it's a piped command, use its pipe and hope it runs in the bg
-                    # logging.debug ("prepare_fds: _in::Command uses the stdout_pipe")
+                    logger.debug ("_in::Command uses the stdout_pipe")
                     self.stdin_pipe= i.stdout_pipe
+
+            logger.debug ("_in: %s", self.stdin_pipe)
 
         if '_out' in self.options:
             if self.options['_out']==Capture:
                 if self.options['_out_tty']:
                     if self.options['_in_tty']:
                         # we use a copy of the pty created for the stdin
+                        logger.debug ('duping tty form _in to _out')
                         self.stdout_pipe= (os.dup (self.stdin_pipe[1]),
                                            os.dup (self.stdin_pipe[0]))
                     else:
                         # this time the order is right
+                        logger.debug ('_out: using tty')
                         (master, slave)= os.openpty ()
                         self.stdout_pipe= (master, slave)
                 else:
-                    # logging.debug ("prepare_fds: _out==Capture creates a pipe()")
+                    logger.debug ("_out==Capture creates a pipe()")
                     self.stdout_pipe= os.pipe ()
             elif self.options['_out']==Pipe:
                 # this pipe should be picked up by the outer Command
-                # logging.debug ("prepare_fds: _out==Pipe creates a pipe()")
+                logger.debug ("_out==Pipe creates a pipe()")
                 self.stdout_pipe= os.pipe ()
+
+            logger.debug ("_out: %s", self.stdout_pipe)
 
         if '_err' in self.options:
             if self.options['_err']==Capture:
@@ -173,15 +184,18 @@ class Command:
                 if not '_out' in self.options or self.options['_out']!=Capture:
                     # if stdout is a tty, hook to that one
                     if self.options['_out_tty']:
+                        logger.debug ('duping tty form _out to _err')
                         self.stderr_pipe= (os.dup (self.stdout_pipe[0]),
                                            os.dup (self.stdout_pipe[1]))
                     else:
-                        # logging.debug ("prepare_fds: _err==Capture creates a pipe()")
+                        logger.debug ("_err==Capture creates a pipe()")
                         self.stderr_pipe= os.pipe ()
             elif self.options['_err']==Pipe:
                 # this pipe should be picked up by the outer Command
-                # logging.debug ("prepare_fds: _err==Pipe creates a pipe()")
+                logger.debug ("_err==Pipe creates a pipe()")
                 self.stderr_pipe= os.pipe ()
+
+            logger.debug ("_err: %s", self.stderr_pipe)
 
     def child (self):
         if '_in' in self.options:
@@ -189,24 +203,30 @@ class Command:
             if i is None:
                 # connect to /dev/null
                 # it's not /dev/zero, see man (4) zero
+                logger.debug ("_in==None redirects from /dev/null")
                 i= open (os.devnull, 'rb')
 
             if isinstance (i, io.IOBase):
                 # this does not work with file like objects
                 # dup its fd int stdin (0)
-                # logging.debug ("child: _in::IOBase redirects file to stdin")
-                os.dup2 (i.fileno (), 0)
+                fd= i.fileno ()
+                logger.debug ("_in::IOBase redirects %d -> 0 (stdin)", fd)
+                os.dup2 (fd, 0)
+                logger.debug ('closing %d', fd)
                 i.close ()
             elif type (i)==int:
-                # logging.debug ("child: _in::int redirects fd to stdin")
+                logger.debug ("_in::int redirects %d -> 0 (stdin)", i)
                 os.dup2 (i, 0)
+                logger.debug ('closing %d', i)
                 os.close (i)
             else:
                 # use the pipe prepared by prepare_fds()
                 # including the case where _in::Command
-                # logging.debug ("child: _in::%s, redirect stdin_pipe from prepare_fds() to stdin", type (i))
+                logger.debug ("_in::%s, redirect stdin_pipe from prepare_fds() to stdin", type (i))
                 r, w= self.stdin_pipe
+                logger.debug ("_in: redirecting %d -> 0", r)
                 os.dup2 (r, 0)
+                logger.debug ('closing %d', r)
                 os.close (r)
                 # the write fd can already be closed in this case:
                 # a= cat (..., _out=capture)
@@ -219,28 +239,35 @@ class Command:
             if o is None:
                 # connect to /dev/null
                 o= open (os.devnull, 'wb') # no need to create it
+                logger.debug ("_out==None, redirects stdout 1 -> %d (%s)", o.fileno (), os.devnull)
 
             if isinstance (o, io.IOBase):
                 # this does not work with file like objects
                 # dup its fd in stdout (1)
-                # logging.debug ("child: _out::IOBase, redirects stout to file")
-                os.dup2 (o.fileno (), 1)
+                fd= o.fileno ()
+                logger.debug ("_out::IOBase, redirects stdout 1 -> %d", fd)
+                os.dup2 (fd, 1)
+                logger.debug ('closing %d', fd)
                 o.close ()
             elif type (o)==int:
-                # logging.debug ("child: _out::int, redirects stdout to fd")
+                logger.debug ("_out::int, redirects stdout 1 -> %d", o)
                 os.dup2 (o, 1)
+                logger.debug ('closing %d', o)
                 os.close (o)
             elif o==Capture or o==Pipe:
-                # logging.debug ("child: _out::(Capture or Pipe), stdout -> stdout_pipe")
                 r, w= self.stdout_pipe
+                logger.debug ("_out::(Capture or Pipe), redirects stdout 1 -> %d", w)
                 os.dup2 (w, 1)
+                logger.debug ('closing %d', w)
                 os.close (w)
                 os.close (r)
             elif type (o) in (bytes, str):
                 # BUG: this is inconsistent with _in::str
-                # logging.debug ("child: _out::str, open file and redirect ")
                 f= open (o, 'w+')
-                os.dup2 (f.fileno (), 1)
+                fd= f.fileno ()
+                logger.debug ("_out::str, redirects stdout 1 -> %d (%s)", fd, o)
+                os.dup2 (fd, 1)
+                logger.debug ('closing %d', fd)
                 f.close ()
 
         if '_err' in self.options:
@@ -248,20 +275,29 @@ class Command:
             if e is None:
                 # connect to /dev/null
                 e= open (os.devnull, 'wb') # no need to create it
+                logger.debug ("_err==None, redirects stderr 2 -> %d (%s)", e.fileno (), os.devnull)
 
             if isinstance (e, io.IOBase):
                 # this does not work with file like objects
                 # dup its fd int stderr (2)
-                os.dup2 (e.fileno (), 2)
+                fd= e.fileno ()
+                logger.debug ("_out::IOBase, redirects stderr 2 -> %d", fd)
+                os.dup2 (fd, 2)
 
+            # TODO: why the fall-through in this case? compare with _out
             if e==Capture:
                 if '_out' in self.options and self.options['_out']==Capture:
                     # send it to stdout
+                    logger.debug ("_err::Capture and _out::Capture, redirects stderr 2 -> 1")
                     os.dup2 (1, 2)
                 else:
                     r, w= self.stderr_pipe
+                    logger.debug ("_err::Capture, redirects stderr 2 -> %d", w)
                     os.dup2 (w, 2)
+                    logger.debug ('closing %d', r)
                     os.close (r)
+
+            # TODO: bytes/str?
 
         # restore some signals
         for i in (signal.SIGPIPE, signal.SIGINT):
@@ -306,6 +342,7 @@ class Command:
             i= self.options['_in']
 
             r, w= self.stdin_pipe
+            logger.debug ('closing %d', r)
             os.close (r)
 
             if type (i)==str:
@@ -324,11 +361,12 @@ class Command:
                 os.write (w, str (i).encode (encoding))
                 os.write (w, self.options['_end'])
 
+            logger.debug ('closing %d', w)
             os.close (w)
 
         # TODO: The return status of a pipeline is the exit status of the last
-        # command, unless the pipefail option is enabled.  If pipefail is enabled,
-        # the pipeline's return status  is  the value  of the last (rightmost)
+        # command, unless the pipefail option is enabled. If pipefail is enabled,
+        # the pipeline's return status is the value of the last (rightmost)
         # command to exit with a non-zero status, or zero if all commands exit
         # successfully.
         if not self.options['_bg']:
@@ -350,6 +388,7 @@ class Command:
 
         if reader_pipe is not None and self.options.get ('_out', None)!=Pipe:
             r, w= reader_pipe
+            # logger.debug ('closing %d', w)
             os.close (w)
             self.capture_file= open (r)
 
@@ -398,6 +437,7 @@ class Command:
         if type (self.options['_end'])!=bytes:
             self.options['_end']= str (self.options['_end']).encode (encoding)
 
+        logger.debug ('fork')
         r= os.fork ()
         if r==0:
             self.child ()

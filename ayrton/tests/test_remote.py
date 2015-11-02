@@ -32,7 +32,7 @@ import logging
 logger= logging.getLogger ('ayton.tests.remote')
 
 
-class RemoteTests (unittest.TestCase):
+class DebugRemoteTests (unittest.TestCase):
 
 
     def setUp (self):
@@ -114,21 +114,39 @@ with remote ('127.0.0.1', _debug=True):
         self.assertTrue (self.runner.locals['testLocalVarToRemoteToLocal'])
 
 
-    def testLocalVarToRealRemoteToLocal (self):
-        """This test only succeeds if you you have password/passphrase-less access
-        to localhost"""
+    def testRemoteCommandStdout (self):
+        self.runner.run_script ('''with remote ('127.0.0.1', _debug=True):
+    ls(-l=True)''', 'testRemoteCommand.py')
+
+
+    def testRemoteCommandStderr (self):
+        self.runner.run_script ('''with remote ('127.0.0.1', _debug=True):
+    ls('foobarbaz')''', 'testRemoteCommand.py')
+
+
+class RealRemoteTests (unittest.TestCase):
+
+
+    def setUp (self):
+        # create one of these
+        self.runner= ayrton.Ayrton ()
+
+
+    def testLocalVarToRemoteToLocal (self):
+        """This test only succeeds if you you have password/passphrase-less access to localhost"""
         self.runner.run_script ('''testLocalVarToRealRemoteToLocal= False
-with remote ('127.0.0.1', allow_agent=False):
+with remote ('127.0.0.1', allow_agent=False, _test=True):
     testLocalVarToRealRemoteToLocal= True''', 'testLocalVarToRealRemoteToLocal.py')
 
         self.assertTrue (self.runner.locals['testLocalVarToRealRemoteToLocal'])
 
+    def testRemoteCommandStdout (self):
+        """This test only succeeds if you you have password/passphrase-less access to localhost"""
+        self.runner.run_script ('''with remote ('127.0.0.1', allow_agent=False, _test=True):
+    ls(-l=True)''', 'testRemoteCommand.py')
 
-    def __testLocals (self):
-        self.runner.run_script ('''import ayrton
-a= True
-l= locals()['a']
-# r= ayrton.runner.locals['a']
-# ayrton.main() creates a new Ayrton instance and ****s up everything
-r= ayrton.runner.run_script ("""return locals()['a']""", 'inception_locals')
-assert (l==r)''', 'testLocals')
+
+    def testRemoteCommandStderr (self):
+        """This test only succeeds if you you have password/passphrase-less access to localhost"""
+        self.runner.run_script ('''with remote ('127.0.0.1', allow_agent=False, _test=True):
+    ls('foobarbaz')''', 'testRemoteCommand.py')
