@@ -22,6 +22,7 @@ import os
 import tempfile
 import os.path
 import time
+import signal
 
 from ayrton.expansion import bash
 import ayrton
@@ -32,7 +33,7 @@ import logging
 logger= logging.getLogger ('ayton.tests.remote')
 
 
-class DebugRemoteTests (unittest.TestCase):
+class RemoteTests (unittest.TestCase):
 
 
     def setUp (self):
@@ -40,10 +41,26 @@ class DebugRemoteTests (unittest.TestCase):
         self.runner= ayrton.Ayrton ()
 
 
-    def tearDown (self):
-        # give time for nc to recover
-        time.sleep (0.2)
+class DebugRemoteTests (RemoteTests):
 
+
+    def setUp (self):
+        super ().setUp ()
+
+        # fork and execute nc
+        pid= os.fork ()
+        if pid!=0:
+            # parent
+            self.child= pid
+            # give nc time to come up
+            time.sleep (0.2)
+        else:
+            # child          vvvv-- don't forget argv[0]
+            os.execlp ('nc', 'nc', '-l', '-s', '127.0.0.1', '-p', '2233', '-e', '/bin/bash')
+            # NOTE: does not return
+
+    def tearDown (self):
+        os.kill (self.child, signal.SIGKILL)
 
     def testRemoteEnv (self):
         self.runner.run_script ('''with remote ('127.0.0.1', _debug=True):
@@ -124,12 +141,7 @@ with remote ('127.0.0.1', _debug=True):
     ls('foobarbaz')''', 'testRemoteCommand.py')
 
 
-class RealRemoteTests (unittest.TestCase):
-
-
-    def setUp (self):
-        # create one of these
-        self.runner= ayrton.Ayrton ()
+class RealRemoteTests (RemoteTests):
 
 
     def testLocalVarToRemoteToLocal (self):

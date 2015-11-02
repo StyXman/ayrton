@@ -3,12 +3,12 @@ all: docs
 INSTALL_DIR=$(HOME)/local
 
 tests:
-	bash -c 'while true; do nc -l -s 127.0.0.1 -p 2233 -e /bin/bash; done' & echo $$! > server.pid
-	# bash -c 'while true; do strace -ff -o netcat -s 128 nc -l -s 127.0.0.1 -p 2233 -e /bin/bash; done' & echo $$! > server.pid
-	LC_ALL=C strace -tt -T -ff -o runner -s 128 python3 -m unittest discover -v ayrton || \
-		bash -c 'kill $$(cat server.pid); rm server.pid' && \
-		false
-	bash -c 'kill $$(cat server.pid); rm server.pid'
+	python3 -m unittest discover -v ayrton
+
+quicktest: fasttest
+
+fasttest:
+	python3 -m unittest discover -f -v ayrton
 
 docs:
 	PYTHONPATH=${PWD} make -C doc html
