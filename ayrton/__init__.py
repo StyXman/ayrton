@@ -23,6 +23,7 @@ import importlib
 import ast
 import logging
 import dis
+import traceback
 
 # patch logging so we have debug2 and debug3
 import ayrton.utils
@@ -207,6 +208,8 @@ class Ayrton (object):
         try:
             exec (code, self.globals, self.locals)
         except Exception as e:
+            logger.debug ('script finised by Exception')
+            logger.debug (traceback.format_exc ())
             error= e
 
         logger.debug3 ('globals at script exit: %s', ayrton.utils.dump_dict (self.globals))
