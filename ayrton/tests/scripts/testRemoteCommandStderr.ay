@@ -1,0 +1,4 @@
+#! /usr/bin/env ayrton
+
+with remote ('127.0.0.1', allow_agent=False, _test=True):
+    ls('foobarbaz')

@@ -1,0 +1,8 @@
+#! /usr/bin/env ayrton
+
+testLocalVarToRealRemoteToLocal= False
+
+with remote ('127.0.0.1', allow_agent=False, _test=True):
+    testLocalVarToRealRemoteToLocal= True
+
+print (testLocalVarToRealRemoteToLocal)
