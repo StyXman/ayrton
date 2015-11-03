@@ -28,6 +28,7 @@ import sys
 import errno
 import ctypes
 import os
+import traceback
 
 import logging
 logger= logging.getLogger ('ayrton.functions')
@@ -53,10 +54,13 @@ class CopyThread (Thread):
             try:
                 data= self.src.read (10240)
             # ValueError: read of closed file
-            except (OSError, ValueError):
+            except (OSError, ValueError) as e:
+                logger.debug ('stopping copying thread for %s', self.src)
+                logger.debug (traceback.format_exc ())
                 break
             else:
                 if len (data)==0:
+                    logger.debug ('stopping copying thread for %s, no more data', self.src)
                     break
                 else:
                     # self.dst.write (data.decode ())
@@ -65,6 +69,7 @@ class CopyThread (Thread):
         # self.close ()
 
     def close (self):
+        logger.debug ('closing %s', self.src)
         self.src.close ()
         # self.dst.close ()
 
@@ -163,7 +168,7 @@ import logging                                                            # 10
 logger= logging.getLogger ('ayrton.remote.runner')                        # 11
                                                                           # 12
 # precommand, used by tests to change to the proper directory             # 13
-# so it picks up the current versoin of the code.                         # 14
+# so it picks up the current version of the code.                         # 14
 %s                                                                        # 15
                                                                           # 16
 client= socket ()                                                         # 17
@@ -201,6 +206,7 @@ client.close ()                                                           # 45"
 
         if not self._debug:
             self.client= paramiko.SSHClient ()
+            # TODO: TypeError: invalid file: ['/home/mdione/.ssh/known_hosts']
             # self.client.load_host_keys (bash ('~/.ssh/known_hosts'))
             # self.client.set_missing_host_key_policy (ShutUpPolicy ())
             self.client.set_missing_host_key_policy (paramiko.WarningPolicy ())
@@ -240,6 +246,7 @@ client.close ()                                                           # 45"
         self.connection= RemoteStub(i, o, e)
 
     def __exit__ (self, *args):
+        logger.debug (args)
         data= b''
         partial= self.conn.recv (8196)
         while len(partial)>0:
