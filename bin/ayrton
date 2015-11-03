@@ -121,13 +121,16 @@ try:
 
 except Exception:
     t, e, tb= sys.exc_info ()
-    # skip ayrton's stack
-    # TODO: if the script has a syntax error, the stack is shorter
-    if script is not None:
-        for i in range (5):
-            tb= tb.tb_next
-    else:
-        for i in range (6):
-            tb= tb.tb_next
+
+    if False:
+        # skip ayrton's stack
+        # TODO: if the script has a syntax error, the stack is shorter
+        if script is not None:
+            for i in range (5):
+                tb= tb.tb_next
+        else:
+            for i in range (6):
+                tb= tb.tb_next
+
     traceback.print_exception (t, e, tb)
     sys.exit (1)
