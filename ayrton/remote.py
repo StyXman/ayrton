@@ -42,8 +42,9 @@ class CopyThread (Thread):
         super ().__init__ ()
         # so I can close them at will
         # self.src= open (os.dup (src.fileno ()), 'rb')
+        # self.dst= open (os.dup (dst.fileno ()), 'wb')
         self.src= src
-        self.dst= open (os.dup (dst.fileno ()), 'wb')
+        self.dst= dst
 
     def run (self):
         # NOTE: OSError: [Errno 22] Invalid argument
@@ -63,8 +64,8 @@ class CopyThread (Thread):
                     logger.debug ('stopping copying thread for %s, no more data', self.src)
                     break
                 else:
-                    # self.dst.write (data.decode ())
-                    self.dst.write (data)
+                    self.dst.write (data.decode ())
+                    # self.dst.write (data)
 
         # self.close ()
 
