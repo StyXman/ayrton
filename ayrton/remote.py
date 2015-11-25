@@ -102,7 +102,6 @@ class remote:
         self.ast= ast
         self.hostname= hostname
         self.args= args
-        self.python_only= False
 
         self.param ('_debug', kwargs)
         self.param ('_test', kwargs)
