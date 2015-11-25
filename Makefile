@@ -1,31 +1,35 @@
 # DEBUG_MULTI=strace -tt -T -ff -o runner -s 128
 # DEBUG_SIMPLE=strace -tt -T -f -o runner -s 128
+PYTHON=python3.4
 
 all: docs
 
 INSTALL_DIR=$(HOME)/local
 
 tests:
+	LC_ALL=C $(PYTHON) -m unittest discover -v ayrton
 	LC_ALL=C $(DEBUG_MULTI) python3 -m unittest discover -v ayrton
 
 quicktest: fasttest
 
 fasttest:
-	LC_ALL=C $(DEBUG_SIMPLE) python3 -m unittest discover -f -v ayrton
+	# LC_ALL=C $(PYTHON) -m unittest discover -f -v ayrton
+	LC_ALL=C $(DEBUG_SIMPLE) $(PYTHON) -m unittest discover -f -v ayrton
+	# LC_ALL=C $(DEBUG_MULTI) $(PYTHON) -m unittest discover -f -v ayrton
 
 docs:
 	PYTHONPATH=${PWD} make -C doc html
 
 install: tests
-	python3 setup.py install --prefix=$(INSTALL_DIR)
+	$(PYTHON) setup.py install --prefix=$(INSTALL_DIR)
 
 unsafe-install:
 	@echo "unsafe install, are you sure?"
 	@read foo
-	python3 setup.py install --prefix=$(INSTALL_DIR)
+	$(PYTHON) setup.py install --prefix=$(INSTALL_DIR)
 
 upload: tests upload-docs
-	python3 setup.py sdist upload
+	$(PYTHON) setup.py sdist upload
 
 upload-docs: docs
 	rsync --archive --verbose --compress --rsh ssh doc/build/html/ www.grulic.org.ar:www/projects/ayrton/
