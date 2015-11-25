@@ -153,7 +153,7 @@ class Command:
                     logger.debug ("_in::Command uses the stdout_pipe")
                     self.stdin_pipe= i.stdout_pipe
 
-            logger.debug ("_in: %s", self.stdin_pipe)
+        logger.debug ("_in: %s", self.stdin_pipe)
 
         if '_out' in self.options:
             if self.options['_out']==Capture:
@@ -176,7 +176,7 @@ class Command:
                 logger.debug ("_out==Pipe creates a pipe()")
                 self.stdout_pipe= os.pipe ()
 
-            logger.debug ("_out: %s", self.stdout_pipe)
+        logger.debug ("_out: %s", self.stdout_pipe)
 
         if '_err' in self.options:
             if self.options['_err']==Capture:
@@ -195,7 +195,7 @@ class Command:
                 logger.debug ("_err==Pipe creates a pipe()")
                 self.stderr_pipe= os.pipe ()
 
-            logger.debug ("_err: %s", self.stderr_pipe)
+        logger.debug ("_err: %s", self.stderr_pipe)
 
     def child (self):
         if '_in' in self.options:

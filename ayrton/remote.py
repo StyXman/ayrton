@@ -41,6 +41,7 @@ class CopyThread (Thread):
     def __init__ (self, src, dst):
         super ().__init__ ()
         # so I can close them at will
+        logger.debug ('CopyThread %s -> %s', src, dst)
         # self.src= open (os.dup (src.fileno ()), 'rb')
         # self.dst= open (os.dup (dst.fileno ()), 'wb')
         self.src= src
@@ -54,6 +55,7 @@ class CopyThread (Thread):
         while True:
             try:
                 data= self.src.read (10240)
+                logger.debug ('%s -> %s: %s', self.src, self.dst, data)
             # ValueError: read of closed file
             except (OSError, ValueError) as e:
                 logger.debug ('stopping copying thread for %s', self.src)
