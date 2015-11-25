@@ -52,6 +52,7 @@ Arguments:
 
 script= None
 file= None
+# sys.argv[0] is 'ayrton'
 args= sys.argv[1:]
 reason= None
 
@@ -84,6 +85,7 @@ try:
             # we could let it fallback to the last case,
             # but this way we can handle the actual argument to the option
             file= args[index+1]
+            # script_args[0] is the script's file name
             script_args= args[index+1:]
             # stop parsing, anything else is passed to the script
             break
@@ -91,6 +93,7 @@ try:
         # as every branch either exit()s, break's or continue's,
         # here we're in the situation where the next argument is the script name
         file= arg
+        # script_args[0] is the script's file name
         script_args= args[index:]
         # stop parsing, anything else is passed to the script
         break

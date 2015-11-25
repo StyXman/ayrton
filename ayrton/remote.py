@@ -214,6 +214,13 @@ client.close ()                                                           # 45"
             self.client.connect (self.hostname, *self.args, **self.kwargs)
 
             # create the backchannel
+            # this channel will be used for sending/receiving runtime data
+            # to/from the remote
+            # the remote code will connect to it (line #18)
+            # read the ast (#19), globals (#21) and locals (#23)
+            # and return the locals, result and exception (#43)
+            # the remote will see this channel as a localhost port
+            # and it's seen on the local side as self.con defined below
             self.result_channel= self.client.get_transport ()
             self.result_channel.request_port_forward ('localhost', port)
 
@@ -222,7 +229,7 @@ client.close ()                                                           # 45"
             self.conn= self.result_channel.accept ()
         else:
             self.client= socket ()
-            self.client.connect ((self.hostname, 2233)) # nc listening here
+            self.client.connect ((self.hostname, 2233)) # nc listening here, see DebugRemoteTests
             # unbuffered
             i= open (self.client.fileno (), 'wb', 0)
             o= open (self.client.fileno (), 'rb', 0)

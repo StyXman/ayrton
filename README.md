@@ -210,10 +210,24 @@ their main objective, and its syntax is designed around it. That leads to
 shortcuts that later are more difficult to read and creates problems when
 handling filenames that have special characters.
 
+Q: Instead, why not use...
+
+A: (Short version) We think noone provides all of `ayrton`'s features.
+
+A: ... [`sh`](https://amoffat.github.io/sh/)? Well, we started with `sh` as a basis
+of `ayrton`, but its buffered output didn't allow us to run editors and other TIU's.
+
+A: ... [`xonsh`](http://xonsh.org/)?
+
+A: ... [plumbum](https://plumbum.readthedocs.org/en/latest/)? You could say that we
+independently thought of its piping and redirection syntax (but in reality we just
+based ours on `bash`'s). Still, the fact that you fisrt build pipes and then execute
+them looks weird for a SysAdmin.
+
 # Thanks to:
 
-`rbilstolfi`, `marianoguerra`, `facundobatista`, `ralsina`, `nessita` for unit
-testing support, `Darni` for pointing me to
+`rbilstolfi`, `marianoguerra`, `facundobatista`, `ralsina` for ideas; `nessita` for unit
+testing support; `Darni` for pointing me to
 [nvie's workflow for `git`](http://nvie.com/posts/a-successful-git-branching-model/),
 Andrew Moffat for [`sh`](http://amoffat.github.io/sh/) and Richard Jones for
 this talk (thanks again, `ralsina`), even when I ended up doing something
