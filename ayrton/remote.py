@@ -31,7 +31,7 @@ import os
 import traceback
 
 import logging
-logger= logging.getLogger ('ayrton.functions')
+logger= logging.getLogger ('ayrton.remote')
 
 class ShutUpPolicy (paramiko.MissingHostKeyPolicy):
     def missing_host_key (self, *args, **kwargs):
