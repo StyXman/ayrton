@@ -30,8 +30,8 @@ usage="""ayrton - A Python-based shell-like scripting language.
 
 Usage:
 
-    ayrton -h
-    ayrton -v
+    ayrton [-h|--help]
+    ayrton [-v|--version]
     ayrton [-c|--script] SCRIPT [argv ...]
     ayrton [-f|--file] file [argv ...]
 
