@@ -12,7 +12,7 @@
 
 where= argv[2]
 
-with remote (where, allow_agent=False) as foo:
+with remote (where, allow_agent=False):
     # notice how we can reference to the local's argv
     what= argv[1]
     # we assume Audacious is running on display :0
@@ -20,6 +20,3 @@ with remote (where, allow_agent=False) as foo:
     # use qdbus to send the command
     qdbus ('org.mpris.MediaPlayer2.audacious', '/org/mpris/MediaPlayer2',
            'org.mpris.MediaPlayer2.Player.%s' % what)
-
-# print (foo[1].readlines ())
-# print (foo[2].readlines ())
