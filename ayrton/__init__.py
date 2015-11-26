@@ -142,7 +142,12 @@ class Ayrton (object):
     def run_file (self, file):
         # it's a pity that parse() does not accept a file as input
         # so we could avoid reading the whole file
-        return self.run_script (open (file).read (), file)
+
+        f= open (file_name)
+        script= f.read ()
+        f.close ()
+
+        return self.run_script (script, file_name)
 
     def run_script (self, script, file_name):
         tree= parse (script, file_name)
