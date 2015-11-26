@@ -32,7 +32,7 @@ log_format= "%(asctime)s %(name)16s:%(lineno)-4d (%(funcName)-21s) %(levelname)-
 date_format= "%H:%M:%S"
 
 # uncomment one of these for way too much debugging :)
-# logging.basicConfig(filename='ayrton.%d.log' % os.getpid (), level=logging.DEBUG, format=log_format, datefmt=date_format)
+logging.basicConfig(filename='ayrton.%d.log' % os.getpid (), level=logging.DEBUG, format=log_format, datefmt=date_format)
 # logging.basicConfig(filename='ayrton.log', level=logging.DEBUG, format=log_format, datefmt=date_format)
 logger= logging.getLogger ('ayrton')
 
@@ -53,50 +53,61 @@ def parse (script, file_name=''):
     info= CompileInfo (file_name, 'exec')
     return ast_from_node (None, parser.parse_source (script, info), info)
 
-def polute (d, more):
-    d.update (__builtins__)
-    # weed out some stuff
-    for weed in ('copyright', '__doc__', 'help', '__package__', 'credits', 'license', '__name__'):
-        del d[weed]
+class Environment (dict):
+    def __init__ (self, *args, **kwargs):
+        super ().__init__ (*args, **kwargs)
 
-    # envars as gobal vars, shell like
-    d.update (os.environ)
+        self.polute ()
 
-    # these functions will be loaded from each module and put in the globals
-    # tuples (src, dst) renames function src to dst
-    builtins= {
-        'os': [ ('getcwd', 'pwd'), 'uname', 'listdir', ],
-        'os.path': [ 'abspath', 'basename', 'commonprefix', 'dirname',  ],
-        'time': [ 'sleep', ],
-        'sys': [ 'exit', 'argv' ],
 
-        'ayrton.file_test': [ '_a', '_b', '_c', '_d', '_e', '_f', '_g', '_h',
-                              '_k', '_p', '_r', '_s', '_u', '_w', '_x', '_L',
-                              '_N', '_S', '_nt', '_ot' ],
-        'ayrton.expansion': [ 'bash', ],
-        'ayrton.functions': [ 'cd', ('cd', 'chdir'), 'export', 'option', 'run',
-                               'shift', 'unset', ],
-        'ayrton.execute': [ 'o', 'Capture', 'CommandFailed', 'CommandNotFound',
-                            'Pipe', 'Command'],
-        'ayrton.remote': [ 'remote' ]
-        }
+    def polute (self):
+        self.update (__builtins__)
+        # weed out some stuff
+        for weed in ('copyright', '__doc__', 'help', '__package__', 'credits', 'license', '__name__'):
+            del self[weed]
 
-    for module, functions in builtins.items ():
-        m= importlib.import_module (module)
-        for function in functions:
-            if type (function)==tuple:
-                src, dst= function
-            else:
-                src= function
-                dst= function
+        # these functions will be loaded from each module and put in the globals
+        # tuples (src, dst) renames function src to dst
+        ayrton_builtins= {
+            'os': [ ('getcwd', 'pwd'), 'uname', 'listdir', ],
+            'os.path': [ 'abspath', 'basename', 'commonprefix', 'dirname',  ],
+            'time': [ 'sleep', ],
+            'sys': [ 'exit', 'argv' ],
 
-            d[dst]= getattr (m, src)
+            'ayrton.file_test': [ '_a', '_b', '_c', '_d', '_e', '_f', '_g', '_h',
+                                  '_k', '_p', '_r', '_s', '_u', '_w', '_x', '_L',
+                                  '_N', '_S', '_nt', '_ot' ],
+            'ayrton.expansion': [ 'bash', ],
+            'ayrton.functions': [ 'cd', ('cd', 'chdir'), 'export', 'option', 'run',
+                                   'shift', 'unset', ],
+            'ayrton.execute': [ 'o', 'Capture', 'CommandFailed', 'CommandNotFound',
+                                'Pipe', 'Command'],
+            'ayrton.remote': [ 'remote' ]
+            }
 
-    # now the IO files
-    for std in ('stdin', 'stdout', 'stderr'):
-        d[std]= getattr (sys, std).buffer
+        for module, functions in ayrton_builtins.items ():
+            m= importlib.import_module (module)
+            for function in functions:
+                if type (function)==tuple:
+                    src, dst= function
+                else:
+                    src= function
+                    dst= function
 
-    d.update (more)
+                self[dst]= getattr (m, src)
+
+        # now the IO files
+        for std in ('stdin', 'stdout', 'stderr'):
+            self[std]= getattr (sys, std).buffer
+
+
+    def update (self, other=None):
+        if other is None:
+            # envars as gobal vars, shell like
+            super ().update (os.environ)
+        else:
+            super ().update (other)
+
 
 class Ayrton (object):
     def __init__ (self, g=None, l=None, **kwargs):
@@ -104,11 +115,11 @@ class Ayrton (object):
         logger.debug ('new interpreter')
         logger.debug3 ('globals: %s', ayrton.utils.dump_dict (g))
         logger.debug3 ('locals: %s', ayrton.utils.dump_dict (l))
-        if g is None:
-            self.globals= {}
-        else:
-            self.globals= g
-        polute (self.globals, kwargs)
+
+        self.globals= Environment ()
+        if g is not None:
+            self.globals.update (g)
+        self.globals.update (kwargs)
 
         if l is None:
             # If exec gets two separate objects as globals and locals,
@@ -185,6 +196,8 @@ class Ayrton (object):
                     elif type (inst.argval)==str:
                         logger.debug ("last function is called: %s", inst.argval)
 
+        # prepare environment
+        self.globals.update ()
         if argv is not None:
             self.globals['argv']= argv
 
