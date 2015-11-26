@@ -1,0 +1,5 @@
+#! /usr/bin/env ayrton
+
+export (foo=47)
+
+print (foo)

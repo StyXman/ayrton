@@ -1,0 +1,5 @@
+#! /usr/bin/env ayrton
+
+export (testEnviron=44);
+
+run ("./ayrton/tests/data/test_environ.sh")

@@ -1,0 +1,6 @@
+#! /usr/bin/env ayrton
+
+def foo ():
+    true= 40
+
+true ()

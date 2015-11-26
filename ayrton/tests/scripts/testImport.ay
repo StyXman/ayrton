@@ -1,0 +1,5 @@
+#! /usr/bin/env ayrton
+
+import math
+
+math.floor (1.1)

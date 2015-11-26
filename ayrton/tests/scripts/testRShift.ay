@@ -1,0 +1,4 @@
+#! /usr/bin/env ayrton
+
+echo ('yes') > argv[1]
+echo ('yes!') >> argv[1]

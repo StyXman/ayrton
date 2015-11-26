@@ -1,0 +1,5 @@
+#! /usr/bin/env ayrton
+
+import os.path
+
+print (os.path.split (pwd ())[-1])

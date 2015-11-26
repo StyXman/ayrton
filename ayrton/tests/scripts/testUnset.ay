@@ -1,0 +1,10 @@
+#! /usr/bin/env ayrton
+
+export (testUnset=45)
+print (testUnset)
+unset ("testUnset") # TODO: ugly
+
+try:
+    testUnset
+except NameError:
+    print ("yes")

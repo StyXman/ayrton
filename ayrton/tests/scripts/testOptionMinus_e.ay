@@ -1,0 +1,5 @@
+#! /usr/bin/env ayrton
+
+option ('-e')
+
+false ()

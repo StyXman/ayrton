@@ -1,0 +1,3 @@
+#! /usr/bin/env ayrton
+
+cat () < argv[1] > argv[2]

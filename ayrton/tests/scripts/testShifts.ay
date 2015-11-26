@@ -1,0 +1,4 @@
+#! /usr/bin/env ayrton
+
+a= shift (2)
+print (a)

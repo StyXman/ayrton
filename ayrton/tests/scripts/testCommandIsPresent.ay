@@ -1,0 +1,4 @@
+#! /usr/bin/env ayrton
+
+c= Command ('ls')
+c ()

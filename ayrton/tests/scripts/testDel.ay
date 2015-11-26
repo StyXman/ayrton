@@ -1,0 +1,7 @@
+#! /usr/bin/env ayrton
+
+option ('errexit')
+
+false= lambda: x
+del false
+false ()

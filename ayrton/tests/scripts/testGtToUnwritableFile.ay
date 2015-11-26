@@ -1,0 +1,3 @@
+#! /usr/bin/env ayrton
+
+echo ("yes") > "/foo/bar/baz/quux/moo"
