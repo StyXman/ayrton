@@ -101,14 +101,6 @@ class Environment (dict):
             self[std]= getattr (sys, std).buffer
 
 
-    def update (self, other=None):
-        if other is None:
-            # envars as gobal vars, shell like
-            super ().update (os.environ)
-        else:
-            super ().update (other)
-
-
 class Ayrton (object):
     def __init__ (self, g=None, l=None, **kwargs):
         logger.debug ('===========================================================')
@@ -203,7 +195,7 @@ class Ayrton (object):
                         logger.debug ("last function is called: %s", inst.argval)
 
         # prepare environment
-        self.globals.update ()
+        self.globals.update (os.environ)
 
         logger.debug (argv)
         if argv is None:
