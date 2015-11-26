@@ -250,9 +250,7 @@ class CrazyASTTransformer (ast.NodeTransformer):
 
         # For(target=Name(id='line', ctx=Store()),
         #     iter=Call(func=Call(func=Name(id='Command', ctx=Load()), ...
-        if (type (node.iter)==Call and type (node.iter.func)==Call and
-            type (node.iter.func.func)==Name and node.iter.func.func.id=='Command'):
-
+        if is_executable (node.iter):
             update_keyword (node.iter,
                             keyword (arg='_out', value=Name (id='Capture', ctx=Load ())))
             ast.fix_missing_locations (node.iter)
