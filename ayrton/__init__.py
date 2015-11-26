@@ -168,13 +168,15 @@ class Ayrton (object):
 
         return self.run_tree (tree, file_name, argv)
 
+
     def run_tree (self, tree, file_name, argv=None):
         logger.debug2 ('AST: %s', ast.dump (tree))
         logger.debug2 ('code: \n%s', pprint (tree))
 
-        return self.run_code (compile (tree, file_name, 'exec'), argv)
+        return self.run_code (compile (tree, file_name, 'exec'), file_name, argv)
 
-    def run_code (self, code, argv=None):
+
+    def run_code (self, code, file_name, argv=None):
         if logger.parent.level<=logging.DEBUG2:
             logger.debug2 ('------------------')
             logger.debug2 ('main (gobal) code:')
