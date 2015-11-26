@@ -290,6 +290,11 @@ class Command:
                     fd= e.fileno ()
                     logger.debug ("_err::IOBase, redirects stderr 2 -> %d", fd)
                     os.dup2 (fd, 2)
+                elif type (e)==int:
+                    logger.debug ("_err::int, redirects stderr 1 -> %d", e)
+                    os.dup2 (e, 1)
+                    logger.debug ('closing %d', e)
+                    os.close (e)
                 elif e==Capture:
                     if '_out' in self.options and self.options['_out']==Capture:
                         # send it to stdout
@@ -301,6 +306,12 @@ class Command:
                         os.dup2 (w, 2)
                         logger.debug ('closing %d', r)
                         os.close (r)
+                elif type (o) in (bytes, str):
+                    fd= os.open (e, os.O_WRONLY)
+                    logger.debug ("_err::(str|bytes), redirects stdout 1 -> %d (%s)", fd, e)
+                    os.dup2 (fd, 1)
+                    logger.debug ('closing %d', fd)
+                    os.close (fd)
         except FileNotFoundError as e:
             logger.debug (e)
             # TODO: report something
