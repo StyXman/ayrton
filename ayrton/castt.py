@@ -403,17 +403,7 @@ class CrazyASTTransformer (ast.NodeTransformer):
 
                 elif type (comp)==Lt:
                     # < means _in
-
-                    # now, _in works differently
-                    # a string is written directly to the stdin,
-                    # instead of creating a file() with that name
-                    # so, we do it ourseleves.
-                    if type (op)==Str:
-                        op= Call (func=Name (id='open', ctx=Load ()), args=[op],
-                                  keywords=[], starargs=None, kwargs=None)
-
                     update_keyword (node.left, keyword (arg='_in', value=op))
-                    ast.fix_missing_locations (node.left)
                     ans= node.left
 
         return ans

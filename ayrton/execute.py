@@ -129,10 +129,10 @@ class Command:
 
             # this condition is complex, but basically handles any type of input
             # that is not going to be handled later in client()
-            if ( not isinstance (i, io.IOBase) and  # file and such objects
-                 type (i)!=int and                  # fd's
-                 i is not None and                  # special value for /dev/null
-                 not isinstance (i, Command) ):     # Command's
+            if (     not isinstance (i, io.IOBase)      # file and such objects
+                 and type (i) not in (int, str, bytes)  # fd's and file names
+                 and i is not None                      # special value for /dev/null
+                 and not isinstance (i, Command) ):     # Command's
                 if self.options['_in_tty']:
                     # TODO: no support yet for input from file when _in_tty
                     # NOTE: os.openpty() returns (master, slave)
@@ -219,6 +219,12 @@ class Command:
                 os.dup2 (i, 0)
                 logger.debug ('closing %d', i)
                 os.close (i)
+            elif type (i) in (str, bytes):
+                fd= os.open (i, os.O_RDONLY)
+                logger.debug ("_in::(str|bytes) redirects %d (%s) -> 0 (stdin)", fd, i)
+                os.dup2 (fd, 0)
+                logger.debug ('closing %d', fd)
+                os.close (fd)
             else:
                 # use the pipe prepared by prepare_fds()
                 # including the case where _in::Command
