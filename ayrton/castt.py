@@ -427,7 +427,7 @@ class CrazyASTTransformer (ast.NodeTransformer):
             if defs==0:
                 unknown= True
 
-        logger.debug ("%s: %s", name, unknown)
+        logger.debug2 ("%s: %s", name, unknown)
 
         if unknown:
             if not name in self.environ:
@@ -455,7 +455,7 @@ class CrazyASTTransformer (ast.NodeTransformer):
                         if is_option (arg):
                             # ast_pprinter takes care of expressions
                             kw= arg.keywords[0]
-                            logger.debug ("->>>kw: %s", ast.dump (kw))
+                            logger.debug2 ("->>>kw: %s", ast.dump (kw))
                             kw.arg= pprint (kw.arg)
 
                 ast.copy_location (new_node, node)

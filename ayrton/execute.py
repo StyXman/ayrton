@@ -153,7 +153,7 @@ class Command:
                     logger.debug ("_in::Command uses the stdout_pipe")
                     self.stdin_pipe= i.stdout_pipe
 
-        logger.debug ("_in: %s", self.stdin_pipe)
+        logger.debug ("stdin_pipe: %s", self.stdin_pipe)
 
         if '_out' in self.options:
             if self.options['_out']==Capture:
@@ -176,7 +176,7 @@ class Command:
                 logger.debug ("_out==Pipe creates a pipe()")
                 self.stdout_pipe= os.pipe ()
 
-        logger.debug ("_out: %s", self.stdout_pipe)
+        logger.debug ("stdout_pipe: %s", self.stdout_pipe)
 
         if '_err' in self.options:
             if self.options['_err']==Capture:
@@ -324,6 +324,8 @@ class Command:
         try:
             os.execvpe (self.exe, self.args, self.options['_env'])
         except FileNotFoundError:
+            logger.debug (e)
+            # TODO: report something
             os._exit (127)
 
     def prepare_args (self, cmd, args, kwargs):
@@ -353,6 +355,8 @@ class Command:
             pass
 
     def parent (self):
+        logger.debug ('parent')
+
         if self.stdin_pipe is not None:
             # str -> write into the fd
             # list -> write each

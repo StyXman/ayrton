@@ -100,6 +100,7 @@ def polute (d, more):
 
 class Ayrton (object):
     def __init__ (self, g=None, l=None, **kwargs):
+        logger.debug ('===========================================================')
         logger.debug ('new interpreter')
         logger.debug3 ('globals: %s', ayrton.utils.dump_dict (g))
         logger.debug3 ('locals: %s', ayrton.utils.dump_dict (l))
@@ -245,7 +246,6 @@ def run_tree (tree, g, l):
 
 def run_file_or_script (script=None, file_name='script_from_command_line', **kwargs):
     """Main entry point for bin/ayrton and unittests."""
-    logger.debug ('===========================================================')
     global runner
     runner= Ayrton (**kwargs)
     if script is None:

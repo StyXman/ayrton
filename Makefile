@@ -1,5 +1,5 @@
-# DEBUG_MULTI=strace -tt -T -ff -o runner -s 128
-# DEBUG_SIMPLE=strace -tt -T -f -o runner -s 128
+DEBUG_MULTI=strace -tt -T -ff -o runner -s 128
+DEBUG_SIMPLE=strace -tt -T -o runner -s 128
 PYTHON=python3.4
 
 all: docs
@@ -8,14 +8,14 @@ INSTALL_DIR=$(HOME)/local
 
 tests:
 	LC_ALL=C $(PYTHON) -m unittest discover -v ayrton
-	LC_ALL=C $(DEBUG_MULTI) python3 -m unittest discover -v ayrton
+	# LC_ALL=C $(DEBUG_MULTI) python3 -m unittest discover -v ayrton
 
 quicktest: fasttest
 
 fasttest:
 	# LC_ALL=C $(PYTHON) -m unittest discover -f -v ayrton
-	LC_ALL=C $(DEBUG_SIMPLE) $(PYTHON) -m unittest discover -f -v ayrton
-	# LC_ALL=C $(DEBUG_MULTI) $(PYTHON) -m unittest discover -f -v ayrton
+	# LC_ALL=C $(DEBUG_SIMPLE) $(PYTHON) -m unittest discover -f -v ayrton
+	LC_ALL=C $(DEBUG_MULTI) $(PYTHON) -m unittest discover -f -v ayrton
 
 docs:
 	PYTHONPATH=${PWD} make -C doc html
