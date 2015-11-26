@@ -84,7 +84,7 @@ try:
             # -f|--file is optional (because idiot /usr/bin/env ayrton -f does not work)
             # we could let it fallback to the last case,
             # but this way we can handle the actual argument to the option
-            file= args[index+1]
+            file_name= args[index+1]
             # script_args[0] is the script's file name
             script_args= args[index+1:]
             # stop parsing, anything else is passed to the script
@@ -92,7 +92,7 @@ try:
 
         # as every branch either exit()s, break's or continue's,
         # here we're in the situation where the next argument is the script name
-        file= arg
+        file_name= arg
         # script_args[0] is the script's file name
         script_args= args[index:]
         # stop parsing, anything else is passed to the script
@@ -104,9 +104,8 @@ except IndexError:
     sys,exit (1)
 
 try:
-    # fake argv
-    sys.argv= script_args
-    v= ayrton.run_file_or_script (file=file, script=script)
+    v= ayrton.run_file_or_script (file_name=file_name, script=script,
+                                  argv=script_args)
 
     if type(v)==bool:
         if v:
