@@ -151,6 +151,12 @@ class Ayrton (object):
         self.options= {}
         self.pending_children= []
 
+        # HACK to update the singleton
+        # this might break if we implement subinstances
+        global runner
+        runner= self
+
+
     def run_file (self, file_name, argv=None):
         # it's a pity that parse() does not accept a file as input
         # so we could avoid reading the whole file
@@ -258,14 +264,12 @@ class Ayrton (object):
 
 def run_tree (tree, g, l):
     """main entry point for remote()"""
-    global runner
     runner= Ayrton (g=g, l=l)
     return runner.run_tree (tree, 'unknown_tree')
 
 def run_file_or_script (script=None, file_name='script_from_command_line', argv=None,
                         **kwargs):
     """Main entry point for bin/ayrton and unittests."""
-    global runner
     runner= Ayrton (**kwargs)
     if script is None:
         v= runner.run_file (file_name, argv)
