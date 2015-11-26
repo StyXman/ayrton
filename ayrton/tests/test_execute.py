@@ -65,13 +65,13 @@ class MockedStdOut (unittest.TestCase):
         self.assertEqual (self.mock_stdout.read (), 'simple\n')
         self.mock_stdout.close ()
 
-    def testInStr (self):
+    def __testInStr (self):
         a= cat (_in='_in=str')
         tearDownMockStdOut (self)
         self.assertEqual (self.mock_stdout.read (), '_in=str\n')
         self.mock_stdout.close ()
 
-    def testInBytes (self):
+    def __testInBytes (self):
         a= cat (_in=b'_in=bytes')
         tearDownMockStdOut (self)
         self.assertEqual (self.mock_stdout.read (), '_in=bytes\n')
