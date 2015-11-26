@@ -13,9 +13,11 @@ tests:
 quicktest: fasttest
 
 fasttest:
-	# LC_ALL=C $(PYTHON) -m unittest discover -f -v ayrton
 	# LC_ALL=C $(DEBUG_SIMPLE) $(PYTHON) -m unittest discover -f -v ayrton
 	LC_ALL=C $(DEBUG_MULTI) $(PYTHON) -m unittest discover -f -v ayrton
+
+qtest:
+	LC_ALL=C $(PYTHON) -m unittest discover -f -v ayrton
 
 docs:
 	PYTHONPATH=${PWD} make -C doc html
@@ -39,3 +41,6 @@ push: tests
 
 check:
 	flake8 --ignore E201,E211,E225,E221,E226,E202 --show-source --statistics --max-line-length 130 ayrton/*.py
+
+testclean:
+	rm -rfv ayrton.*log runner.*
