@@ -139,7 +139,7 @@ class Ayrton (object):
         self.options= {}
         self.pending_children= []
 
-    def run_file (self, file_name):
+    def run_file (self, file_name, argv=None):
         # it's a pity that parse() does not accept a file as input
         # so we could avoid reading the whole file
 
@@ -147,22 +147,22 @@ class Ayrton (object):
         script= f.read ()
         f.close ()
 
-        return self.run_script (script, file_name)
+        return self.run_script (script, file_name, argv)
 
-    def run_script (self, script, file_name):
+    def run_script (self, script, file_name, argv=None):
         tree= parse (script, file_name)
         # TODO: self.locals?
         tree= CrazyASTTransformer (self.globals, file_name).modify (tree)
 
-        return self.run_tree (tree, file_name)
+        return self.run_tree (tree, file_name, argv)
 
-    def run_tree (self, tree, file_name):
+    def run_tree (self, tree, file_name, argv=None):
         logger.debug2 ('AST: %s', ast.dump (tree))
         logger.debug2 ('code: \n%s', pprint (tree))
 
-        return self.run_code (compile (tree, file_name, 'exec'))
+        return self.run_code (compile (tree, file_name, 'exec'), argv)
 
-    def run_code (self, code):
+    def run_code (self, code, argv=None):
         if logger.parent.level<=logging.DEBUG2:
             logger.debug2 ('------------------')
             logger.debug2 ('main (gobal) code:')
@@ -181,6 +181,9 @@ class Ayrton (object):
                         handler.release ()
                     elif type (inst.argval)==str:
                         logger.debug ("last function is called: %s", inst.argval)
+
+        if argv is not None:
+            self.globals['argv']= argv
 
         '''
         exec(): If only globals is provided, it must be a dictionary, which will
