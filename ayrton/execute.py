@@ -195,115 +195,116 @@ class Command:
                 logger.debug ("_err==Pipe creates a pipe()")
                 self.stderr_pipe= os.pipe ()
 
-        logger.debug ("_err: %s", self.stderr_pipe)
+        logger.debug ("stderr_pipe: %s", self.stderr_pipe)
 
     def child (self):
-        if '_in' in self.options:
-            i= self.options['_in']
-            if i is None:
-                # connect to /dev/null
-                # it's not /dev/zero, see man (4) zero
-                logger.debug ("_in==None redirects from /dev/null")
-                i= open (os.devnull, 'rb')
+        logger.debug ('child')
 
-            if isinstance (i, io.IOBase):
-                # this does not work with file like objects
-                # dup its fd int stdin (0)
-                fd= i.fileno ()
-                logger.debug ("_in::IOBase redirects %d -> 0 (stdin)", fd)
-                os.dup2 (fd, 0)
-                logger.debug ('closing %d', fd)
-                i.close ()
-            elif type (i)==int:
-                logger.debug ("_in::int redirects %d -> 0 (stdin)", i)
-                os.dup2 (i, 0)
-                logger.debug ('closing %d', i)
-                os.close (i)
-            elif type (i) in (str, bytes):
-                fd= os.open (i, os.O_RDONLY)
-                logger.debug ("_in::(str|bytes) redirects %d (%s) -> 0 (stdin)", fd, i)
-                os.dup2 (fd, 0)
-                logger.debug ('closing %d', fd)
-                os.close (fd)
-            else:
-                # use the pipe prepared by prepare_fds()
-                # including the case where _in::Command
-                logger.debug ("_in::%s, redirect stdin_pipe from prepare_fds() to stdin", type (i))
-                r, w= self.stdin_pipe
-                logger.debug ("_in: redirecting %d -> 0", r)
-                os.dup2 (r, 0)
-                logger.debug ('closing %d', r)
-                os.close (r)
-                # the write fd can already be closed in this case:
-                # a= cat (..., _out=capture)
-                # b= grep (..., _in= a)
-                # once a's lines have been read, t
-                os.close (w)
+        try:
+            if '_in' in self.options:
+                i= self.options['_in']
+                if i is None:
+                    # connect to /dev/null
+                    # it's not /dev/zero, see man (4) zero
+                    logger.debug ("_in==None redirects from /dev/null")
+                    i= open (os.devnull, 'rb')
 
-        if '_out' in self.options:
-            o= self.options['_out']
-            if o is None:
-                # connect to /dev/null
-                o= open (os.devnull, 'wb') # no need to create it
-                logger.debug ("_out==None, redirects stdout 1 -> %d (%s)", o.fileno (), os.devnull)
-
-            if isinstance (o, io.IOBase):
-                # this does not work with file like objects
-                # dup its fd in stdout (1)
-                fd= o.fileno ()
-                logger.debug ("_out::IOBase, redirects stdout 1 -> %d", fd)
-                os.dup2 (fd, 1)
-                logger.debug ('closing %d', fd)
-                o.close ()
-            elif type (o)==int:
-                logger.debug ("_out::int, redirects stdout 1 -> %d", o)
-                os.dup2 (o, 1)
-                logger.debug ('closing %d', o)
-                os.close (o)
-            elif o==Capture or o==Pipe:
-                r, w= self.stdout_pipe
-                logger.debug ("_out::(Capture or Pipe), redirects stdout 1 -> %d", w)
-                os.dup2 (w, 1)
-                logger.debug ('closing %d', w)
-                os.close (w)
-                os.close (r)
-            elif type (o) in (bytes, str):
-                # BUG: this is inconsistent with _in::str
-                f= open (o, 'w+')
-                fd= f.fileno ()
-                logger.debug ("_out::str, redirects stdout 1 -> %d (%s)", fd, o)
-                os.dup2 (fd, 1)
-                logger.debug ('closing %d', fd)
-                f.close ()
-
-        if '_err' in self.options:
-            e= self.options['_err']
-            if e is None:
-                # connect to /dev/null
-                e= open (os.devnull, 'wb') # no need to create it
-                logger.debug ("_err==None, redirects stderr 2 -> %d (%s)", e.fileno (), os.devnull)
-
-            if isinstance (e, io.IOBase):
-                # this does not work with file like objects
-                # dup its fd int stderr (2)
-                fd= e.fileno ()
-                logger.debug ("_out::IOBase, redirects stderr 2 -> %d", fd)
-                os.dup2 (fd, 2)
-
-            # TODO: why the fall-through in this case? compare with _out
-            if e==Capture:
-                if '_out' in self.options and self.options['_out']==Capture:
-                    # send it to stdout
-                    logger.debug ("_err::Capture and _out::Capture, redirects stderr 2 -> 1")
-                    os.dup2 (1, 2)
+                if isinstance (i, io.IOBase):
+                    # this does not work with file like objects
+                    # dup its fd int stdin (0)
+                    fd= i.fileno ()
+                    logger.debug ("_in::IOBase redirects %d -> 0 (stdin)", fd)
+                    os.dup2 (fd, 0)
+                    logger.debug ('closing %d', fd)
+                    i.close ()
+                elif type (i)==int:
+                    logger.debug ("_in::int redirects %d -> 0 (stdin)", i)
+                    os.dup2 (i, 0)
+                    logger.debug ('closing %d', i)
+                    os.close (i)
+                elif type (i) in (str, bytes):
+                    fd= os.open (i, os.O_RDONLY)
+                    logger.debug ("_in::(str|bytes) redirects %d (%s) -> 0 (stdin)", fd, i)
+                    os.dup2 (fd, 0)
+                    logger.debug ('closing %d', fd)
+                    os.close (fd)
                 else:
-                    r, w= self.stderr_pipe
-                    logger.debug ("_err::Capture, redirects stderr 2 -> %d", w)
-                    os.dup2 (w, 2)
+                    # use the pipe prepared by prepare_fds()
+                    # including the case where _in::Command
+                    logger.debug ("_in::%s, redirect stdin_pipe from prepare_fds() to stdin", type (i))
+                    r, w= self.stdin_pipe
+                    logger.debug ("_in: redirecting %d -> 0", r)
+                    os.dup2 (r, 0)
                     logger.debug ('closing %d', r)
                     os.close (r)
+                    # the write fd can already be closed in this case:
+                    # a= cat (..., _out=capture)
+                    # b= grep (..., _in= a)
+                    # once a's lines have been read, t
+                    os.close (w)
 
-            # TODO: bytes/str?
+            if '_out' in self.options:
+                o= self.options['_out']
+                if o is None:
+                    # connect to /dev/null
+                    o= open (os.devnull, 'wb') # no need to create it
+                    logger.debug ("_out==None, redirects stdout 1 -> %d (%s)", o.fileno (), os.devnull)
+
+                if isinstance (o, io.IOBase):
+                    # this does not work with file like objects
+                    # dup its fd in stdout (1)
+                    fd= o.fileno ()
+                    logger.debug ("_out::IOBase, redirects stdout 1 -> %d", fd)
+                    os.dup2 (fd, 1)
+                    logger.debug ('closing %d', fd)
+                    o.close ()
+                elif type (o)==int:
+                    logger.debug ("_out::int, redirects stdout 1 -> %d", o)
+                    os.dup2 (o, 1)
+                    logger.debug ('closing %d', o)
+                    os.close (o)
+                elif o==Capture or o==Pipe:
+                    r, w= self.stdout_pipe
+                    logger.debug ("_out::(Capture or Pipe), redirects stdout 1 -> %d", w)
+                    os.dup2 (w, 1)
+                    logger.debug ('closing %d', w)
+                    os.close (w)
+                    os.close (r)
+                elif type (o) in (bytes, str):
+                    fd= os.open (o, os.O_WRONLY)
+                    logger.debug ("_out::str, redirects stdout 1 -> %d (%s)", fd, o)
+                    os.dup2 (fd, 1)
+                    logger.debug ('closing %d', fd)
+                    os.close (fd)
+
+            if '_err' in self.options:
+                e= self.options['_err']
+                if e is None:
+                    # connect to /dev/null
+                    e= open (os.devnull, 'wb') # no need to create it
+                    logger.debug ("_err==None, redirects stderr 2 -> %d (%s)", e.fileno (), os.devnull)
+
+                if isinstance (e, io.IOBase):
+                    # this does not work with file like objects
+                    # dup its fd int stderr (2)
+                    fd= e.fileno ()
+                    logger.debug ("_err::IOBase, redirects stderr 2 -> %d", fd)
+                    os.dup2 (fd, 2)
+                elif e==Capture:
+                    if '_out' in self.options and self.options['_out']==Capture:
+                        # send it to stdout
+                        logger.debug ("_err::Capture and _out::Capture, redirects stderr 2 -> 1")
+                        os.dup2 (1, 2)
+                    else:
+                        r, w= self.stderr_pipe
+                        logger.debug ("_err::Capture, redirects stderr 2 -> %d", w)
+                        os.dup2 (w, 2)
+                        logger.debug ('closing %d', r)
+                        os.close (r)
+        except FileNotFoundError as e:
+            logger.debug (e)
+            # TODO: report something
+            os._exit (1)
 
         # restore some signals
         for i in (signal.SIGPIPE, signal.SIGINT):
