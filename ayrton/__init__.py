@@ -233,9 +233,10 @@ class Ayrton (object):
         '''
         error= None
         try:
+            logger.debug3 ('globals for script: %s', ayrton.utils.dump_dict (self.globals))
             exec (code, self.globals, self.locals)
         except Exception as e:
-            logger.debug ('script finised by Exception')
+            logger.debug ('script finished by Exception')
             logger.debug (traceback.format_exc ())
             error= e
 
