@@ -72,7 +72,7 @@ class Environment (dict):
             'os': [ ('getcwd', 'pwd'), 'uname', 'listdir', ],
             'os.path': [ 'abspath', 'basename', 'commonprefix', 'dirname',  ],
             'time': [ 'sleep', ],
-            'sys': [ 'exit', 'argv' ],
+            'sys': [ 'exit', ],  # argv is handled just before execution
 
             'ayrton.file_test': [ '_a', '_b', '_c', '_d', '_e', '_f', '_g', '_h',
                                   '_k', '_p', '_r', '_s', '_u', '_w', '_x', '_L',
@@ -198,8 +198,11 @@ class Ayrton (object):
 
         # prepare environment
         self.globals.update ()
-        if argv is not None:
-            self.globals['argv']= argv
+
+        logger.debug (argv)
+        if argv is None:
+            argv= [ file_name ]
+        self.globals['argv']= argv
 
         '''
         exec(): If only globals is provided, it must be a dictionary, which will
@@ -246,10 +249,12 @@ class Ayrton (object):
 
         return result
 
+
     def wait_for_pending_children (self):
         for i in range (len (self.pending_children)):
             child= self.pending_children.pop (0)
             child.wait ()
+
 
 def run_tree (tree, g, l):
     """main entry point for remote()"""
@@ -257,14 +262,15 @@ def run_tree (tree, g, l):
     runner= Ayrton (g=g, l=l)
     return runner.run_tree (tree, 'unknown_tree')
 
-def run_file_or_script (script=None, file_name='script_from_command_line', **kwargs):
+def run_file_or_script (script=None, file_name='script_from_command_line', argv=None,
+                        **kwargs):
     """Main entry point for bin/ayrton and unittests."""
     global runner
     runner= Ayrton (**kwargs)
     if script is None:
-        v= runner.run_file (file_name)
+        v= runner.run_file (file_name, argv)
     else:
-        v= runner.run_script (script, file_name)
+        v= runner.run_script (script, file_name, argv)
 
     return v
 
