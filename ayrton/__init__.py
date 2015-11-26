@@ -139,7 +139,7 @@ class Ayrton (object):
         self.options= {}
         self.pending_children= []
 
-    def run_file (self, file):
+    def run_file (self, file_name):
         # it's a pity that parse() does not accept a file as input
         # so we could avoid reading the whole file
 
@@ -238,15 +238,15 @@ def run_tree (tree, g, l):
     runner= Ayrton (g=g, l=l)
     return runner.run_tree (tree, 'unknown_tree')
 
-def run_file_or_script (script=None, file='script_from_command_line', **kwargs):
+def run_file_or_script (script=None, file_name='script_from_command_line', **kwargs):
     """Main entry point for bin/ayrton and unittests."""
     logger.debug ('===========================================================')
     global runner
     runner= Ayrton (**kwargs)
     if script is None:
-        v= runner.run_file (file)
+        v= runner.run_file (file_name)
     else:
-        v= runner.run_script (script, file)
+        v= runner.run_script (script, file_name)
 
     return v
 
