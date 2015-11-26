@@ -1,3 +1,3 @@
 #! /bin/sh
 
-echo "$TEST_ENV"
+echo "$testEnviron"
