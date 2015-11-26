@@ -101,10 +101,11 @@ Functions
     of strings, not the variables themselves. Unknown variables will be silently
     ignored.
 
-.. py:function:: foo ([*args, [**kwars]])
+.. py:function:: foo (...)
 
     Executes the binary *foo*, searching the binary using :py:data:`path`.
-    Arguments in *\*args* are used as positional arguments for the command. This
+    Arguments are used as positional arguments for the command, except for the
+    special keyword arguments listed below. This
     returns a :py:class:`Command`. The syntaxis for Commands departs a little from
     pure Python. Python expressions are allowed as keyword names, so `-o` and
     `--long-option` are valid. Also, keywords and positional arguments can be mixed,
@@ -119,7 +120,8 @@ Functions
         * If it's a file object [#file_objects]_, it uses its contents.
         * If its type is ``int``, it's considered a file descriptor from where
           the input is read.
-        * If its type is ``str`` or ``bytes``, it's passed as it is [#undecided]_.
+        * If its type is ``str`` or ``bytes``, it's considered the name of the file
+          from where the input is read.
         * if it's an iterable, then it's the `str()` of each elements.
         * Else, it's the `str()` of it.
 
