@@ -142,6 +142,7 @@ class Ayrton (object):
     def run_file (self, file_name, argv=None):
         # it's a pity that parse() does not accept a file as input
         # so we could avoid reading the whole file
+        logger.debug ('running from file %s', file_name)
 
         f= open (file_name)
         script= f.read ()
@@ -150,6 +151,7 @@ class Ayrton (object):
         return self.run_script (script, file_name, argv)
 
     def run_script (self, script, file_name, argv=None):
+        logger.debug ('running script:\n-----------\n%s\n-----------', script)
         tree= parse (script, file_name)
         # TODO: self.locals?
         tree= CrazyASTTransformer (self.globals, file_name).modify (tree)
