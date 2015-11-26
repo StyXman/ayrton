@@ -253,7 +253,6 @@ class CrazyASTTransformer (ast.NodeTransformer):
         if is_executable (node.iter):
             update_keyword (node.iter,
                             keyword (arg='_out', value=Name (id='Capture', ctx=Load ())))
-            ast.fix_missing_locations (node.iter)
 
         return node
 
@@ -392,13 +391,11 @@ class CrazyASTTransformer (ast.NodeTransformer):
                     # > means _out
                     update_keyword (node.left, keyword (arg='_out', value=op))
                     ans= node.left
-
-                if type (comp)==GtE:
+                elif type (comp)==GtE:
                     # >= means _out+_err
                     update_keyword (node.left, keyword (arg='_out', value=op))
                     update_keyword (node.left, keyword (arg='_err_to_out', value=op))
                     ans= node.left
-
                 elif type (comp)==Lt:
                     # < means _in
                     update_keyword (node.left, keyword (arg='_in', value=op))
