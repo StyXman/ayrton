@@ -415,7 +415,7 @@ class Command:
 
         if reader_pipe is not None and self.options.get ('_out', None)!=Pipe:
             r, w= reader_pipe
-            # logger.debug ('closing %d', w)
+            logger.debug ('closing %d', w)
             os.close (w)
             self.capture_file= open (r)
 
