@@ -72,10 +72,10 @@ def shift (n=1):
         ans= [ ayrton.runner.globals['argv'].pop (1)
                for i in range (n) ]
     else:
-        # TODO
-        pass
+        raise ValueError ()
 
     return ans
+
 
 def unset (*args):
     for k in args:
