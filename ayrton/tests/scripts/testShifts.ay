@@ -1,4 +1,3 @@
 #! /usr/bin/env ayrton
 
-a= shift (2)
-print (a)
+ayrton_return_value= shift (2)

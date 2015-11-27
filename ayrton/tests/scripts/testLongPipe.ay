@@ -1,3 +1,4 @@
 #! /usr/bin/env ayrton
 
-ls () | grep ("setup") | wc (-l=True)
+# long piping works, and so do -o(ptions)
+ayrton_return_value= str (ls () | grep ("setup") | wc (-l=True, _out=Capture))

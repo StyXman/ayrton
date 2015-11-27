@@ -3,4 +3,4 @@
 # exported variables are seen as global variables
 export (foo=47)
 
-print (foo)
+ayrton_return_value= foo

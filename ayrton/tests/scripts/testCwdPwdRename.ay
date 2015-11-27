@@ -2,4 +2,5 @@
 
 import os.path
 
-print (os.path.split (pwd ())[-1])
+# tests that cwd() is properly renamed to pwd()
+ayrton_return_value= os.path.split (pwd ())[-1]

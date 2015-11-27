@@ -112,12 +112,14 @@ class ScriptExecution (unittest.TestCase):
         self.runner= ayrton.Ayrton ()
 
 
-    def doTest (self, script, argv=None):
+    def doTest (self, script, expected=None, argv=None):
         if argv is not None:
             argv.insert (0, script)
 
         logger.debug (argv)
-        self.runner.run_file (os.path.join ('ayrton/tests/scripts', script), argv=argv)
+        result= self.runner.run_file (os.path.join ('ayrton/tests/scripts', script), argv=argv)
+        if expected is not None:
+            self.assertEqual (result, expected)
 
 
 class MockedStdout (ScriptExecution):
@@ -170,13 +172,11 @@ class MockedStdout (ScriptExecution):
         self.runner.wait_for_pending_children ()
 
 
-    def doTest (self, script, argv=None):
-        super ().doTest (script, argv)
+    def doTest (self, script):
+        super ().doTest (script)
         # close stdout as per the description of setUpMockStdout()
         os.close (1)
 
-
-class CommandExecution (MockedStdout):
 
     def testStdout (self):
         self.doTest ('testStdout.ay')
@@ -189,21 +189,19 @@ class CommandExecution (MockedStdout):
         self.assertEqual (self.r.read (), b'')
 
 
+class CommandExecution (ScriptExecution):
+
     def testStdoutEqCapture (self):
-        self.doTest ('testStdoutEqCapture.ay')
-        # BUG: check why there's a second \n
-        # ANS: because echo adds the first one and print adds the second one
-        self.assertEqual (self.r.read (), b'echo: foo\n\n')
+        # echo adds the \n
+        self.doTest ('testStdoutEqCapture.ay', 'foo\n')
 
 
     def testExitCodeOK (self):
-        self.doTest ('testExitCodeOK.ay')
-        self.assertEqual (self.r.read (), b'yes!\n')
+        self.doTest ('testExitCodeOK.ay', 'yes!')
 
 
     def testExitCodeNOK (self):
-        self.doTest ('testExitCodeNOK.ay')
-        self.assertEqual (self.r.read (), b'yes!\n')
+        self.doTest ('testExitCodeNOK.ay', 'yes!')
 
 
     def testOptionErrexit (self):
@@ -234,7 +232,8 @@ class NonWordExecutableNames (ScriptExecution):
         self.old_path= os.environ['PATH']
 
         # add ayrton/tests/data to $PATH
-        os.environ['PATH']+= os.pathsep+os.path.join (os.getcwd (), 'ayrton/tests/data')
+        os.environ['PATH']+= os.pathsep+os.path.join (os.getcwd (),
+                                                      'ayrton/tests/data')
         logger.debug (os.environ['PATH'])
 
 
@@ -263,7 +262,7 @@ class NonWordExecutableNames (ScriptExecution):
 class TempFile (ScriptExecution):
 
     def doTempFileTest (self, script, final_contents, initial_contents=None,
-                        from_stdout=False, double_redirection=False):
+                        double_redirection=False):
         fh, file_name= tempfile.mkstemp ()
         logger.debug ('mkstemp() -> %d (%s)', fh, file_name)
         argv= [ file_name ]
@@ -283,20 +282,18 @@ class TempFile (ScriptExecution):
         logger.debug ('closing %d', fh)
         os.close (fh)
 
-        self.doTest (script, argv)
+        logger.debug (argv)
+        self.doTest (script, argv=argv)
 
-        if not from_stdout:
-            if not double_redirection:
-                f= open (file_name)
-                logger.debug ('reading from %d (%s)', f.fileno (), file_name)
-            else:
-                f= open (file_name2)
-                logger.debug ('reading from %d (%s)', f.fileno (), file_name2)
-            contents= f.read ()
-            logger.debug ('closing %d', f.fileno ())
-            f.close ()
+        if not double_redirection:
+            f= open (file_name)
+            logger.debug ('reading from %d (%s)', f.fileno (), file_name)
         else:
-            contents= self.r.read ()
+            f= open (file_name2)
+            logger.debug ('reading from %d (%s)', f.fileno (), file_name2)
+        contents= f.read ()
+        logger.debug ('closing %d', f.fileno ())
+        f.close ()
 
         self.assertEqual (contents, final_contents)
 
@@ -305,7 +302,11 @@ class TempFile (ScriptExecution):
             os.unlink (file_name2)
 
 
-class Redirection (TempFile):
+class RedirectionPiping (TempFile):
+
+    def testLt (self):
+        self.doTempFileTest ('testLt.ay', '42\n', initial_contents=b'42\n')
+
 
     def testGt (self):
         self.doTempFileTest ('testGt.ay', 'yes\n')
@@ -325,64 +326,48 @@ class Redirection (TempFile):
         self.doTempFileTest ('testRShift.ay', 'yes\nyes!\n')
 
 
-class Piping (MockedStdout, TempFile):
-
     def testPipe (self):
-        self.doTest ('testPipe.ay')
-        self.assertEqual (self.r.read (), b'setup.py\n')
+        self.doTest ('testPipe.ay', 'setup.py\n')
 
 
     def testLongPipe (self):
-        self.doTest ('testLongPipe.ay')
-        self.assertEqual (self.r.read (), b'1\n')
+        self.doTest ('testLongPipe.ay', '1\n')
 
 
-    def testLt (self):
-        self.doTempFileTest ('testLt.ay', b'42\n', initial_contents=b'42\n',
-                             from_stdout=True)
-
-
-class MiscTests (MockedStdout):
+class MiscTests (ScriptExecution):
 
     def testEnviron (self):
-        self.doTest ('testEnviron.ay')
-        self.assertEqual (self.r.read (), b'44\n')
+        self.doTest ('testEnviron.ay', '44\n')
 
 
     def testUnset (self):
-        self.doTest ('testUnset.ay')
-        self.assertEqual (self.r.read (), b'45\nyes\n')
+        self.doTest ('testUnset.ay',  [ '45', 'yes' ])
 
 
     def testEnvVarAsGlobalVar (self):
         os.environ['testEnvVarAsGlobalVar'] = '46' # envvars are strings only
-        self.doTest ('testEnvVarAsGlobalVar.ay')
-        self.assertEqual (self.r.read (), b'46\n')
+        self.doTest ('testEnvVarAsGlobalVar.ay', '46')
 
 
     def testExportSetsGlobalVar (self):
-        self.doTest ('testExportSetsGlobalVar.ay')
-        self.assertEqual (self.r.read (), b'47\n')
+        self.doTest ('testExportSetsGlobalVar.ay', '47')
 
 
     def testCwdPwdRename (self):
-        self.doTest ('testCwdPwdRename.ay')
-        self.assertEqual (self.r.read (), b'ayrton\n')
+        self.doTest ('testCwdPwdRename.ay', 'ayrton')
 
 
     def testWithCd (self):
-        self.doTest ('testWithCd.ay')
-        self.assertEqual (self.r.read (), b'bin\n')
+        self.doTest ('testWithCd.ay',
+                     os.path.split (os.getcwd ())[-1])
 
 
     def testShift (self):
-        self.doTest ('testShift.ay', argv=[ 48 ])
-        self.assertEqual (self.r.read (), b'48\n')
+        self.doTest ('testShift.ay', '48', argv=[ '48' ])
 
 
     def testShifts (self):
-        self.doTest ('testShifts.ay', argv=[ 49, 27 ])
-        self.assertEqual (self.r.read (), b"[49, 27]\n")
+        self.doTest ('testShifts.ay', [ '49', '27' ], argv=[ '49', '27' ])
 
 
     def testO (self):
@@ -392,13 +377,11 @@ class MiscTests (MockedStdout):
 
     def testComposing (self):
         # equivalent to testPipe()
-        self.doTest ('testComposing.ay')
-        self.assertEqual (self.r.read (), b'setup.py\n')
+        self.doTest ('testComposing.ay', 'setup.py\n')
 
     def testBg (self):
         '''This test takes some time...'''
-        self.doTest ('testBg.ay')
-        self.assertEqual (self.r.read (), b'yes!\n')
+        self.doTest ('testBg.ay', 'yes!')
         self.runner.wait_for_pending_children ()
 
 class CommandDetection (ScriptExecution):

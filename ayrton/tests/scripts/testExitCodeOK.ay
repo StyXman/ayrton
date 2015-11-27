@@ -2,4 +2,4 @@
 
 # successful executables can be tested as booleans
 if true ():
-    print ("yes!")
+    ayrton_return_value= "yes!"
