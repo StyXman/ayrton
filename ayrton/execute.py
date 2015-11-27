@@ -372,14 +372,8 @@ class Command:
             logger.debug ('closing %d', r)
             os.close (r)
 
-            if type (i)==str:
-                os.write (w, i.encode (encoding))
-                os.write (w, self.options['_end'])
-            elif type (i)==bytes:
-                os.write (w, i)
-                os.write (w, self.options['_end'])
-            elif isinstance (i, Iterable) and (not isinstance (i, Command) or
-                                               i.options.get ('_out', None)==Capture):
+            if isinstance (i, Iterable) and (not isinstance (i, Command) or
+                                             i.options.get ('_out', None)==Capture):
                 # this includes file-like's and Capture'd Commands
                 for e in i:
                     os.write (w, str (e).encode (encoding))
