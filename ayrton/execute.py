@@ -337,7 +337,7 @@ class Command:
         ans= [cmd]
 
         for arg in args:
-            if type (arg)==o:
+            if isinstance (arg, o):
                 self.prepare_arg (ans, arg.key, arg.value)
             else:
                 ans.append (str (arg))
