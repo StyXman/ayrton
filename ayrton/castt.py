@@ -72,7 +72,7 @@ def update_keyword (node, keyword):
 def func_name2dotted_exec (node):
     logger.debug (ast.dump (node))
 
-    complete_name= pprint (node)
+    complete_name= str (pprint (node))
 
     while type (node) in (Attribute, Subscript):
         node= node.value
@@ -453,7 +453,7 @@ class CrazyASTTransformer (ast.NodeTransformer):
                             # ast_pprinter takes care of expressions
                             kw= arg.keywords[0]
                             logger.debug2 ("->>>kw: %s", ast.dump (kw))
-                            kw.arg= pprint (kw.arg)
+                            kw.arg= str (pprint (kw.arg))
 
                 ast.copy_location (new_node, node)
                 node.func= new_node
