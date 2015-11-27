@@ -200,34 +200,37 @@ class Command:
     def child (self):
         logger.debug ('child')
 
+        ifile= ofile= efile= None  # these hold the IOBase object to close
+
         try:
             if '_in' in self.options:
                 i= self.options['_in']
+
                 if i is None:
                     # connect to /dev/null
                     # it's not /dev/zero, see man (4) zero
                     logger.debug ("_in==None redirects from /dev/null")
-                    i= open (os.devnull, 'rb')
-
-                if isinstance (i, io.IOBase):
+                    i= os.open (os.devnull, os.O_RDONLY)
+                elif isinstance (i, io.IOBase):
                     # this does not work with file like objects
-                    # dup its fd int stdin (0)
-                    fd= i.fileno ()
-                    logger.debug ("_in::IOBase redirects %d -> 0 (stdin)", fd)
-                    os.dup2 (fd, 0)
-                    logger.debug ('closing %d', fd)
-                    i.close ()
-                elif type (i)==int:
+                    ifile= i
+                    logger.debug ("_in::IOBase redirects %s -> 0 (stdin)", ifile)
+                    i= i.fileno ()
+                elif type (i) in (str, bytes):
+                    file_name= i
+                    i= os.open (i, os.O_RDONLY)
+                    logger.debug ("_in::(str|bytes) redirects %d (%s) -> 0 (stdin)", i, file_name)
+
+                if isinstance (i, int):
                     logger.debug ("_in::int redirects %d -> 0 (stdin)", i)
                     os.dup2 (i, 0)
-                    logger.debug ('closing %d', i)
-                    os.close (i)
-                elif type (i) in (str, bytes):
-                    fd= os.open (i, os.O_RDONLY)
-                    logger.debug ("_in::(str|bytes) redirects %d (%s) -> 0 (stdin)", fd, i)
-                    os.dup2 (fd, 0)
-                    logger.debug ('closing %d', fd)
-                    os.close (fd)
+                    if ifile is None:
+                        logger.debug ('closing %d', i)
+                        os.close (i)
+                    else:
+                        # closes both the IOBase file and its fh
+                        logger.debug ('closing %s', ifile)
+                        ifile.close ()
                 else:
                     # use the pipe prepared by prepare_fds()
                     # including the case where _in::Command
@@ -247,22 +250,28 @@ class Command:
                 o= self.options['_out']
                 if o is None:
                     # connect to /dev/null
-                    o= open (os.devnull, 'wb') # no need to create it
-                    logger.debug ("_out==None, redirects stdout 1 -> %d (%s)", o.fileno (), os.devnull)
-
-                if isinstance (o, io.IOBase):
+                    o= os.open (os.devnull, os.O_WRONLY) # no need to create it
+                    logger.debug ("_out==None, redirects stdout 1 -> %d (%s)", o, os.devnull)
+                elif isinstance (o, io.IOBase):
                     # this does not work with file like objects
-                    # dup its fd in stdout (1)
-                    fd= o.fileno ()
-                    logger.debug ("_out::IOBase, redirects stdout 1 -> %d", fd)
-                    os.dup2 (fd, 1)
-                    logger.debug ('closing %d', fd)
-                    o.close ()
-                elif type (o)==int:
+                    ofile= o
+                    logger.debug ("_out::IOBase, redirects stdout 1 -> %s", ofile)
+                    o= o.fileno ()
+                elif type (o) in (bytes, str):
+                    file_name= o
+                    o= os.open (o, os.O_WRONLY)
+                    logger.debug ("_out::(str|bytes), redirects stdout 1 -> %d (%s)", o, file_name)
+
+                if isinstance (o, int):
                     logger.debug ("_out::int, redirects stdout 1 -> %d", o)
                     os.dup2 (o, 1)
-                    logger.debug ('closing %d', o)
-                    os.close (o)
+                    if ofile is None:
+                        logger.debug ('closing %d', o)
+                        os.close (o)
+                    else:
+                        # closes both the IOBase file and its fh
+                        logger.debug ('closing %s', ofile)
+                        ofile.close ()
                 elif o==Capture or o==Pipe:
                     r, w= self.stdout_pipe
                     logger.debug ("_out::(Capture or Pipe), redirects stdout 1 -> %d", w)
@@ -270,31 +279,33 @@ class Command:
                     logger.debug ('closing %d', w)
                     os.close (w)
                     os.close (r)
-                elif type (o) in (bytes, str):
-                    fd= os.open (o, os.O_WRONLY)
-                    logger.debug ("_out::str, redirects stdout 1 -> %d (%s)", fd, o)
-                    os.dup2 (fd, 1)
-                    logger.debug ('closing %d', fd)
-                    os.close (fd)
 
             if '_err' in self.options:
                 e= self.options['_err']
                 if e is None:
                     # connect to /dev/null
-                    e= open (os.devnull, 'wb') # no need to create it
-                    logger.debug ("_err==None, redirects stderr 2 -> %d (%s)", e.fileno (), os.devnull)
-
-                if isinstance (e, io.IOBase):
+                    e= os.open (os.devnull, os.O_WRONLY) # no need to create it
+                    logger.debug ("_err==None, redirects stderr 2 -> %d (%s)", e, os.devnull)
+                elif isinstance (e, io.IOBase):
                     # this does not work with file like objects
-                    # dup its fd int stderr (2)
-                    fd= e.fileno ()
-                    logger.debug ("_err::IOBase, redirects stderr 2 -> %d", fd)
-                    os.dup2 (fd, 2)
-                elif type (e)==int:
-                    logger.debug ("_err::int, redirects stderr 1 -> %d", e)
-                    os.dup2 (e, 1)
-                    logger.debug ('closing %d', e)
-                    os.close (e)
+                    efile= e
+                    logger.debug ("_err::IOBase, redirects stderr 2 -> %s", efile)
+                    e= e.fileno ()
+                elif type (e) in (bytes, str):
+                    file_name= e
+                    e= os.open (e, os.O_WRONLY)
+                    logger.debug ("_err::(str|bytes), redirects stderr 2 -> %d (%s)", e, file_name)
+
+                if isinstance (e, int):
+                    logger.debug ("_err::int, redirects stderr 2 -> %d", e)
+                    os.dup2 (e, 2)
+                    if efile is None:
+                        logger.debug ('closing %d', e)
+                        os.close (e)
+                    else:
+                        # closes both the IOBase file and its fh
+                        logger.debug ('closing %s', efile)
+                        efile.close ()
                 elif e==Capture:
                     if '_out' in self.options and self.options['_out']==Capture:
                         # send it to stdout
@@ -306,12 +317,6 @@ class Command:
                         os.dup2 (w, 2)
                         logger.debug ('closing %d', r)
                         os.close (r)
-                elif type (o) in (bytes, str):
-                    fd= os.open (e, os.O_WRONLY)
-                    logger.debug ("_err::(str|bytes), redirects stdout 1 -> %d (%s)", fd, e)
-                    os.dup2 (fd, 1)
-                    logger.debug ('closing %d', fd)
-                    os.close (fd)
         except FileNotFoundError as e:
             logger.debug (e)
             # TODO: report something
