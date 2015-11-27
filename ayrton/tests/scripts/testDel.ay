@@ -2,6 +2,9 @@
 
 option ('errexit')
 
+# defining a local...
 false= lambda: x
+# ... and deleting it...
 del false
+# still allows us to call executables
 false ()

@@ -2,5 +2,6 @@
 
 import os.path
 
+# this change of directory does not affect the code outside the with
 with cd ("bin"):
     print (os.path.split (pwd ())[-1])

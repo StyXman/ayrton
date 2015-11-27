@@ -1,4 +1,5 @@
 #! /usr/bin/env ayrton
 
+# failing executables can be tested as booleans
 if not false ():
     print ("yes!")

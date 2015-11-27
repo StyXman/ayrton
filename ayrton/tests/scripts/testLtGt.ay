@@ -1,3 +1,4 @@
 #! /usr/bin/env ayrton
 
+# double redirection
 cat () < argv[1] > argv[2]

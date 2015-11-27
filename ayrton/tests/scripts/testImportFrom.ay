@@ -1,5 +1,6 @@
 #! /usr/bin/env ayrton
 
+# from ... import works
 from math import floor
 
 floor (1.1)

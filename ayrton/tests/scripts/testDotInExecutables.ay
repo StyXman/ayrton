@@ -1,3 +1,4 @@
 #! /usr/bin/env ayrton
 
+# names with dots work
 test.me.py ()

@@ -2,4 +2,4 @@
 
 option ('+e')
 
-false ()
+false ()  # doesn't fail

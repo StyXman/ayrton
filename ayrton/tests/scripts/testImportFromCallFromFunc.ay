@@ -1,5 +1,6 @@
 #! /usr/bin/env ayrton
 
+# we didn't break from ... import!
 from math import floor
 
 def foo ():

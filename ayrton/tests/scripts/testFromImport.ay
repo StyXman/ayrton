@@ -1,5 +1,6 @@
 #! /usr/bin/env ayrton
 
+# I can call functions imported
 from random import seed
 
 seed ()

@@ -1,4 +1,5 @@
 #! /usr/bin/env ayrton
 
+# successful executables can be tested as booleans
 if true ():
     print ("yes!")

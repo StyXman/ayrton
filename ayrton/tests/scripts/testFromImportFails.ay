@@ -2,4 +2,4 @@
 
 from random import seed
 
-foo ()
+foo ()  # CommandNotFound

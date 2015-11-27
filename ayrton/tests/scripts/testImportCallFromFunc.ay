@@ -1,5 +1,6 @@
 #! /usr/bin/env ayrton
 
+# import works and is global
 import math
 
 def foo ():
