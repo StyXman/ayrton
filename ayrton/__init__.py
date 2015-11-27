@@ -32,7 +32,7 @@ log_format= "%(asctime)s %(name)16s:%(lineno)-4d (%(funcName)-21s) %(levelname)-
 date_format= "%H:%M:%S"
 
 # uncomment one of these for way too much debugging :)
-logging.basicConfig(filename='ayrton.%d.log' % os.getpid (), level=logging.DEBUG, format=log_format, datefmt=date_format)
+# logging.basicConfig(filename='ayrton.%d.log' % os.getpid (), level=logging.DEBUG, format=log_format, datefmt=date_format)
 # logging.basicConfig(filename='ayrton.log', level=logging.DEBUG, format=log_format, datefmt=date_format)
 logger= logging.getLogger ('ayrton')
 
@@ -48,10 +48,12 @@ from ayrton.ast_pprinter import pprint
 
 __version__= '0.6'
 
+
 def parse (script, file_name=''):
     parser= PythonParser (None)
     info= CompileInfo (file_name, 'exec')
     return ast_from_node (None, parser.parse_source (script, info), info)
+
 
 class Environment (dict):
     def __init__ (self, *args, **kwargs):
@@ -159,6 +161,7 @@ class Ayrton (object):
         f.close ()
 
         return self.run_script (script, file_name, argv)
+
 
     def run_script (self, script, file_name, argv=None):
         logger.debug ('running script:\n-----------\n%s\n-----------', script)
