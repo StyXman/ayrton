@@ -65,7 +65,8 @@ class Environment (dict):
     def polute (self):
         self.update (__builtins__)
         # weed out some stuff
-        for weed in ('copyright', '__doc__', 'help', '__package__', 'credits', 'license', '__name__'):
+        for weed in ('copyright', '__doc__', 'help', '__package__', 'credits',
+                     'license', '__name__', 'quit', 'exit'):
             del self[weed]
 
         # these functions will be loaded from each module and put in the globals
