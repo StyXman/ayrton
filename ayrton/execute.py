@@ -21,6 +21,7 @@ import io
 from collections.abc import Iterable
 import signal
 import errno
+from traceback import format_exc
 
 import ayrton
 
@@ -328,10 +329,11 @@ class Command:
 
         try:
             os.execvpe (self.exe, self.args, self.options['_env'])
-        except FileNotFoundError:
+        except FileNotFoundError as e:
             logger.debug (e)
             # TODO: report something
             os._exit (127)
+
 
     def prepare_args (self, cmd, args, kwargs):
         ans= [cmd]
@@ -461,7 +463,14 @@ class Command:
         logger.debug ('fork')
         r= os.fork ()
         if r==0:
-            self.child ()
+            try:
+                self.child ()
+            except Exception as e:
+                logger.debug ('child borked')
+                logger.debug (format_exc())
+
+            # catch all
+            os._exit (1)
         else:
             self.child_pid= r
             self.parent ()
