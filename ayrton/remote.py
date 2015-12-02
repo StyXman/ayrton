@@ -115,14 +115,16 @@ class RemoteStub:
     def __init__ (self, i, o, e):
         # TODO: handle _in, _out, _err
         # TODO: handle stdin
-        self.i= i
-        self.o= CopyThread (o, sys.stdout)
+        self.i= CopyThread (0, i)
+        self.i.start ()
+        self.o= CopyThread (o, 1)
         self.o.start ()
-        self.e= CopyThread (e, sys.stderr)
+        self.e= CopyThread (e, 2)
         self.e.start ()
 
     def close (self):
-        for attr in ('i', 'o', 'e'):
+        # for attr in ('i', 'o', 'e'):
+        for attr in ('i'):
             f= getattr (self, attr)
             try:
                 f.close ()
