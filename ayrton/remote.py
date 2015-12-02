@@ -41,11 +41,34 @@ class CopyThread (Thread):
     def __init__ (self, src, dst):
         super ().__init__ ()
         # so I can close them at will
-        logger.debug ('CopyThread %s -> %s', src, dst)
-        # self.src= open (os.dup (src.fileno ()), 'rb')
-        # self.dst= open (os.dup (dst.fileno ()), 'wb')
-        self.src= src
-        self.dst= dst
+        logger.debug ('CopyThread %s (%s -> %s)', self, src, dst)
+        self.src= self.dup (src)
+        self.dst= self.dup (dst)
+
+    def dup (self, o):
+        try:
+            f= os.dup (o)
+        except TypeError:
+            f= o
+
+        return f
+
+    def read (self):
+        try:
+            try:
+                data= os.read (self.src, 10240)
+            except TypeError:
+                data= self.src.read (10240)
+        except ConnectionResetError:
+            data= ''
+
+        return data
+
+    def write (self, data):
+        try:
+            os.write (self.dst, data)
+        except TypeError:
+            self.dst.write (data)
 
     def run (self):
         # NOTE: OSError: [Errno 22] Invalid argument
@@ -54,7 +77,7 @@ class CopyThread (Thread):
         # so, copy by hand
         while True:
             try:
-                data= self.src.read (10240)
+                data= self.read ()
                 logger.debug ('%s -> %s: %s', self.src, self.dst, data)
             # ValueError: read of closed file
             except (OSError, ValueError) as e:
@@ -66,15 +89,27 @@ class CopyThread (Thread):
                     logger.debug ('stopping copying thread for %s, no more data', self.src)
                     break
                 else:
-                    self.dst.write (data.decode ())
-                    # self.dst.write (data)
+                    self.write (data)
 
-        # self.close ()
+        self.close ()
+        logger.debug ('%s shutdown', self)
 
     def close (self):
-        logger.debug ('closing %s', self.src)
-        self.src.close ()
-        # self.dst.close ()
+        self.close_file (self.src)
+        self.close_file (self.dst)
+
+    def close_file (self, f):
+        logger.debug ('closing %s', f)
+        try:
+            try:
+                f.close ()
+            except AttributeError:
+                # AttributeError: 'int' object has no attribute 'close'
+                os.close (f)
+        except OSError as e:
+            logger.debug ('closing gave %s', e)
+            if e.errno!=errno.EBADF:
+                raise
 
 class RemoteStub:
     def __init__ (self, i, o, e):
