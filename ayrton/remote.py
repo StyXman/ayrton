@@ -107,8 +107,12 @@ class remote:
         self.param ('_test', kwargs)
         self.kwargs= kwargs
 
+        # socket/transport where we wait for connection for the result
+        self.result_listen= None
         # socket/transport where the result is going to come back
         self.result_channel= None
+
+        self.remote= None
 
     def param (self, param, kwargs, default_value=False):
         """gets a param from kwargs, or uses a default_value. if found, it's
@@ -222,12 +226,12 @@ client.close ()                                                           # 45"
             # and return the locals, result and exception (#43)
             # the remote will see this channel as a localhost port
             # and it's seen on the local side as self.con defined below
-            self.result_channel= self.client.get_transport ()
-            self.result_channel.request_port_forward ('localhost', port)
+            self.result_listen= self.client.get_transport ()
+            self.result_listen.request_port_forward ('localhost', port)
 
             (i, o, e)= self.client.exec_command (command)
 
-            self.conn= self.result_channel.accept ()
+            self.result_channel= self.result_listen.accept ()
         else:
             self.client= socket ()
             self.client.connect ((self.hostname, 2233)) # nc listening here, see DebugRemoteTests
@@ -236,37 +240,43 @@ client.close ()                                                           # 45"
             o= open (self.client.fileno (), 'rb', 0)
             e= open (self.client.fileno (), 'rb', 0)
 
-            self.result_channel= socket ()
-            # self.result_channel.setsockopt (SO_REUSEADDR, )
-            self.result_channel.bind (('', port))
-            self.result_channel.listen (1)
+            self.result_listen= socket ()
+            # self.result_listen.setsockopt (SO_REUSEADDR, )
+            self.result_listen.bind (('', port))
+            self.result_listen.listen (1)
 
             # so bash does not hang waiting from more input
             command+= 'exit\n'
             i.write (command.encode ())
 
-            (self.conn, addr)= self.result_channel.accept ()
+            (self.result_channel, addr)= self.result_listen.accept ()
 
         logger.debug ('sending ast, globals, locals')
-        self.conn.sendall (self.ast)
-        self.conn.sendall (global_env)
-        self.conn.sendall (local_env)
+        self.result_channel.sendall (self.ast)
+        self.result_channel.sendall (global_env)
+        self.result_channel.sendall (local_env)
 
-        self.connection= RemoteStub(i, o, e)
+        self.remote= RemoteStub(i, o, e)
 
     def __exit__ (self, *args):
         logger.debug (args)
         data= b''
-        partial= self.conn.recv (8196)
+        partial= self.result_channel.recv (8196)
         while len(partial)>0:
             data+= partial
-            partial= self.conn.recv (8196)
+            partial= self.result_channel.recv (8196)
 
         logger.debug ('recieved %d bytes', len (data))
         (l, result, e)= pickle.loads (data)
         logger.debug ('result from remote: %r', result)
         logger.debug3 ('locals returned from remote: %s', ayrton.utils.dump_dict (l))
-        self.conn.close ()
+        logger.debug ('closing %s', self.result_channel)
+        self.result_channel.close ()
+
+        logger.debug ('closing %s', self.result_listen)
+        self.result_listen.close ()
+        logger.debug ('closing %s', self.remote)
+        self.remote.close ()
 
         # update locals
         callers_frame= sys._getframe().f_back
@@ -283,9 +293,6 @@ client.close ()                                                           # 45"
         logger.debug3 ('globals after remote: %s', ayrton.utils.dump_dict (ayrton.runner.globals))
         logger.debug3 ('locals after remote: %s', ayrton.utils.dump_dict (callers_frame.f_locals))
         logger.debug3 ('co_varnames: %s', callers_frame.f_code.co_varnames)
-
-        self.result_channel.close ()
-        self.connection.close ()
 
         if e is not None:
             logger.debug ('raised from remote: %r', e)
