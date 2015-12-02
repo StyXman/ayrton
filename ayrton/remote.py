@@ -29,6 +29,7 @@ import errno
 import ctypes
 import os
 import traceback
+from select import select
 
 import logging
 logger= logging.getLogger ('ayrton.remote')
@@ -44,6 +45,8 @@ class CopyThread (Thread):
         logger.debug ('CopyThread %s (%s -> %s)', self, src, dst)
         self.src= self.dup (src)
         self.dst= self.dup (dst)
+        if isinstance (src, int):
+            self.finished= os.pipe ()
 
     def dup (self, o):
         try:
@@ -77,6 +80,15 @@ class CopyThread (Thread):
         # so, copy by hand
         while True:
             try:
+                if isinstance (self.src, int):
+                    # this is stdin
+                    # we must finish without reading from it
+                    # if a signal comes via self.finished
+                    ready= select ([self.src, self.finished[0]], [], [])
+                    if self.finished[0] in ready:
+                        self.close_file (self.finished[0])
+                        break
+
                 data= self.read ()
                 logger.debug ('%s -> %s: %s', self.src, self.dst, data)
             # ValueError: read of closed file
@@ -97,6 +109,9 @@ class CopyThread (Thread):
     def close (self):
         self.close_file (self.src)
         self.close_file (self.dst)
+        if isinstance (self.src, int):
+            # send the finished signal
+            self.close_file (self.finished[1])
 
     def close_file (self, f):
         logger.debug ('closing %s', f)
