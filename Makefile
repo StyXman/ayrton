@@ -10,13 +10,11 @@ tests:
 	LC_ALL=C $(PYTHON) -m unittest discover -v ayrton
 	# LC_ALL=C $(DEBUG_MULTI) python3 -m unittest discover -v ayrton
 
-quicktest: fasttest
-
-fasttest:
+slowtest:
 	# LC_ALL=C $(DEBUG_SIMPLE) $(PYTHON) -m unittest discover -f -v ayrton
 	LC_ALL=C $(DEBUG_MULTI) $(PYTHON) -m unittest discover -f -v ayrton
 
-qtest:
+quicktest:
 	LC_ALL=C $(PYTHON) -m unittest discover -f -v ayrton
 
 docs:
@@ -44,3 +42,9 @@ check:
 
 testclean:
 	rm -rfv ayrton.*log runner.*
+
+debugserver:
+	# TODO: generate the server key
+	# if ! [ -f
+	# TODO: discover path?
+	/usr/sbin/sshd -dd -e -h $(shell pwd)/rsa_server_key -p 2244
