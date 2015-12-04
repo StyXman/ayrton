@@ -68,9 +68,18 @@ class InteractiveThread (Thread):
         else:
             dst.send (data)
 
+    def fileno (self, f):
+        if isinstance (f, int):
+            return f
+        elif getattr (f, 'fileno', None) is not None:
+            return f.fileno ()
+        else:
+            raise TypeError (f)
+
     def run (self):
-        # NOTE: OSError: [Errno 22] Invalid argument
+        # NOTE:
         # os.sendfile (self.dst, self.src, None, 0)
+        # OSError: [Errno 22] Invalid argument
         # and splice() is not available
         # so, copy by hand
         while True:
@@ -83,6 +92,7 @@ class InteractiveThread (Thread):
                       not isinstance (wait.fileno(), int)) ):
                     logger.debug ('type mismatch: %s', wait)
 
+            logger.debug (wait_for)
             r, w, e= select (wait_for, [], [])
 
             if self.finished[0] in r:
@@ -321,7 +331,7 @@ client.close ()                                                           # 45"
         self.result_channel.sendall (global_env)
         self.result_channel.sendall (local_env)
 
-        self.remote= RemoteStub(i, o, e)
+        self.remote= RemoteStub (i, o, e)
 
     def __exit__ (self, *args):
         logger.debug (args)
