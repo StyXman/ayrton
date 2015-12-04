@@ -30,6 +30,7 @@ import ctypes
 import os
 import traceback
 from select import select
+import io
 
 import logging
 logger= logging.getLogger ('ayrton.remote')
@@ -38,80 +39,103 @@ class ShutUpPolicy (paramiko.MissingHostKeyPolicy):
     def missing_host_key (self, *args, **kwargs):
         pass
 
-class CopyThread (Thread):
-    def __init__ (self, src, dst):
+class InteractiveThread (Thread):
+    def __init__ (self, pairs):
         super ().__init__ ()
         # so I can close them at will
-        logger.debug ('CopyThread %s (%s -> %s)', self, src, dst)
-        self.src= self.dup (src)
-        self.dst= self.dup (dst)
-        if isinstance (src, int):
-            self.finished= os.pipe ()
+        logger.debug ('%s: %s', self, pairs)
+        self.pairs= pairs
+        self.finished= os.pipe ()
 
-    def dup (self, o):
-        try:
-            f= os.dup (o)
-        except TypeError:
-            f= o
 
-        return f
-
-    def read (self):
-        try:
-            try:
-                data= os.read (self.src, 10240)
-            except TypeError:
-                data= self.src.read (10240)
-        except ConnectionResetError:
-            data= ''
+    def read (self, src):
+        if isinstance (src, io.IOBase):
+            data= src.read (10240)
+        elif isinstance (src, int):
+            data= os.read (src, 10240)
+        else:
+            data= src.recv (10240)
 
         return data
 
-    def write (self, data):
-        try:
-            os.write (self.dst, data)
-        except TypeError:
-            self.dst.write (data)
+
+    def write (self, dst, data):
+        if isinstance (dst, io.IOBase):
+            dst.write (data.decode ())
+            dst.flush ()
+        elif isinstance (dst, int):
+            os.write (dst, data)
+        else:
+            dst.send (data)
+
+    def fileno (self, f):
+        if isinstance (f, int):
+            return f
+        elif getattr (f, 'fileno', None) is not None:
+            return f.fileno ()
+        else:
+            raise TypeError (f)
 
     def run (self):
-        # NOTE: OSError: [Errno 22] Invalid argument
+        # NOTE:
         # os.sendfile (self.dst, self.src, None, 0)
+        # OSError: [Errno 22] Invalid argument
         # and splice() is not available
         # so, copy by hand
         while True:
-            try:
-                if isinstance (self.src, int):
-                    # this is stdin
-                    # we must finish without reading from it
-                    # if a signal comes via self.finished
-                    ready= select ([self.src, self.finished[0]], [], [])
-                    if self.finished[0] in ready:
-                        self.close_file (self.finished[0])
-                        break
+            wait_for= list (self.pairs.keys ())
+            wait_for.append (self.finished[0])
+            logger.debug (wait_for)
+            for wait in wait_for:
+                if ( not isinstance (wait, int) and
+                     (getattr (wait, 'fileno', None) is None  or
+                      not isinstance (wait.fileno(), int)) ):
+                    logger.debug ('type mismatch: %s', wait)
 
-                data= self.read ()
-                logger.debug ('%s -> %s: %s', self.src, self.dst, data)
-            # ValueError: read of closed file
-            except (OSError, ValueError) as e:
-                logger.debug ('stopping copying thread for %s', self.src)
-                logger.debug (traceback.format_exc ())
+            logger.debug (wait_for)
+            r, w, e= select (wait_for, [], [])
+
+            if self.finished[0] in r:
+                self.close_file (self.finished[0])
                 break
-            else:
-                if len (data)==0:
-                    logger.debug ('stopping copying thread for %s, no more data', self.src)
+
+            for error in e:
+                logger.debug ('%s error')
+                # TODO: what?
+
+            for i in r:
+                o= self.pairs[i]
+                try:
+                    data= self.read (i)
+                    logger.debug ('%s -> %s: %s', i, o, data)
+
+                # ValueError: read of closed file
+                except (OSError, ValueError) as e:
+                    logger.debug ('stopping copying for %s', i)
+                    del self.pairs[i]
+                    logger.debug (traceback.format_exc ())
                     break
                 else:
-                    self.write (data)
+                    if len (data)==0:
+                        logger.debug ('stopping copying for %s, no more data', i)
+                        del self.pairs[i]
+                    else:
+                        self.write (o, data)
 
         self.close ()
         logger.debug ('%s shutdown', self)
 
+
     def close (self):
-        self.close_file (self.src)
-        self.close_file (self.dst)
-        if isinstance (self.src, int):
-            # send the finished signal
-            self.close_file (self.finished[1])
+        for k, v in list (self.pairs.items ()):
+            for f in (k, v):
+                if ( isinstance (f, paramiko.Channel) or
+                     (isinstance (f, io.TextIOWrapper) and
+                      f.fileno ()>2) ):
+                     self.close_file (f)
+
+        self.close_file (self.finished[1])
+
 
     def close_file (self, f):
         logger.debug ('closing %s', f)
@@ -129,23 +153,21 @@ class CopyThread (Thread):
 class RemoteStub:
     def __init__ (self, i, o, e):
         # TODO: handle _in, _out, _err
-        # TODO: handle stdin
-        self.i= CopyThread (0, i)
-        self.i.start ()
-        self.o= CopyThread (o, 1)
-        self.o.start ()
-        self.e= CopyThread (e, 2)
-        self.e.start ()
+        if isinstance (i, paramiko.ChannelFile):
+            # I don't expect mixed files
+            # so select() works on them
+            i= i.channel
+            o= o.channel
+            e= e.channel
+
+        self.interactive= InteractiveThread ({0: i, o: 1, e: 2})
+        self.interactive.start ()
+
 
     def close (self):
-        # for attr in ('i', 'o', 'e'):
-        for attr in ('i'):
-            f= getattr (self, attr)
-            try:
-                f.close ()
-            except OSError as e:
-                if e.errno!=errno.EBADF:
-                    raise
+        self.interactive.close ()
+        self.interactive.join ()
+
 
 class remote:
     "Uses the same arguments as paramiko.SSHClient.connect ()"
@@ -166,6 +188,7 @@ class remote:
 
         self.remote= None
 
+
     def param (self, param, kwargs, default_value=False):
         """gets a param from kwargs, or uses a default_value. if found, it's
         removed from kwargs"""
@@ -175,6 +198,7 @@ class remote:
         else:
             value= default_value
         setattr (self, param, value)
+
 
     def __enter__ (self):
         # get the globals from the runtime
@@ -281,7 +305,7 @@ client.close ()                                                           # 45"
             self.result_listen= self.client.get_transport ()
             self.result_listen.request_port_forward ('localhost', port)
 
-            (i, o, e)= self.client.exec_command (command)
+            (i, o, e)= self.client.exec_command (command, get_pty=True)
 
             self.result_channel= self.result_listen.accept ()
         else:
@@ -308,7 +332,8 @@ client.close ()                                                           # 45"
         self.result_channel.sendall (global_env)
         self.result_channel.sendall (local_env)
 
-        self.remote= RemoteStub(i, o, e)
+        self.remote= RemoteStub (i, o, e)
+
 
     def __exit__ (self, *args):
         logger.debug (args)
