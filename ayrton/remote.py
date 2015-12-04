@@ -155,20 +155,19 @@ class RemoteStub:
         # TODO: handle _in, _out, _err
         if isinstance (i, paramiko.ChannelFile):
             # I don't expect mixed files
+            # so select() works on them
             i= i.channel
             o= o.channel
             e= e.channel
 
-        # self.interactive= InteractiveThread ({sys.stdin: i,
-        #                                       o: sys.stdout,
-        #                                       e: sys.stderr})
-        self.interactive= InteractiveThread ({0: i,
-                                              o: 1,
-                                              e: 2})
+        self.interactive= InteractiveThread ({0: i, o: 1, e: 2})
         self.interactive.start ()
+
 
     def close (self):
         self.interactive.close ()
+        self.interactive.join ()
+
 
 class remote:
     "Uses the same arguments as paramiko.SSHClient.connect ()"
@@ -189,6 +188,7 @@ class remote:
 
         self.remote= None
 
+
     def param (self, param, kwargs, default_value=False):
         """gets a param from kwargs, or uses a default_value. if found, it's
         removed from kwargs"""
@@ -198,6 +198,7 @@ class remote:
         else:
             value= default_value
         setattr (self, param, value)
+
 
     def __enter__ (self):
         # get the globals from the runtime
@@ -332,6 +333,7 @@ client.close ()                                                           # 45"
         self.result_channel.sendall (local_env)
 
         self.remote= RemoteStub (i, o, e)
+
 
     def __exit__ (self, *args):
         logger.debug (args)
