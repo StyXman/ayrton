@@ -40,9 +40,6 @@ class ShutUpPolicy (paramiko.MissingHostKeyPolicy):
         pass
 
 # TODO:
-#19:44:54.884077 dup(0)                  = 5 <0.000014>
-#19:44:54.884127 dup(1)                  = 6 <0.000013>
-#19:44:54.884171 dup(2)                  = 7 <0.000012>
 #19:44:54.884213 ioctl(5, TCGETS, {B38400 opost isig icanon echo ...}) = 0 <0.000015>
 #19:44:54.884267 ioctl(6, TCGETS, {B38400 opost isig icanon echo ...}) = 0 <0.000014>
 #19:44:54.884316 ioctl(7, TCGETS, {B38400 opost isig icanon echo ...}) = 0 <0.000013>
