@@ -69,14 +69,9 @@ class ShutUpPolicy (paramiko.MissingHostKeyPolicy):
 #19:44:58.479607 select(8, [3 5], [6], NULL, NULL) = 1 (out [6]) <0.000015>
 #19:44:58.479708 write(6, "logout\r\n", 8) = 8 <0.000017>
 
-#19:44:58.483894 close(5)                = 0 <0.000015>
-#19:44:58.483956 close(6)                = 0 <0.000015>
-#19:44:58.484011 clock_gettime(CLOCK_BOOTTIME, {1233289, 294825737}) = 0 <0.000014>
-#19:44:58.484063 clock_gettime(CLOCK_BOOTTIME, {1233289, 294876787}) = 0 <0.000014>
 #19:44:58.484115 ioctl(0, TCGETS, {B38400 -opost -isig -icanon -echo ...}) = 0 <0.000015>
 #19:44:58.484170 ioctl(0, SNDCTL_TMR_STOP or TCSETSW, {B38400 opost isig icanon echo ...}) = 0 <0.000018>
 #19:44:58.484228 ioctl(0, TCGETS, {B38400 opost isig icanon echo ...}) = 0 <0.000015>
-#19:44:58.484300 close(7)                = 0 <0.000015>
 #19:44:58.484746 ioctl(0, TCGETS, {B38400 opost isig icanon echo ...}) = 0 <0.000015>
 #19:44:58.484800 ioctl(1, TCGETS, {B38400 opost isig icanon echo ...}) = 0 <0.000015>
 #19:44:58.484853 ioctl(2, TCGETS, {B38400 opost isig icanon echo ...}) = 0 <0.000015>
@@ -192,6 +187,7 @@ class InteractiveThread (Thread):
             logger.debug ('closing gave %s', e)
             if e.errno!=errno.EBADF:
                 raise
+
 
 class RemoteStub:
     def __init__ (self, pairs):
@@ -342,7 +338,6 @@ client.close ()                                                           # 45"
 
             (i, o, e)= self.client.exec_command (command, get_pty=True)
             if isinstance (i, paramiko.ChannelFile):
-                # I don't expect mixed files
                 # so select() works on them
                 i= i.channel
                 o= o.channel
