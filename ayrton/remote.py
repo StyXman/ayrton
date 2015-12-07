@@ -39,6 +39,53 @@ class ShutUpPolicy (paramiko.MissingHostKeyPolicy):
     def missing_host_key (self, *args, **kwargs):
         pass
 
+# TODO:
+#19:44:54.884077 dup(0)                  = 5 <0.000014>
+#19:44:54.884127 dup(1)                  = 6 <0.000013>
+#19:44:54.884171 dup(2)                  = 7 <0.000012>
+#19:44:54.884213 ioctl(5, TCGETS, {B38400 opost isig icanon echo ...}) = 0 <0.000015>
+#19:44:54.884267 ioctl(6, TCGETS, {B38400 opost isig icanon echo ...}) = 0 <0.000014>
+#19:44:54.884316 ioctl(7, TCGETS, {B38400 opost isig icanon echo ...}) = 0 <0.000013>
+#19:44:54.884369 fcntl(5, F_SETFD, FD_CLOEXEC) = 0 <0.000013>
+#19:44:54.884415 fcntl(6, F_SETFD, FD_CLOEXEC) = 0 <0.000013>
+#19:44:54.884459 fcntl(7, F_SETFD, FD_CLOEXEC) = 0 <0.000013>
+#19:44:54.885998 ioctl(0, TCGETS, {B38400 opost isig icanon echo ...}) = 0 <0.000021>
+#19:44:54.886083 ioctl(0, TCGETS, {B38400 opost isig icanon echo ...}) = 0 <0.000014>
+#19:44:54.886137 ioctl(0, SNDCTL_TMR_STOP or TCSETSW, {B38400 -opost -isig -icanon -echo ...}) = 0 <0.000016>
+#19:44:54.886190 ioctl(0, TCGETS, {B38400 -opost -isig -icanon -echo ...}) = 0 <0.000013>
+
+#19:44:54.953791 getsockopt(3, SOL_TCP, TCP_NODELAY, [0], [4]) = 0 <0.000016>
+#19:44:54.953852 setsockopt(3, SOL_TCP, TCP_NODELAY, [1], 4) = 0 <0.000014>
+
+#19:44:54.955976 select(8, [3 5], [], NULL, NULL) = 1 (in [3]) <0.000016>
+#19:44:54.956074 read(3, "o\266@g\334F2\236/J\3768\347]\345\265<\331\336\32\210)\250\3261\214\376kZ\326h\2674K\27T\263d\34\314\315\264S0\352A\301\335y\305\377R\345B]\360\322 \200h5\244\366U\32197\250\273\314\353\4\357\214K\261\350\323\342\343\27I\25\v\314\244G|\22\333\256\262\274v\211\313\30u\344D\320\276\241\256u\302\267\"\3607w\3320\2403]\0345\34Ch%@(\37\367\376\255"..., 8192) = 520 <0.000033>
+#19:44:54.956288 select(8, [3 5], [6], NULL, NULL) = 1 (out [6]) <0.000017>
+#19:44:54.956399 write(6, "\r\nThe programs included with the Debian GNU/Linux system are free software;\r\nthe exact distribution terms for each program are d"..., 367) = 367 <0.000018>
+#19:44:54.956583 select(8, [3 5], [], NULL, NULL) = 1 (in [3]) <0.113194>
+#19:44:55.069989 read(3, "\234\27\263\30i\262\305\336\361\f\16\374,9\251;\225h\236\262\26\343\213I-\300]f\206\266D\263\337+\36\356=\216\r\335\257.Y\203\327\347\314\265\245mUP\311Z\3\230\242{s5\0\216\342\225\1\353\303_\202\25\347\353\236\305\207R", 8192) = 76 <0.000069>
+#19:44:55.070305 select(8, [3 5], [6], NULL, NULL) = 1 (out [6]) <0.000009>
+#19:44:55.070407 write(6, "\33]0;mdione@diablo: ~\7mdione@diablo:~$ ", 38) = 38 <0.000027>
+#19:44:55.070528 select(8, [3 5], [], NULL, NULL) = 1 (in [5]) <3.407809>
+#19:44:58.478516 read(5, "\4", 16384)    = 1 <0.000020>
+#19:44:58.479153 select(8, [3 5], [], NULL, NULL) = 1 (in [3]) <0.000129>
+#19:44:58.479421 read(3, "D\332\236-\331\26b\214\214%C3*U\243\2412)\240\241\354\303X\251\273\246\203\316\361l\304q\37\264\353\205\202\301\2\364\254m\214W", 8192) = 44 <0.000018>
+#19:44:58.479607 select(8, [3 5], [6], NULL, NULL) = 1 (out [6]) <0.000015>
+#19:44:58.479708 write(6, "logout\r\n", 8) = 8 <0.000017>
+
+#19:44:58.483894 close(5)                = 0 <0.000015>
+#19:44:58.483956 close(6)                = 0 <0.000015>
+#19:44:58.484011 clock_gettime(CLOCK_BOOTTIME, {1233289, 294825737}) = 0 <0.000014>
+#19:44:58.484063 clock_gettime(CLOCK_BOOTTIME, {1233289, 294876787}) = 0 <0.000014>
+#19:44:58.484115 ioctl(0, TCGETS, {B38400 -opost -isig -icanon -echo ...}) = 0 <0.000015>
+#19:44:58.484170 ioctl(0, SNDCTL_TMR_STOP or TCSETSW, {B38400 opost isig icanon echo ...}) = 0 <0.000018>
+#19:44:58.484228 ioctl(0, TCGETS, {B38400 opost isig icanon echo ...}) = 0 <0.000015>
+#19:44:58.484300 close(7)                = 0 <0.000015>
+#19:44:58.484746 ioctl(0, TCGETS, {B38400 opost isig icanon echo ...}) = 0 <0.000015>
+#19:44:58.484800 ioctl(1, TCGETS, {B38400 opost isig icanon echo ...}) = 0 <0.000015>
+#19:44:58.484853 ioctl(2, TCGETS, {B38400 opost isig icanon echo ...}) = 0 <0.000015>
+#19:44:58.484908 write(2, "Connection to localhost closed.\r\n", 33) = 33 <0.000023>
+
+
 class InteractiveThread (Thread):
     def __init__ (self, pairs):
         super ().__init__ ()
