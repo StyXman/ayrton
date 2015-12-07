@@ -3,7 +3,7 @@
 # we can define a local variable...
 testLocalVarToRealRemoteToLocal= False
 
-with remote ('127.0.0.1', allow_agent=False, _test=True):
+with remote ('127.0.0.1', _test=True):
     # ... modify it in the remote...
     testLocalVarToRealRemoteToLocal= True
 
