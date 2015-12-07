@@ -151,16 +151,8 @@ class InteractiveThread (Thread):
                 raise
 
 class RemoteStub:
-    def __init__ (self, i, o, e):
-        # TODO: handle _in, _out, _err
-        if isinstance (i, paramiko.ChannelFile):
-            # I don't expect mixed files
-            # so select() works on them
-            i= i.channel
-            o= o.channel
-            e= e.channel
-
-        self.interactive= InteractiveThread ({0: i, o: 1, e: 2})
+    def __init__ (self, pairs):
+        self.interactive= InteractiveThread (pairs)
         self.interactive.start ()
 
 
@@ -306,6 +298,12 @@ client.close ()                                                           # 45"
             self.result_listen.request_port_forward ('localhost', port)
 
             (i, o, e)= self.client.exec_command (command, get_pty=True)
+            if isinstance (i, paramiko.ChannelFile):
+                # I don't expect mixed files
+                # so select() works on them
+                i= i.channel
+                o= o.channel
+                e= e.channel
 
             self.result_channel= self.result_listen.accept ()
         else:
@@ -332,7 +330,8 @@ client.close ()                                                           # 45"
         self.result_channel.sendall (global_env)
         self.result_channel.sendall (local_env)
 
-        self.remote= RemoteStub (i, o, e)
+        # TODO: handle _in, _out, _err
+        self.remote= RemoteStub ({0: i, o: 1, e: 2})
 
 
     def __exit__ (self, *args):
