@@ -130,8 +130,7 @@ class InteractiveThread (Thread):
         for k, v in list (self.pairs.items ()):
             for f in (k, v):
                 if ( isinstance (f, paramiko.Channel) or
-                     (isinstance (f, io.TextIOWrapper) and
-                      f.fileno ()>2) ):
+                     isinstance (f, io.TextIOWrapper) ):
                      self.close_file (f)
 
         self.close_file (self.finished[1])
@@ -331,7 +330,7 @@ client.close ()                                                           # 45"
         self.result_channel.sendall (local_env)
 
         # TODO: handle _in, _out, _err
-        self.remote= RemoteStub ({0: i, o: 1, e: 2})
+        self.remote= RemoteStub ({os.dup (0): i, o: os.dup (1), e: os.dup (2)})
 
 
     def __exit__ (self, *args):
