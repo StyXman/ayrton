@@ -31,6 +31,9 @@ import os
 import traceback
 from select import select
 import io
+from termios import tcgetattr, tcsetattr, TCSADRAIN
+from termios import IGNPAR, ISTRIP, INLCR, IGNCR, ICRNL, IXON, IXANY, IXOFF
+from termios import ISIG, ICANON, ECHO, ECHOE, ECHOK, ECHONL, IEXTEN, OPOST, VMIN, VTIME
 
 import logging
 logger= logging.getLogger ('ayrton.remote')
@@ -87,6 +90,53 @@ class InteractiveThread (Thread):
         self.copy_to= dict (pairs)
         self.finished= os.pipe ()
 
+        # we're using a tty, change all the local settings for stdin
+        # directly taken from openssh (sshtty.c)
+        # tio.c_iflag |= IGNPAR;
+        # tio.c_iflag &= ~(ISTRIP | INLCR | IGNCR | ICRNL | IXON | IXANY | IXOFF);
+        # tio.c_lflag &= ~(ISIG | ICANON | ECHO | ECHOE | ECHOK | ECHONL);
+        # tio.c_lflag &= ~IEXTEN;
+        # tio.c_oflag &= ~OPOST;
+        # tio.c_cc[VMIN] = 1;
+        # tio.c_cc[VTIME] = 0;
+        self.orig_terminfo= tcgetattr (pairs[0][0])
+        iflag, oflag, cflag, lflag, ispeed, ospeed, cc= self.orig_terminfo
+
+        # turn on:
+        # Ignore framing errors and parity errors
+        iflag|= IGNPAR
+        # turn off:
+        # Strip off eighth bit
+        # Translate NL to CR on input
+        # Ignore carriage return on input
+        # Enable XON/XOFF flow control on output
+        # (XSI) Typing any character will restart stopped output. NOTE: not needed?
+        # Enable XON/XOFF flow control on input
+        iflag&= ~( ISTRIP | INLCR | IGNCR | ICRNL | IXON | IXANY | IXOFF )
+
+        # turn off
+        # When any of the characters INTR, QUIT, SUSP, or DSUSP are received, generate the corresponding signal
+        # Enable canonical mode
+        # Echo input characters (finally)
+        # NOTE: why these three? they only work with ICANON and we're disabling it
+        # If ICANON is also set, the ERASE character erases the preceding input character, and WERASE erases the preceding word
+        # If ICANON is also set, the KILL character erases the current line
+        # If ICANON is also set, echo the NL character even if ECHO is not set
+        # Enable implementation-defined input processing
+        lflag&= ~( ISIG | ICANON | ECHO | ECHOE | ECHOK | ECHONL | IEXTEN )
+
+        # turn off:
+        # Enable implementation-defined output processing
+        oflag&= ~OPOST
+
+        # NOTE: whatever
+        # Minimum number of characters for noncanonical read
+        cc[VMIN]= 1
+        # Timeout in deciseconds for noncanonical read
+        cc[VTIME]= 0
+
+        tcsetattr(self.pairs[0][0], TCSADRAIN, [ iflag, oflag, cflag, lflag,
+                                                 ispeed, ospeed, cc ])
 
     def read (self, src):
         if isinstance (src, io.IOBase):
@@ -167,6 +217,9 @@ class InteractiveThread (Thread):
 
 
     def close (self):
+        # reste term settings
+        tcsetattr (self.pairs[0][0], TCSADRAIN, self.orig_terminfo)
+
         for k, v in self.pairs:
             for f in (k, v):
                 if ( isinstance (f, paramiko.Channel) or
