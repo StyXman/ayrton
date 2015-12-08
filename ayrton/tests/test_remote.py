@@ -142,15 +142,6 @@ with remote ('127.0.0.1', _debug=True):
 
 
 class RealRemoteTests (RemoteTests):
-    """For some reason the socket is closed, so these tests fail.
-    But if you runthem from the CLI, f.i.:
-
-mdione@diablo:~/src/projects/ayrton$ ayrton ayrton/tests/scripts/testLocalVarToRealRemoteToLocal.ay
-/usr/lib/python3/dist-packages/paramiko/client.py:580: UserWarning: Unknown ssh-rsa host key for 127.0.0.1: b'12d40a354952bb060e3a79424236cddc'
-  (key.get_name(), hostname, hexlify(key.get_fingerprint())))
-True
-
-    they work :("""
 
     def testLocalVarToRemoteToLocal (self):
         """This test only succeeds if you you have password/passphrase-less access to localhost"""
@@ -158,9 +149,11 @@ True
 
         self.assertTrue (self.runner.locals['testLocalVarToRealRemoteToLocal'])
 
+
     def testRemoteCommandStdout (self):
         """This test only succeeds if you you have password/passphrase-less access to localhost"""
         self.runner.run_file ('ayrton/tests/scripts/testRemoteCommandStdout.ay')
+
 
 
     def testRemoteCommandStderr (self):
