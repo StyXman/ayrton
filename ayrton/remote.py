@@ -84,6 +84,7 @@ class InteractiveThread (Thread):
         # so I can close them at will
         logger.debug ('%s: %s', self, pairs)
         self.pairs= pairs
+        self.copy_to= dict (pairs)
         self.finished= os.pipe ()
 
 
@@ -122,7 +123,7 @@ class InteractiveThread (Thread):
         # and splice() is not available
         # so, copy by hand
         while True:
-            wait_for= list (self.pairs.keys ())
+            wait_for= list (self.copy_to.keys ())
             wait_for.append (self.finished[0])
             logger.debug (wait_for)
             for wait in wait_for:
@@ -143,7 +144,7 @@ class InteractiveThread (Thread):
                 # TODO: what?
 
             for i in r:
-                o= self.pairs[i]
+                o= self.copy_to[i]
                 try:
                     data= self.read (i)
                     logger.debug ('%s -> %s: %s', i, o, data)
@@ -151,13 +152,13 @@ class InteractiveThread (Thread):
                 # ValueError: read of closed file
                 except (OSError, ValueError) as e:
                     logger.debug ('stopping copying for %s', i)
-                    del self.pairs[i]
+                    del self.copy_to[i]
                     logger.debug (traceback.format_exc ())
                     break
                 else:
                     if len (data)==0:
                         logger.debug ('stopping copying for %s, no more data', i)
-                        del self.pairs[i]
+                        del self.copy_to[i]
                     else:
                         self.write (o, data)
 
@@ -166,7 +167,7 @@ class InteractiveThread (Thread):
 
 
     def close (self):
-        for k, v in list (self.pairs.items ()):
+        for k, v in self.pairs:
             for f in (k, v):
                 if ( isinstance (f, paramiko.Channel) or
                      isinstance (f, io.TextIOWrapper) ):
@@ -369,7 +370,7 @@ client.close ()                                                           # 45"
         self.result_channel.sendall (local_env)
 
         # TODO: handle _in, _out, _err
-        self.remote= RemoteStub ({os.dup (0): i, o: os.dup (1), e: os.dup (2)})
+        self.remote= RemoteStub (( (os.dup (0), i), (o, os.dup (1)), (e, os.dup (2)) ))
 
 
     def __exit__ (self, *args):
