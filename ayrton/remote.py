@@ -74,6 +74,7 @@ class InteractiveThread (Thread):
         # we're using a tty, change all the local settings for stdin
         # directly taken from openssh (sshtty.c)
         self.orig_terminfo= tcgetattr (pairs[0][0])
+        # input, output, control, local, speeds, special chars
         iflag, oflag, cflag, lflag, ispeed, ospeed, cc= self.orig_terminfo
 
         # turn on:
