@@ -43,17 +43,6 @@ class ShutUpPolicy (paramiko.MissingHostKeyPolicy):
         pass
 
 # TODO:
-#19:44:54.884213 ioctl(5, TCGETS, {B38400 opost isig icanon echo ...}) = 0 <0.000015>
-#19:44:54.884267 ioctl(6, TCGETS, {B38400 opost isig icanon echo ...}) = 0 <0.000014>
-#19:44:54.884316 ioctl(7, TCGETS, {B38400 opost isig icanon echo ...}) = 0 <0.000013>
-#19:44:54.884369 fcntl(5, F_SETFD, FD_CLOEXEC) = 0 <0.000013>
-#19:44:54.884415 fcntl(6, F_SETFD, FD_CLOEXEC) = 0 <0.000013>
-#19:44:54.884459 fcntl(7, F_SETFD, FD_CLOEXEC) = 0 <0.000013>
-#19:44:54.885998 ioctl(0, TCGETS, {B38400 opost isig icanon echo ...}) = 0 <0.000021>
-#19:44:54.886083 ioctl(0, TCGETS, {B38400 opost isig icanon echo ...}) = 0 <0.000014>
-#19:44:54.886137 ioctl(0, SNDCTL_TMR_STOP or TCSETSW, {B38400 -opost -isig -icanon -echo ...}) = 0 <0.000016>
-#19:44:54.886190 ioctl(0, TCGETS, {B38400 -opost -isig -icanon -echo ...}) = 0 <0.000013>
-
 #19:44:54.953791 getsockopt(3, SOL_TCP, TCP_NODELAY, [0], [4]) = 0 <0.000016>
 #19:44:54.953852 setsockopt(3, SOL_TCP, TCP_NODELAY, [1], 4) = 0 <0.000014>
 
@@ -72,14 +61,6 @@ class ShutUpPolicy (paramiko.MissingHostKeyPolicy):
 #19:44:58.479607 select(8, [3 5], [6], NULL, NULL) = 1 (out [6]) <0.000015>
 #19:44:58.479708 write(6, "logout\r\n", 8) = 8 <0.000017>
 
-#19:44:58.484115 ioctl(0, TCGETS, {B38400 -opost -isig -icanon -echo ...}) = 0 <0.000015>
-#19:44:58.484170 ioctl(0, SNDCTL_TMR_STOP or TCSETSW, {B38400 opost isig icanon echo ...}) = 0 <0.000018>
-#19:44:58.484228 ioctl(0, TCGETS, {B38400 opost isig icanon echo ...}) = 0 <0.000015>
-#19:44:58.484746 ioctl(0, TCGETS, {B38400 opost isig icanon echo ...}) = 0 <0.000015>
-#19:44:58.484800 ioctl(1, TCGETS, {B38400 opost isig icanon echo ...}) = 0 <0.000015>
-#19:44:58.484853 ioctl(2, TCGETS, {B38400 opost isig icanon echo ...}) = 0 <0.000015>
-#19:44:58.484908 write(2, "Connection to localhost closed.\r\n", 33) = 33 <0.000023>
-
 
 class InteractiveThread (Thread):
     def __init__ (self, pairs):
@@ -92,13 +73,6 @@ class InteractiveThread (Thread):
 
         # we're using a tty, change all the local settings for stdin
         # directly taken from openssh (sshtty.c)
-        # tio.c_iflag |= IGNPAR;
-        # tio.c_iflag &= ~(ISTRIP | INLCR | IGNCR | ICRNL | IXON | IXANY | IXOFF);
-        # tio.c_lflag &= ~(ISIG | ICANON | ECHO | ECHOE | ECHOK | ECHONL);
-        # tio.c_lflag &= ~IEXTEN;
-        # tio.c_oflag &= ~OPOST;
-        # tio.c_cc[VMIN] = 1;
-        # tio.c_cc[VTIME] = 0;
         self.orig_terminfo= tcgetattr (pairs[0][0])
         iflag, oflag, cflag, lflag, ispeed, ospeed, cc= self.orig_terminfo
 
@@ -109,24 +83,24 @@ class InteractiveThread (Thread):
         # Strip off eighth bit
         # Translate NL to CR on input
         # Ignore carriage return on input
-        # Enable XON/XOFF flow control on output
+        # XON/XOFF flow control on output
         # (XSI) Typing any character will restart stopped output. NOTE: not needed?
-        # Enable XON/XOFF flow control on input
+        # XON/XOFF flow control on input
         iflag&= ~( ISTRIP | INLCR | IGNCR | ICRNL | IXON | IXANY | IXOFF )
 
-        # turn off
+        # turn off:
         # When any of the characters INTR, QUIT, SUSP, or DSUSP are received, generate the corresponding signal
-        # Enable canonical mode
+        # canonical mode
         # Echo input characters (finally)
         # NOTE: why these three? they only work with ICANON and we're disabling it
         # If ICANON is also set, the ERASE character erases the preceding input character, and WERASE erases the preceding word
         # If ICANON is also set, the KILL character erases the current line
         # If ICANON is also set, echo the NL character even if ECHO is not set
-        # Enable implementation-defined input processing
+        # implementation-defined input processing
         lflag&= ~( ISIG | ICANON | ECHO | ECHOE | ECHOK | ECHONL | IEXTEN )
 
         # turn off:
-        # Enable implementation-defined output processing
+        # implementation-defined output processing
         oflag&= ~OPOST
 
         # NOTE: whatever
