@@ -3,3 +3,4 @@
 with remote ('127.0.0.1', _test=True):
     input ('type here: ')
     input ('type here too: ')
+    run ('bash')
