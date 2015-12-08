@@ -34,6 +34,7 @@ import io
 from termios import tcgetattr, tcsetattr, TCSADRAIN
 from termios import IGNPAR, ISTRIP, INLCR, IGNCR, ICRNL, IXON, IXANY, IXOFF
 from termios import ISIG, ICANON, ECHO, ECHOE, ECHOK, ECHONL, IEXTEN, OPOST, VMIN, VTIME
+import shutil
 
 import logging
 logger= logging.getLogger ('ayrton.remote')
@@ -365,12 +366,21 @@ client.close ()                                                           # 45"
             self.result_listen= self.client.get_transport ()
             self.result_listen.request_port_forward ('localhost', port)
 
-            (i, o, e)= self.client.exec_command (command, get_pty=True)
-            if isinstance (i, paramiko.ChannelFile):
-                # so select() works on them
-                i= i.channel
-                o= o.channel
-                e= e.channel
+            # taken from paramiko/client.py:SSHClient.exec_command()
+            channel= self.client._transport.open_session ()
+            # TODO:
+            #19:44:54.953791 getsockopt(3, SOL_TCP, TCP_NODELAY, [0], [4]) = 0 <0.000016>
+            #19:44:54.953852 setsockopt(3, SOL_TCP, TCP_NODELAY, [1], 4) = 0 <0.000014>
+
+            try:
+                # TODO signal handler from SIGWINCH
+                term= shutil.get_terminal_size ()
+                channel.get_pty (os.environ['TERM'], term.columns, term.lines)
+            except OSError:
+                channel.get_pty (os.environ['TERM'], )
+
+            channel.exec_command (command)
+            i= o= e= channel
 
             self.result_channel= self.result_listen.accept ()
         else:
