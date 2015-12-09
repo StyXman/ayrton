@@ -1,4 +1,4 @@
-ayrton (0.6) UNRELEASED; urgency=medium
+ayrton (0.6) unstable; urgency=medium
 
   * Great improvements in `remote()`'s API and sematics:
     * Made sure local varaibles go to and come back from the remote.
