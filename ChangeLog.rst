@@ -1,3 +1,23 @@
+ayrton (0.7) UNRELEASED; urgency=medium
+
+  * Send data to/from the remote via another `ssh` channel, which is more stable than using `stdin`.
+  * Stabilized a lot all tests, specially those using a mocked stdout for getting test validation.
+  * A lot of tests have been moved to their own scripts in ayrton/tests/scripts, which also work as (very minimal) examples of whatś working.
+  * Use `flake8` to check the code.
+  * Move `remote()` to its own source.
+  * API change: if a `str` or `bytes` object is passed in `_in`, then it's the name of a file where to read `stdin`. If it's an `int`, then it's considered a file descriptor. This makes the API consistent to `_out` and `_err` handling.
+  * More error handling.
+  * Fixed errors with global variables handling.
+  * `argv` is handled at the last time possible, allowing it being passed from test invoction.
+  * `shift` complains on negative values.
+  * Lazy `pprint()`, so debug statemens do not do useless work.
+  * `stdin/out/err` handling in `remote()` is done by a single thread. 
+  * Modify a lot the local terminal when in `remote()` so, among other things, we have no local echo.
+  * Properly pass the terminal type and size to the remote. These last three features allows programs like `vi` be run in the remote.
+  * Paved the road to make `remote()`s more like `Command()`s.
+
+ -- Marcos Dione <mdione@grulic.org.ar>  Wed, 09 Dec 2015 15:48:49 +0100
+
 ayrton (0.6) unstable; urgency=medium
 
   * Great improvements in `remote()`'s API and sematics:
