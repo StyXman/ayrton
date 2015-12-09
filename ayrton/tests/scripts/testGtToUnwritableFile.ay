@@ -1,0 +1,4 @@
+#! /usr/bin/env ayrton
+
+# TODO
+echo ("yes") > "/foo/bar/baz/quux/moo"

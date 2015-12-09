@@ -210,10 +210,31 @@ their main objective, and its syntax is designed around it. That leads to
 shortcuts that later are more difficult to read and creates problems when
 handling filenames that have special characters.
 
+Q: Instead, why not use...
+
+A: (Short version) We think nobody provides all of `ayrton`'s features.
+
+A: ... [`sh`](https://amoffat.github.io/sh/)? Well, we started with `sh` as a basis
+of `ayrton`, but its buffered output didn't allow us to run editors and other TIU's.
+
+A: ... [`xonsh`](http://xonsh.org/)? `xonsh` keeps environment variables well
+separated from Python ones; it even has a Python mode and a 'subprocess' mode;
+and is more oriented to being a shell. `ayrton` aims directly in the opposite
+direction.
+
+A: ... [`plumbum`](https://plumbum.readthedocs.org/en/latest/)? You could say that we
+independently thought of its piping and redirection syntax (but in reality we just
+based ours on `bash`'s). Still, the fact that you fisrt build pipes and then execute
+them looks weird for a SysAdmin.
+
+A: ... [`fabric`](http://www.fabfile.org/)? `fabric` is the only one that has remote
+execution and the `cd` context manager, but command execution is still done via
+strings.
+
 # Thanks to:
 
-`rbilstolfi`, `marianoguerra`, `facundobatista`, `ralsina`, `nessita` for unit
-testing support, `Darni` for pointing me to
+`rbilstolfi`, `marianoguerra`, `facundobatista`, `ralsina` for ideas; `nessita` for unit
+testing support; `Darni` for pointing me to
 [nvie's workflow for `git`](http://nvie.com/posts/a-successful-git-branching-model/),
 Andrew Moffat for [`sh`](http://amoffat.github.io/sh/) and Richard Jones for
 this talk (thanks again, `ralsina`), even when I ended up doing something

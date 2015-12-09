@@ -18,9 +18,9 @@
 # along with ayrton.  If not, see <http://www.gnu.org/licenses/>.
 
 import logging
+import functools
 
 # TODO: there's probably a better way to do this
-
 def debug2 (self, msg, *args, **kwargs):
     if self.manager.disable>=logging.DEBUG2:
         return
@@ -28,12 +28,14 @@ def debug2 (self, msg, *args, **kwargs):
     if logging.DEBUG2>=self.getEffectiveLevel ():
         self._log (logging.DEBUG2, msg, args, **kwargs)
 
+
 def debug3 (self, msg, *args, **kwargs):
     if self.manager.disable>=logging.DEBUG3:
         return
 
     if logging.DEBUG3>=self.getEffectiveLevel ():
         self._log (logging.DEBUG3, msg, args, **kwargs)
+
 
 def patch_logging ():
     # based on https://mail.python.org/pipermail/tutor/2007-August/056243.html
@@ -46,7 +48,21 @@ def patch_logging ():
     logging.Logger.debug2= debug2
     logging.Logger.debug3= debug3
 
+
 patch_logging ()
+
+
+def any_comparator (a, b):
+    try:
+        if a==b:
+            return 0
+        elif a<b:
+            return -1
+        else:
+            return 1
+    except TypeError:
+        return any_comparator (str (type (a)), str (type (b)))
+
 
 def dump_dict (d, level=1):
     if d is not None:
@@ -54,7 +70,8 @@ def dump_dict (d, level=1):
 
         if level==0:
             strings.append ("{\n")
-        for k, v in d.items ():
+        for k in sorted (d.keys (), key=functools.cmp_to_key (any_comparator)):
+            v= d[k]
             if type (v)!=dict:
                 strings.append ("%s%r: %r,\n" % ( '    '*level, k, v ))
             else:

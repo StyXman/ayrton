@@ -72,7 +72,7 @@ def update_keyword (node, keyword):
 def func_name2dotted_exec (node):
     logger.debug (ast.dump (node))
 
-    complete_name= pprint (node)
+    complete_name= str (pprint (node))
 
     while type (node) in (Attribute, Subscript):
         node= node.value
@@ -250,12 +250,9 @@ class CrazyASTTransformer (ast.NodeTransformer):
 
         # For(target=Name(id='line', ctx=Store()),
         #     iter=Call(func=Call(func=Name(id='Command', ctx=Load()), ...
-        if (type (node.iter)==Call and type (node.iter.func)==Call and
-            type (node.iter.func.func)==Name and node.iter.func.func.id=='Command'):
-
+        if is_executable (node.iter):
             update_keyword (node.iter,
                             keyword (arg='_out', value=Name (id='Capture', ctx=Load ())))
-            ast.fix_missing_locations (node.iter)
 
         return node
 
@@ -319,7 +316,20 @@ class CrazyASTTransformer (ast.NodeTransformer):
                 #        value=Call(func=Attribute(value=Name(id='os', ctx=Load()),
                 #                                  attr='pipe', ctx=Load()),
                 #                   args=[], keywords=[], starargs=None, kwargs=None)),
-                # Expr(value=Call(func=Name(id='echo', ctx=Load()), args=[Str(s='pipe!')], keywords=[keyword(arg='_out', value=Name(id='w', ctx=Load()))], starargs=None, kwargs=None)), Expr(value=Call(func=Attribute(value=Name(id='os', ctx=Load()), attr='close', ctx=Load()), args=[Name(id='w', ctx=Load())], keywords=[], starargs=None, kwargs=None)), Expr(value=Call(func=Name(id='grep', ctx=Load()), args=[Str(s='pipe')], keywords=[keyword(arg='_in', value=Name(id='r', ctx=Load()))], starargs=None, kwargs=None)), Expr(value=Call(func=Attribute(value=Name(id='os', ctx=Load()), attr='close', ctx=Load()), args=[Name(id='r', ctx=Load())], keywords=[], starargs=None, kwargs=None))
+                # Expr(value=Call(func=Name(id='echo', ctx=Load()),
+                #                 args=[Str(s='pipe!')],
+                #                 keywords=[keyword(arg='_out', value=Name(id='w', ctx=Load()))],
+                #                 starargs=None, kwargs=None)),
+                # Expr(value=Call(func=Attribute(value=Name(id='os', ctx=Load()), attr='close', ctx=Load()),
+                #                 args=[Name(id='w', ctx=Load())],
+                #                 keywords=[], starargs=None, kwargs=None)),
+                # Expr(value=Call(func=Name(id='grep', ctx=Load()),
+                #                 args=[Str(s='pipe')],
+                #                 keywords=[keyword(arg='_in', value=Name(id='r', ctx=Load()))],
+                #                 starargs=None, kwargs=None)),
+                # Expr(value=Call(func=Attribute(value=Name(id='os', ctx=Load()), attr='close', ctx=Load()),
+                #                 args=[Name(id='r', ctx=Load())],
+                #                 keywords=[], starargs=None, kwargs=None))
 
                 # I can't believe it's this easy
                 # TODO: check if _err is not being captured instead
@@ -381,26 +391,14 @@ class CrazyASTTransformer (ast.NodeTransformer):
                     # > means _out
                     update_keyword (node.left, keyword (arg='_out', value=op))
                     ans= node.left
-
-                if type (comp)==GtE:
+                elif type (comp)==GtE:
                     # >= means _out+_err
                     update_keyword (node.left, keyword (arg='_out', value=op))
                     update_keyword (node.left, keyword (arg='_err_to_out', value=op))
                     ans= node.left
-
                 elif type (comp)==Lt:
                     # < means _in
-
-                    # now, _in works differently
-                    # a string is written directly to the stdin,
-                    # instead of creating a file() with that name
-                    # so, we do it ourseleves.
-                    if type (op)==Str:
-                        op= Call (func=Name (id='open', ctx=Load ()), args=[op],
-                                  keywords=[], starargs=None, kwargs=None)
-
                     update_keyword (node.left, keyword (arg='_in', value=op))
-                    ast.fix_missing_locations (node.left)
                     ans= node.left
 
         return ans
@@ -426,7 +424,7 @@ class CrazyASTTransformer (ast.NodeTransformer):
             if defs==0:
                 unknown= True
 
-        logger.debug ("%s: %s", name, unknown)
+        logger.debug2 ("%s: %s", name, unknown)
 
         if unknown:
             if not name in self.environ:
@@ -454,8 +452,8 @@ class CrazyASTTransformer (ast.NodeTransformer):
                         if is_option (arg):
                             # ast_pprinter takes care of expressions
                             kw= arg.keywords[0]
-                            logger.debug ("->>>kw: %s", ast.dump (kw))
-                            kw.arg= pprint (kw.arg)
+                            logger.debug2 ("->>>kw: %s", ast.dump (kw))
+                            kw.arg= str (pprint (kw.arg))
 
                 ast.copy_location (new_node, node)
                 node.func= new_node

@@ -1,0 +1,8 @@
+#! /usr/bin/env ayrton
+
+option ('errexit')
+
+def foo ():
+    # local definitions work
+    false= lambda: True
+    false ()

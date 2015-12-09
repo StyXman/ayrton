@@ -1,0 +1,7 @@
+#! /usr/bin/env ayrton
+
+# we can define classes
+class Foo ():
+    pass
+
+foo= Foo ()

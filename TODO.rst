@@ -5,6 +5,9 @@ Really do:
 ----------
 
 * better error reporting, including remotes
+
+* interface so local and remote can easily setup more communication channels
+
 * we're weeding out imports, we could gather a list and reimport them in the
   remote
 

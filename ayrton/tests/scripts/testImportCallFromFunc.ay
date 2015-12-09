@@ -1,0 +1,9 @@
+#! /usr/bin/env ayrton
+
+# import works and is global
+import math
+
+def foo ():
+    math.floor (1.1)
+
+foo ()

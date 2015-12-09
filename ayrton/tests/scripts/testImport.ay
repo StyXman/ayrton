@@ -1,0 +1,6 @@
+#! /usr/bin/env ayrton
+
+# import still works
+import math
+
+math.floor (1.1)

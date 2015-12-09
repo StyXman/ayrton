@@ -1,0 +1,3 @@
+#! /usr/bin/env ayrton
+
+ayrton_return_value= str (ls () | grep ("setup", _out=Capture))

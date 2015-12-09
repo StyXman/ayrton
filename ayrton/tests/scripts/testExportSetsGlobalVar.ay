@@ -1,0 +1,6 @@
+#! /usr/bin/env ayrton
+
+# exported variables are seen as global variables
+export (foo=47)
+
+ayrton_return_value= foo

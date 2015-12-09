@@ -1,0 +1,6 @@
+#! /usr/bin/env ayrton
+
+import os.path
+
+# tests that cwd() is properly renamed to pwd()
+ayrton_return_value= os.path.split (pwd ())[-1]

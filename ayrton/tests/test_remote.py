@@ -1,4 +1,4 @@
-# (c) 2013 Marcos Dione <mdione@grulic.org.ar>
+# (c) 2015 Marcos Dione <mdione@grulic.org.ar>
 
 # This file is part of ayrton.
 #
@@ -22,6 +22,7 @@ import os
 import tempfile
 import os.path
 import time
+import signal
 
 from ayrton.expansion import bash
 import ayrton
@@ -38,13 +39,28 @@ class RemoteTests (unittest.TestCase):
     def setUp (self):
         # create one of these
         self.runner= ayrton.Ayrton ()
-        pass
 
+
+class DebugRemoteTests (RemoteTests):
+
+
+    def setUp (self):
+        super ().setUp ()
+
+        # fork and execute nc
+        pid= os.fork ()
+        if pid!=0:
+            # parent
+            self.child= pid
+            # give nc time to come up
+            time.sleep (0.2)
+        else:
+            # child          vvvv-- don't forget argv[0]
+            os.execlp ('nc', 'nc', '-l', '-s', '127.0.0.1', '-p', '2233', '-e', '/bin/bash')
+            # NOTE: does not return
 
     def tearDown (self):
-        # give time for nc to recover
-        time.sleep (0.2)
-
+        os.kill (self.child, signal.SIGKILL)
 
     def testRemoteEnv (self):
         self.runner.run_script ('''with remote ('127.0.0.1', _debug=True):
@@ -58,15 +74,6 @@ class RemoteTests (unittest.TestCase):
     testRemoteVar= 56''', 'testRemoteVar.py')
 
         self.assertEqual (self.runner.locals['testRemoteVar'], 56)
-
-
-    def __testReturn (self):
-        self.runner.run_script ('''with remote ('127.0.0.1', _debug=True):
-    return 57
-
-return foo''', 'testRemoteReturn.py')
-
-        self.assertEqual (self.runner.locals['foo'], 57)
 
 
     def testRaisesInternal (self):
@@ -91,21 +98,21 @@ except SystemError:
         self.runner.run_script ('''testLocalVarToRemote= True
 
 with remote ('127.0.0.1', _debug=True):
-    assert (testLocalVarToRemote)''', 'testLocalVarToRemote')
+    assert (testLocalVarToRemote)''', 'testLocalVarToRemote.py')
 
 
     def __testLocalFunToRemote (self):
         self.runner.run_script ('''def testLocalFunToRemote(): pass
 
 with remote ('127.0.0.1', _debug=True):
-    testLocalFunToRemote''', 'testLocalFunToRemote')
+    testLocalFunToRemote''', 'testLocalFunToRemote.py')
 
 
     def __testLocalClassToRemote (self):
         self.runner.run_script ('''class TestLocalClassToRemote: pass
 
 with remote ('127.0.0.1', _debug=True):
-    TestLocalClassToRemote''', 'testLocalClassToRemote')
+    TestLocalClassToRemote''', 'testLocalClassToRemote.py')
 
 
     def testRemoteVarToLocal (self):
@@ -119,36 +126,36 @@ with remote ('127.0.0.1', _debug=True):
         self.runner.run_script ('''testLocalVarToRemoteToLocal= False
 
 with remote ('127.0.0.1', _debug=True):
-    testLocalVarToRemoteToLocal= True
-
-import ayrton.utils
-import logging
-import sys
-
-logger= logging.getLogger ('ayrton.tests.testLocalVarToRemoteToLocal')
-logger.debug3 ('my name: %s', sys._getframe().f_code.co_name)
-logger.debug3 ('my locals: %s', ayrton.utils.dump_dict (sys._getframe().f_locals))
-
-assert sys._getframe().f_locals['testLocalVarToRemoteToLocal']''', 'testLocalVarToRemoteToLocal.py')
+    testLocalVarToRemoteToLocal= True''', 'testLocalVarToRemoteToLocal.py')
 
         self.assertTrue (self.runner.locals['testLocalVarToRemoteToLocal'])
 
 
-    def testLocalVarToRealRemoteToLocal (self):
-        """This test only succeeds if you you have password/passphrase-less access
-        to localhost"""
-        self.runner.run_script ('''testLocalVarToRealRemoteToLocal= False
-with remote ('127.0.0.1', allow_agent=False):
-    testLocalVarToRealRemoteToLocal= True''', 'testLocalVarToRealRemoteToLocal.py')
+    def testRemoteCommandStdout (self):
+        self.runner.run_script ('''with remote ('127.0.0.1', _debug=True):
+    ls(-l=True)''', 'testRemoteCommand.py')
+
+
+    def testRemoteCommandStderr (self):
+        self.runner.run_script ('''with remote ('127.0.0.1', _debug=True):
+    ls('foobarbaz')''', 'testRemoteCommand.py')
+
+
+class RealRemoteTests (RemoteTests):
+
+    def testLocalVarToRemoteToLocal (self):
+        """This test only succeeds if you you have password/passphrase-less access to localhost"""
+        self.runner.run_file ('ayrton/tests/scripts/testLocalVarToRealRemoteToLocal.ay')
 
         self.assertTrue (self.runner.locals['testLocalVarToRealRemoteToLocal'])
 
 
-    def __testLocals (self):
-        self.runner.run_script ('''import ayrton
-a= True
-l= locals()['a']
-# r= ayrton.runner.locals['a']
-# ayrton.main() creates a new Ayrton instance and ****s up everything
-r= ayrton.runner.run_script ("""return locals()['a']""", 'inception_locals')
-assert (l==r)''', 'testLocals')
+    def testRemoteCommandStdout (self):
+        """This test only succeeds if you you have password/passphrase-less access to localhost"""
+        self.runner.run_file ('ayrton/tests/scripts/testRemoteCommandStdout.ay')
+
+
+
+    def testRemoteCommandStderr (self):
+        """This test only succeeds if you you have password/passphrase-less access to localhost"""
+        self.runner.run_file ('ayrton/tests/scripts/testRemoteCommandStderr.ay')

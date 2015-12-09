@@ -23,6 +23,7 @@ import importlib
 import ast
 import logging
 import dis
+import traceback
 
 # patch logging so we have debug2 and debug3
 import ayrton.utils
@@ -45,67 +46,75 @@ from ayrton.parser.pyparser.pyparse import CompileInfo, PythonParser
 from ayrton.parser.astcompiler.astbuilder import ast_from_node
 from ayrton.ast_pprinter import pprint
 
-__version__= '0.6'
+__version__= '0.7'
+
 
 def parse (script, file_name=''):
     parser= PythonParser (None)
     info= CompileInfo (file_name, 'exec')
     return ast_from_node (None, parser.parse_source (script, info), info)
 
-def polute (d, more):
-    d.update (__builtins__)
-    # weed out some stuff
-    for weed in ('copyright', '__doc__', 'help', '__package__', 'credits', 'license', '__name__'):
-        del d[weed]
 
-    # envars as gobal vars, shell like
-    d.update (os.environ)
+class Environment (dict):
+    def __init__ (self, *args, **kwargs):
+        super ().__init__ (*args, **kwargs)
 
-    # these functions will be loaded from each module and put in the globals
-    # tuples (src, dst) renames function src to dst
-    builtins= {
-        'os': [ ('getcwd', 'pwd'), 'uname', 'listdir', ],
-        'os.path': [ 'abspath', 'basename', 'commonprefix', 'dirname',  ],
-        'time': [ 'sleep', ],
-        'sys': [ 'exit', 'argv' ],
+        self.polute ()
 
-        'ayrton.file_test': [ '_a', '_b', '_c', '_d', '_e', '_f', '_g', '_h',
-                              '_k', '_p', '_r', '_s', '_u', '_w', '_x', '_L',
-                              '_N', '_S', '_nt', '_ot' ],
-        'ayrton.expansion': [ 'bash', ],
-        'ayrton.functions': [ 'cd', ('cd', 'chdir'), 'export', 'option', 'remote', 'run',
-                               'shift', 'unset', ],
-        'ayrton.execute': [ 'o', 'Capture', 'CommandFailed', 'CommandNotFound',
-                            'Pipe', 'Command'],
-        }
 
-    for module, functions in builtins.items ():
-        m= importlib.import_module (module)
-        for function in functions:
-            if type (function)==tuple:
-                src, dst= function
-            else:
-                src= function
-                dst= function
+    def polute (self):
+        self.update (__builtins__)
+        # weed out some stuff
+        for weed in ('copyright', '__doc__', 'help', '__package__', 'credits',
+                     'license', '__name__', 'quit', 'exit'):
+            del self[weed]
 
-            d[dst]= getattr (m, src)
+        # these functions will be loaded from each module and put in the globals
+        # tuples (src, dst) renames function src to dst
+        ayrton_builtins= {
+            'os': [ ('getcwd', 'pwd'), 'uname', 'listdir', ],
+            'os.path': [ 'abspath', 'basename', 'commonprefix', 'dirname',  ],
+            'time': [ 'sleep', ],
+            'sys': [ 'exit', ],  # argv is handled just before execution
 
-    # now the IO files
-    for std in ('stdin', 'stdout', 'stderr'):
-        d[std]= getattr (sys, std).buffer
+            'ayrton.file_test': [ '_a', '_b', '_c', '_d', '_e', '_f', '_g', '_h',
+                                  '_k', '_p', '_r', '_s', '_u', '_w', '_x', '_L',
+                                  '_N', '_S', '_nt', '_ot' ],
+            'ayrton.expansion': [ 'bash', ],
+            'ayrton.functions': [ 'cd', ('cd', 'chdir'), 'export', 'option', 'run',
+                                   'shift', 'unset', ],
+            'ayrton.execute': [ 'o', 'Capture', 'CommandFailed', 'CommandNotFound',
+                                'Pipe', 'Command'],
+            'ayrton.remote': [ 'remote' ]
+            }
 
-    d.update (more)
+        for module, functions in ayrton_builtins.items ():
+            m= importlib.import_module (module)
+            for function in functions:
+                if type (function)==tuple:
+                    src, dst= function
+                else:
+                    src= function
+                    dst= function
+
+                self[dst]= getattr (m, src)
+
+        # now the IO files
+        for std in ('stdin', 'stdout', 'stderr'):
+            self[std]= getattr (sys, std).buffer
+
 
 class Ayrton (object):
     def __init__ (self, g=None, l=None, **kwargs):
+        logger.debug ('===========================================================')
         logger.debug ('new interpreter')
         logger.debug3 ('globals: %s', ayrton.utils.dump_dict (g))
         logger.debug3 ('locals: %s', ayrton.utils.dump_dict (l))
-        if g is None:
-            self.globals= {}
-        else:
-            self.globals= g
-        polute (self.globals, kwargs)
+
+        self.globals= Environment ()
+        if g is not None:
+            self.globals.update (g)
+        self.globals.update (kwargs)
 
         if l is None:
             # If exec gets two separate objects as globals and locals,
@@ -137,25 +146,41 @@ class Ayrton (object):
         self.options= {}
         self.pending_children= []
 
-    def run_file (self, file):
+        # HACK to update the singleton
+        # this might break if we implement subinstances
+        global runner
+        runner= self
+
+
+    def run_file (self, file_name, argv=None):
         # it's a pity that parse() does not accept a file as input
         # so we could avoid reading the whole file
-        return self.run_script (open (file).read (), file)
+        logger.debug ('running from file %s', file_name)
 
-    def run_script (self, script, file_name):
+        f= open (file_name)
+        script= f.read ()
+        f.close ()
+
+        return self.run_script (script, file_name, argv)
+
+
+    def run_script (self, script, file_name, argv=None):
+        logger.debug ('running script:\n-----------\n%s\n-----------', script)
         tree= parse (script, file_name)
         # TODO: self.locals?
         tree= CrazyASTTransformer (self.globals, file_name).modify (tree)
 
-        return self.run_tree (tree, file_name)
+        return self.run_tree (tree, file_name, argv)
 
-    def run_tree (self, tree, file_name):
+
+    def run_tree (self, tree, file_name, argv=None):
         logger.debug2 ('AST: %s', ast.dump (tree))
         logger.debug2 ('code: \n%s', pprint (tree))
 
-        return self.run_code (compile (tree, file_name, 'exec'))
+        return self.run_code (compile (tree, file_name, 'exec'), file_name, argv)
 
-    def run_code (self, code):
+
+    def run_code (self, code, file_name, argv=None):
         if logger.parent.level<=logging.DEBUG2:
             logger.debug2 ('------------------')
             logger.debug2 ('main (gobal) code:')
@@ -174,6 +199,14 @@ class Ayrton (object):
                         handler.release ()
                     elif type (inst.argval)==str:
                         logger.debug ("last function is called: %s", inst.argval)
+
+        # prepare environment
+        self.globals.update (os.environ)
+
+        logger.debug (argv)
+        if argv is None:
+            argv= [ file_name ]
+        self.globals['argv']= argv
 
         '''
         exec(): If only globals is provided, it must be a dictionary, which will
@@ -204,8 +237,11 @@ class Ayrton (object):
         '''
         error= None
         try:
+            logger.debug3 ('globals for script: %s', ayrton.utils.dump_dict (self.globals))
             exec (code, self.globals, self.locals)
         except Exception as e:
+            logger.debug ('script finished by Exception')
+            logger.debug (traceback.format_exc ())
             error= e
 
         logger.debug3 ('globals at script exit: %s', ayrton.utils.dump_dict (self.globals))
@@ -218,26 +254,26 @@ class Ayrton (object):
 
         return result
 
+
     def wait_for_pending_children (self):
         for i in range (len (self.pending_children)):
             child= self.pending_children.pop (0)
             child.wait ()
 
+
 def run_tree (tree, g, l):
     """main entry point for remote()"""
-    global runner
     runner= Ayrton (g=g, l=l)
     return runner.run_tree (tree, 'unknown_tree')
 
-def run_file_or_script (script=None, file='script_from_command_line', **kwargs):
+def run_file_or_script (script=None, file_name='script_from_command_line', argv=None,
+                        **kwargs):
     """Main entry point for bin/ayrton and unittests."""
-    logger.debug ('===========================================================')
-    global runner
     runner= Ayrton (**kwargs)
     if script is None:
-        v= runner.run_file (file)
+        v= runner.run_file (file_name, argv)
     else:
-        v= runner.run_script (script, file)
+        v= runner.run_script (script, file_name, argv)
 
     return v
 

@@ -1,0 +1,6 @@
+#! /usr/bin/env ayrton
+
+# equivalent to -e
+option (e=True)
+
+false ()  # CommandFailed

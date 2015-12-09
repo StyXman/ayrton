@@ -1,0 +1,9 @@
+#! /usr/bin/env ayrton
+
+import os.path
+
+# this change of directory does not affect the code outside the with
+with cd ("bin"):
+    pass
+
+ayrton_return_value= os.path.split (pwd ())[-1]

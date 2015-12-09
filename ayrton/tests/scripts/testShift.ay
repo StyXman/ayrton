@@ -1,0 +1,3 @@
+#! /usr/bin/env ayrton
+
+ayrton_return_value= shift ()

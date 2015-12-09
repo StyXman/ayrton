@@ -1,0 +1,7 @@
+#! /usr/bin/env ayrton
+
+# local definitions do not eclipse global ones ofter the scope finished
+def foo ():
+    true= 40
+
+true ()

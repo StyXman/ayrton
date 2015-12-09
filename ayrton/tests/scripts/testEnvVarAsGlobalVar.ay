@@ -1,0 +1,4 @@
+#! /usr/bin/env ayrton
+
+# see ayrton/tests/test_ayrton.py:MiscTests:testEnvVarAsGlobalVar()
+ayrton_return_value= testEnvVarAsGlobalVar

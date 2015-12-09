@@ -1,0 +1,7 @@
+#! /usr/bin/env ayrton
+
+# exporting variables...
+export (testEnviron=44);
+
+# ... are seen in subprocesses
+ayrton_return_value= str (run ("./ayrton/tests/data/test_environ.sh", _out=Capture))

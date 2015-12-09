@@ -1,0 +1,11 @@
+#! /usr/bin/env ayrton
+
+# we can define a local variable...
+testLocalVarToRealRemoteToLocal= False
+
+with remote ('127.0.0.1', _test=True):
+    # ... modify it in the remote...
+    testLocalVarToRealRemoteToLocal= True
+
+# .. and see the modification locally
+assert (testLocalVarToRealRemoteToLocal)

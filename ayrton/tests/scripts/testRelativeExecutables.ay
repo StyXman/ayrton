@@ -1,0 +1,4 @@
+#! /usr/bin/env ayrton
+
+# does not work yet
+more/test.me.py ()

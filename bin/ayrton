@@ -1,4 +1,4 @@
-#! /usr/bin/env python3
+#! /usr/bin/env python3.4
 # -*- coding: utf-8 -*-
 
 # (c) 2013 Marcos Dione <mdione@grulic.org.ar>
@@ -30,8 +30,8 @@ usage="""ayrton - A Python-based shell-like scripting language.
 
 Usage:
 
-    ayrton -h
-    ayrton -v
+    ayrton [-h|--help]
+    ayrton [-v|--version]
     ayrton [-c|--script] SCRIPT [argv ...]
     ayrton [-f|--file] file [argv ...]
 
@@ -52,6 +52,7 @@ Arguments:
 
 script= None
 file= None
+# sys.argv[0] is 'ayrton'
 args= sys.argv[1:]
 reason= None
 
@@ -83,14 +84,16 @@ try:
             # -f|--file is optional (because idiot /usr/bin/env ayrton -f does not work)
             # we could let it fallback to the last case,
             # but this way we can handle the actual argument to the option
-            file= args[index+1]
+            file_name= args[index+1]
+            # script_args[0] is the script's file name
             script_args= args[index+1:]
             # stop parsing, anything else is passed to the script
             break
 
         # as every branch either exit()s, break's or continue's,
         # here we're in the situation where the next argument is the script name
-        file= arg
+        file_name= arg
+        # script_args[0] is the script's file name
         script_args= args[index:]
         # stop parsing, anything else is passed to the script
         break
@@ -101,9 +104,8 @@ except IndexError:
     sys,exit (1)
 
 try:
-    # fake argv
-    sys.argv= script_args
-    v= ayrton.run_file_or_script (file=file, script=script)
+    v= ayrton.run_file_or_script (file_name=file_name, script=script,
+                                  argv=script_args)
 
     if type(v)==bool:
         if v:
@@ -113,7 +115,7 @@ try:
     else:
         try:
             v= int (v)
-        except ValueError:
+        except (ValueError, TypeError):
             # I can only assume it's ok
             v= 0
 
@@ -121,13 +123,16 @@ try:
 
 except Exception:
     t, e, tb= sys.exc_info ()
-    # skip ayrton's stack
-    # TODO: if the script has a syntax error, the stack is shorter
-    if script is not None:
-        for i in range (5):
-            tb= tb.tb_next
-    else:
-        for i in range (6):
-            tb= tb.tb_next
+
+    if False:
+        # skip ayrton's stack
+        # TODO: if the script has a syntax error, the stack is shorter
+        if script is not None:
+            for i in range (5):
+                tb= tb.tb_next
+        else:
+            for i in range (6):
+                tb= tb.tb_next
+
     traceback.print_exception (t, e, tb)
     sys.exit (1)

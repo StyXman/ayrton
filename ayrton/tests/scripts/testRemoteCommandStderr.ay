@@ -1,0 +1,5 @@
+#! /usr/bin/env ayrton
+
+# _test=True is for internal testing
+with remote ('127.0.0.1', _test=True):
+    ls('foobarbaz')

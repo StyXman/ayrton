@@ -1,0 +1,5 @@
+#! /usr/bin/env ayrton
+
+# this was an intermediate way to specify named arguments in any position
+# which is not even properly demonstrated here
+ls (o (full_time=True))

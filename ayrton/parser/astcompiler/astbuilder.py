@@ -1298,7 +1298,7 @@ class ASTBuilder(object):
         elif first_child_type == tokens.LSQB:
             second_child = atom_node.children[1]
             if second_child.type == tokens.RSQB:
-                new_node = ast.List (None, ast.Load())
+                new_node = ast.List ([], ast.Load())
                 new_node.lineno = atom_node.lineno
                 new_node.col_offset = atom_node.col_offset
                 return new_node

@@ -105,360 +105,343 @@ class Bash(unittest.TestCase):
     def test_tilde_single (self):
         self.assertEqual (bash ('~', single=True), os.environ['HOME'])
 
-def setUpMockStdout (self):
-    # due to the interaction between file descriptors,
-    # I better write this down before I forget
 
-    # I save the old stdout in a new fd
-    self.old_stdout= os.dup (1)
+class ScriptExecution (unittest.TestCase):
 
-    # create a pipe; this gives me a read and write fd
-    r, w= os.pipe ()
+    def setUp (self):
+        self.runner= ayrton.Ayrton ()
 
-    # I replace the stdout with the write fd
-    # this closes 1, but the original stdout is saved in old_stdout
-    os.dup2 (w, 1)
 
-    # now I have two fds pointing to the write end of the pipe, stdout and w
-    # close w
-    os.close (w)
+    def doTest (self, script, expected=None, argv=None):
+        if argv is not None:
+            argv.insert (0, script)
 
-    # create a file() from the reading fd
-    # this DOES NOT create a new fd or file
-    self.r= open (r, mode='rb')
+        logger.debug (argv)
+        result= self.runner.run_file (os.path.join ('ayrton/tests/scripts', script), argv=argv)
+        if expected is not None:
+            self.assertEqual (result, expected)
 
-    # the test will have to close stdin after performing what's testing
-    # that's because otherwise the test locks at reading from the read end
-    # because there's still that fd available for writing in the pipe
-    # there is another copy of that fd, in the child side,
-    # but that is closed when the process finished
-    # there is still a tricky part to do on tearDownMockStdout()
 
-def tearDownMockStdout (self):
-    # restore sanity
-    # original stdout into 1, even if we're leaking fd's
-    os.dup2 (self.old_stdout, 1)
-    os.close (self.old_stdout)
-    self.r.close ()
-    ayrton.runner.wait_for_pending_children ()
+class MockedStdout (ScriptExecution):
 
-class CommandExecution (unittest.TestCase):
-    setUp=    setUpMockStdout
-    tearDown= tearDownMockStdout
+    def setUp (self):
+        super ().setUp ()
 
-    def testStdOut (self):
-        # do the test
-        ayrton.main ('echo ("foo")')
+        # due to the interaction between file descriptors,
+        # I better write this down before I forget
+
+        # I save the old stdout in a new fd
+        self.old_stdout= os.dup (1)
+        logger.debug ('stdout saved in %s', self.old_stdout)
+
+        # create a pipe; this gives me a read and write fd
+        r, w= os.pipe ()
+        logger.debug ('pipe for stdout: %d -> %d', w, r)
+
+        # I replace the stdout with the write fd
+        # this closes 1, but the original stdout is saved in old_stdout
+        os.dup2 (w, 1)
+        logger.debug ('redirecting stdout 1 -> %d', w)
+
+        # now I have two fds pointing to the write end of the pipe, stdout and w
+        # close w
+        logger.debug ('closing %d', w)
+        os.close (w)
+
+        # create a file() from the reading fd
+        # this DOES NOT create a new fd or file
+        self.r= open (r, mode='rb')
+
+        # the test will have to close stdin after performing what's testing
+        # that's because otherwise the test locks at reading from the read end
+        # because there's still that fd available for writing in the pipe
+        # there is another copy of that fd, in the child side,
+        # but that is closed when the process finished
+        # there is still a tricky part to do on tearDownMockStdout()
+
+
+    def tearDown (self):
+        # restore sanity
+        # original stdout into 1, even if we're leaking fd's
+        logger.debug ('restoring stdout -> %d', self.old_stdout)
+        os.dup2 (self.old_stdout, 1)
+        logger.debug ('closing %d', self.old_stdout)
+        os.close (self.old_stdout)
+        logger.debug ('closing %d', self.r.fileno ())
+        self.r.close ()
+        self.runner.wait_for_pending_children ()
+
+
+    def doTest (self, script):
+        super ().doTest (script)
         # close stdout as per the description of setUpMockStdout()
         os.close (1)
+
+
+    def testStdout (self):
+        self.doTest ('testStdout.ay')
         self.assertEqual (self.r.read (), b'foo\n')
 
-    def testStdEqNone (self):
-        # do the test
-        ayrton.main ('echo ("foo", _out=None)')
-        # close stdout as per the description of setUpMockStdout()
-        os.close (1)
+
+    def testStdoutEqNone (self):
+        self.doTest ('testStdoutEqNone.ay')
         # the output is empty, as it went to /dev/null
         self.assertEqual (self.r.read (), b'')
 
-    def testStdEqCapture (self):
-        # do the test
-        ayrton.main ('''f= echo ("foo", _out=Capture);
-print ("echo: %s" % f)''')
-        # close stdout as per the description of setUpMockStdout()
-        os.close (1)
-        # the output is empty, as it went to /dev/null
-        # BUG: check why there's a second \n
-        # ANS: because echo adds the first one and print adds the second one
-        self.assertEqual (self.r.read (), b'echo: foo\n\n')
+
+class CommandExecution (ScriptExecution):
+
+    def testStdoutEqCapture (self):
+        # echo adds the \n
+        self.doTest ('testStdoutEqCapture.ay', 'foo\n')
+
 
     def testExitCodeOK (self):
-        ayrton.main ('''if true ():
-    print ("yes!")''')
-        # close stdout as per the description of setUpMockStdout()
-        os.close (1)
-        self.assertEqual (self.r.read (), b'yes!\n')
+        self.doTest ('testExitCodeOK.ay', 'yes!')
+
 
     def testExitCodeNOK (self):
-        ayrton.main ('''if not false ():
-    print ("yes!")''')
-        # close stdout as per the description of setUpMockStdout()
-        os.close (1)
-        self.assertEqual (self.r.read (), b'yes!\n')
+        self.doTest ('testExitCodeNOK.ay', 'yes!')
+
 
     def testOptionErrexit (self):
-        self.assertRaises (ayrton.CommandFailed,
-                           ayrton.main, '''option ('errexit')
-false ()''')
+        self.assertRaises (ayrton.CommandFailed, self.doTest, 'testOptionErrexit.ay')
+
 
     def testOptionMinus_e (self):
-        self.assertRaises (ayrton.CommandFailed,
-                           ayrton.main, '''option ('-e')
-false ()''')
+        self.assertRaises (ayrton.CommandFailed, self.doTest, 'testOptionMinus_e.ay')
+
 
     def testOptionPlus_e (self):
-        ayrton.main ('''option ('+e')
-false ()''')
+        self.doTest ('testOptionPlus_e.ay')
 
-    #def testOptionETrue (self):
-        #self.assertRaises (ayrton.CommandFailed,
-                           #ayrton.main, '''option (e=True)
-#false ()''')
+
+    def __testOptionETrue (self):
+        self.assertRaises (ayrton.CommandFailed, self.doTest, 'testOptionETrue.ay')
+
 
     def testFails (self):
-        ayrton.main ('''option ('-e')
-false (_fails=True)''')
+        self.doTest ('testFails.ay')
+
+
+class NonWordExecutableNames (ScriptExecution):
+
+    def setUp (self):
+        super ().setUp ()
+
+        self.old_path= os.environ['PATH']
+
+        # add ayrton/tests/data to $PATH
+        os.environ['PATH']+= os.pathsep+os.path.join (os.getcwd (),
+                                                      'ayrton/tests/data')
+        logger.debug (os.environ['PATH'])
+
+
+    def tearDown (self):
+        super ().tearDown ()
+
+        os.environ['PATH']= self.old_path
+
 
     def testDotInExecutables (self):
-        # add ayrton/tests/data to $PATH
-        os.environ['PATH']+= os.pathsep+os.path.join (os.getcwd (), 'ayrton/tests/data')
-        logger.debug (os.environ['PATH'])
-        ayrton.main ('''test.me.py ()''')
+        self.doTest ('testDotInExecutables.ay')
 
-class PipingRedirection (unittest.TestCase):
-    setUp=    setUpMockStdout
-    tearDown= tearDownMockStdout
 
-    def testPipe (self):
-        ayrton.main ('ls () | grep ("setup")')
-        # close stdout as per the description of setUpMockStdout()
-        os.close (1)
-        self.assertEqual (self.r.read (), b'setup.py\n')
+    def __testDashInExecutables (self):
+        self.doTest ('testDashInExecutables.ay')
 
-    def testLongPipe (self):
-        ayrton.main ('ls () | grep ("setup") | wc (-l=True)')
-        # close stdout as per the description of setUpMockStdout()
-        os.close (1)
-        self.assertEqual (self.r.read (), b'1\n')
 
-    def testGt (self):
-        fn= tempfile.mkstemp ()[1]
+    def __testRelativeExecutables (self):
+        self.doTest ('testRelativeExecutables.ay')
 
-        ayrton.main ('echo ("yes") > "%s"' % fn)
 
-        contents= open (fn).read ()
-        # read() does not return bytes!
-        self.assertEqual (contents, 'yes\n')
-        os.unlink (fn)
+    def __testAbsoluteExecutables (self):
+        self.doTest ('testAbsoluteExecutables.ay')
+
+
+class TempFile (ScriptExecution):
+
+    def doTempFileTest (self, script, final_contents, initial_contents=None,
+                        double_redirection=False):
+        fh, file_name= tempfile.mkstemp ()
+        logger.debug ('mkstemp() -> %d (%s)', fh, file_name)
+        argv= [ file_name ]
+
+        if double_redirection:
+            fh2, file_name2= tempfile.mkstemp ()
+            logger.debug ('mkstemp() -> %d (%s)', fh2, file_name2)
+            logger.debug ('closing %d', fh2)
+            os.close (fh2)
+            argv.append (file_name2)
+
+        if initial_contents is not None:
+            logger.debug ('writing %r to %d (%s)', initial_contents, fh, file_name)
+            os.write (fh, initial_contents)
+
+        # I need to close it because I need it open after the test has run
+        logger.debug ('closing %d', fh)
+        os.close (fh)
+
+        logger.debug (argv)
+        self.doTest (script, argv=argv)
+
+        if not double_redirection:
+            f= open (file_name)
+            logger.debug ('reading from %d (%s)', f.fileno (), file_name)
+        else:
+            f= open (file_name2)
+            logger.debug ('reading from %d (%s)', f.fileno (), file_name2)
+        contents= f.read ()
+        logger.debug ('closing %d', f.fileno ())
+        f.close ()
+
+        self.assertEqual (contents, final_contents)
+
+        os.unlink (file_name)
+        if double_redirection:
+            os.unlink (file_name2)
+
+
+class RedirectionPiping (TempFile):
 
     def testLt (self):
-        fd, fn= tempfile.mkstemp ()
-        os.write (fd, b'42\n')
-        os.close (fd)
+        self.doTempFileTest ('testLt.ay', '42\n', initial_contents=b'42\n')
 
-        ayrton.main ('cat () < "%s"' % fn)
 
-        # close stdout as per the description of setUpMockStdout()
-        os.close (1)
-        self.assertEqual (self.r.read (), b'42\n')
-        os.unlink (fn)
+    def testGt (self):
+        self.doTempFileTest ('testGt.ay', 'yes\n')
+
+
+    def testGtToUnwritableFile (self):
+        self.doTest ('testGtToUnwritableFile.ay')
+
 
     def testLtGt (self):
-        fd, fn1= tempfile.mkstemp ()
-        os.write (fd, b'43\n')
-        os.close (fd)
-        fn2= tempfile.mkstemp ()[1]
+        # TODO: type mismatch
+        self.doTempFileTest ('testLtGt.ay', '43\n', initial_contents=b'43\n',
+                             double_redirection=True)
 
-        ayrton.main ('cat () < "%s" > "%s"' % (fn1, fn2))
-
-        contents= open (fn2).read ()
-        # read() does not return bytes!
-        self.assertEqual (contents, '43\n')
-
-        os.unlink (fn1)
-        os.unlink (fn2)
 
     def testRShift (self):
-        fn= tempfile.mkstemp ()[1]
-
-        ayrton.main ('echo ("yes") > "%s"' % fn)
-        ayrton.main ('echo ("yes!") >> "%s"' % fn)
-
-        contents= open (fn).read ()
-        # read() does not return bytes!
-        self.assertEqual (contents, 'yes\nyes!\n')
-        os.unlink (fn)
+        self.doTempFileTest ('testRShift.ay', 'yes\nyes!\n')
 
 
-class MiscTests (unittest.TestCase):
-    setUp=    setUpMockStdout
-    tearDown= tearDownMockStdout
+    def testPipe (self):
+        self.doTest ('testPipe.ay', 'setup.py\n')
+
+
+    def testLongPipe (self):
+        self.doTest ('testLongPipe.ay', '1\n')
+
+
+class MiscTests (ScriptExecution):
 
     def testEnviron (self):
-        ayrton.main ('''export (TEST_ENV=44);
-run ("./ayrton/tests/data/test_environ.sh")''')
-        # close stdout as per the description of setUpMockStdout()
-        os.close (1)
-        self.assertEqual (self.r.read (), b'44\n')
+        self.doTest ('testEnviron.ay', '44\n')
+
 
     def testUnset (self):
-        ayrton.main ('''export (TEST_ENV=45)
-print (TEST_ENV)
-unset ("TEST_ENV")
-try:
-    TEST_ENV
-except NameError:
-    print ("yes")''')
-        # close stdout as per the description of setUpMockStdout()
-        os.close (1)
-        self.assertEqual (self.r.read (), b'45\nyes\n')
+        self.doTest ('testUnset.ay',  [ '45', 'yes' ])
+
 
     def testEnvVarAsGlobalVar (self):
-        os.environ['testEnvVarAsLocalVar'] = '46' # envvars are strings only
-        ayrton.main ('print (testEnvVarAsLocalVar)')
-        # close stdout as per the description of setUpMockStdout()
-        os.close (1)
-        self.assertEqual (self.r.read (), b'46\n')
+        os.environ['testEnvVarAsGlobalVar'] = '46' # envvars are strings only
+        self.doTest ('testEnvVarAsGlobalVar.ay', '46')
+
 
     def testExportSetsGlobalVar (self):
-        ayrton.main ('''export (foo=47);
-print (foo)''')
-        # close stdout as per the description of setUpMockStdout()
-        os.close (1)
-        self.assertEqual (self.r.read (), b'47\n')
+        self.doTest ('testExportSetsGlobalVar.ay', '47')
+
 
     def testCwdPwdRename (self):
-        ayrton.main ('''import os.path;
-print (os.path.split (pwd ())[-1])''')
-        # close stdout as per the description of setUpMockStdout()
-        os.close (1)
-        self.assertEqual (self.r.read (), b'ayrton\n')
+        self.doTest ('testCwdPwdRename.ay', 'ayrton')
+
 
     def testWithCd (self):
-        ayrton.main ('''import os.path
-with cd ("bin"):
-    print (os.path.split (pwd ())[-1])''')
-        # close stdout as per the description of setUpMockStdout()
-        os.close (1)
-        self.assertEqual (self.r.read (), b'bin\n')
+        self.doTest ('testWithCd.ay',
+                     os.path.split (os.getcwd ())[-1])
+
 
     def testShift (self):
-        ayrton.main ('''a= shift ();
-print (a)''', argv=['test_script.ay', '48'])
-        # close stdout as per the description of setUpMockStdout()
-        os.close (1)
-        self.assertEqual (self.r.read (), b'48\n')
+        self.doTest ('testShift.ay', '48', argv=[ '48' ])
+
 
     def testShifts (self):
-        ayrton.main ('''a= shift (2);
-print (a)''', argv=['test_script.ay', '49', '27'])
-        # close stdout as per the description of setUpMockStdout()
-        os.close (1)
-        self.assertEqual (self.r.read (), b"['49', '27']\n")
+        self.doTest ('testShifts.ay', [ '49', '27' ], argv=[ '49', '27' ])
+
 
     def testO (self):
         # this should not explode
-        ayrton.main ('''ls (o (full_time=True))''')
-        # close stdout as per the description of setUpMockStdout()
-        os.close (1)
+        self.doTest ('testO.ay')
+
 
     def testComposing (self):
         # equivalent to testPipe()
-        ayrton.main ('grep (ls (), "setup")')
-        # close stdout as per the description of setUpMockStdout()
-        os.close (1)
-        self.assertEqual (self.r.read (), b'setup.py\n')
+        self.doTest ('testComposing.ay', 'setup.py\n')
 
     def testBg (self):
-        ayrton.main ('''a= find ("/usr", _bg=True, _out=None);
-echo ("yes!");
-echo (a.exit_code ())''')
-        # close stdout as per the description of setUpMockStdout()
-        os.close (1)
-        self.assertEqual (self.r.read (), b'yes!\n0\n')
-        # ayrton.runner.wait_for_pending_children ()
+        '''This test takes some time...'''
+        self.doTest ('testBg.ay', 'yes!')
+        self.runner.wait_for_pending_children ()
 
-class CommandDetection (unittest.TestCase):
+class CommandDetection (ScriptExecution):
 
     def testSimpleCase (self):
-        ayrton.main ('true ()')
+        self.doTest ('testSimpleCase.ay')
 
     def testSimpleCaseFails (self):
-        self.assertRaises (CommandNotFound, ayrton.main, 'foo ()')
+        self.assertRaises (CommandNotFound, self.doTest,
+                           'testSimpleCaseFails.ay')
 
     def testFromImport (self):
-        ayrton.main ('''from random import seed;
-seed ()''')
+        self.doTest ('testFromImport.ay')
 
     def testFromImportFails (self):
-        self.assertRaises (CommandNotFound, ayrton.main,
-                           '''from random import seed;
-foo ()''')
+        self.assertRaises (CommandNotFound, self.doTest,
+                           'testFromImportFails.ay')
 
     def testFromImportAs (self):
-        ayrton.main ('''from random import seed as foo
-foo ()''')
+        self.doTest ('testFromImportAs.ay')
 
     def testFromImportAsFails (self):
-        self.assertRaises (CommandNotFound, ayrton.main,
-                           '''from random import seed as foo
-bar ()''')
+        self.assertRaises (CommandNotFound, self.doTest,
+                           'testFromImportAsFails.ay')
 
     def testAssign (self):
-        ayrton.main ('''a= lambda x: x
-a (1)''')
+        self.doTest ('testAssign.ay')
 
     def testDel (self):
-        self.assertRaises (ayrton.CommandFailed, ayrton.main,
-                           '''option ('errexit')
-false= lambda: x
-del false
-false ()''')
+        self.assertRaises (ayrton.CommandFailed, self.doTest, 'testDel.ay')
 
     def testDefFun1 (self):
-        ayrton.main ('''def foo ():
-    true= 40
-true ()''')
+        self.doTest ('testDefFun1.ay')
 
     def testDefFun2 (self):
-        self.assertRaises (ayrton.CommandFailed, ayrton.main, '''option ('errexit')
-def foo ():
-    false= 41
-false ()''')
+        self.assertRaises (ayrton.CommandFailed, self.doTest, 'testDefFun2.ay')
 
     def testDefFunFails1 (self):
-        ayrton.main ('''option ('errexit')
-def foo ():
-    false= lambda: True
-    false ()''')
+        self.doTest ('testDefFunFails1.ay')
 
     def testCallFun (self):
-        ayrton.main ('''def func ():
-    true ()
+        self.doTest ('testCallFun.ay')
 
-func ()''')
-
-    def testCommanIsPresent (self):
-        ayrton.main ('''c= Command ('ls')
-c ()''')
+    def testCommandIsPresent (self):
+        self.doTest ('testCommandIsPresent.ay')
 
     def testInstantiateClass (self):
-        ayrton.main ('''class Foo ():
-    pass
-
-foo= Foo ()''')
+        self.doTest ('testInstantiateClass.ay')
 
     def testImport (self):
-        ayrton.main ('''import math
-math.floor (1.1)''')
+        self.doTest ('testImport.ay')
 
     def testImportCallFromFunc (self):
-        ayrton.main ('''import math
-def foo ():
-    math.floor (1.1)
-
-foo ()''', 'testImportCallFromFunc')
+        self.doTest ('testImportCallFromFunc.ay')
 
     def testImportFrom (self):
-        ayrton.main ('''from math import floor
-floor (1.1)''')
+        self.doTest ('testImportFrom.ay')
 
     def testImportFromCallFromFunc (self):
-        ayrton.main ('''from math import floor
-def foo ():
-    floor (1.1)
-
-foo ()''', 'testImportFromCallFromFunc')
+        self.doTest ('testImportFromCallFromFunc.ay')
 
     def testUnknown (self):
         try:

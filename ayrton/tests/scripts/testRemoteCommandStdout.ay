@@ -1,0 +1,5 @@
+#! /usr/bin/env ayrton
+
+with remote ('127.0.0.1', _test=True):
+    # stdout from the remote is seen in the local
+    ls(-l=True)

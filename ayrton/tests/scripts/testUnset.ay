@@ -1,0 +1,14 @@
+#! /usr/bin/env ayrton
+
+ayrton_return_value= []
+
+# values are converted to str...
+export (testUnset=45)
+# ... so this appends '45'
+ayrton_return_value.append (testUnset)
+unset ("testUnset") # TODO: ugly
+
+try:
+    testUnset
+except NameError:
+    ayrton_return_value.append ("yes")
