@@ -12,7 +12,9 @@ if make ('tests'):
         print (str (uncommited))
         exit (1)
 
-    dch (--newversion=ayrton.__version__, --changelog='ChangeLog.rst')
+    dch (--changelog='ChangeLog.rst', --newversion=ayrton.__version__)
+    dch (--changelog='ChangeLog.rst', --release=True)
+    git ('commit', 'ChangeLog.rst', --message="[*] new entry for %s." % ayrton.__version__)
 
     # docs
     make ('docs')
