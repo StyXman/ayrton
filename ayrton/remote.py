@@ -174,7 +174,7 @@ class InteractiveThread (Thread):
 
 
     def close (self):
-        # reste term settings
+        # reset term settings
         tcsetattr (self.pairs[0][0], TCSADRAIN, self.orig_terminfo)
 
         for k, v in self.pairs:
@@ -348,7 +348,7 @@ client.close ()                                                           # 45"
             self.result_listen.request_port_forward ('localhost', port)
 
             # taken from paramiko/client.py:SSHClient.exec_command()
-            channel= self.client._transport.open_session ()
+            channel= self.client.get_transport ().open_session ()
             # TODO:
             #19:44:54.953791 getsockopt(3, SOL_TCP, TCP_NODELAY, [0], [4]) = 0 <0.000016>
             #19:44:54.953852 setsockopt(3, SOL_TCP, TCP_NODELAY, [1], 4) = 0 <0.000014>
