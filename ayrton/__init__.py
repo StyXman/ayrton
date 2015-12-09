@@ -46,7 +46,7 @@ from ayrton.parser.pyparser.pyparse import CompileInfo, PythonParser
 from ayrton.parser.astcompiler.astbuilder import ast_from_node
 from ayrton.ast_pprinter import pprint
 
-__version__= '0.6'
+__version__= '0.7'
 
 
 def parse (script, file_name=''):
