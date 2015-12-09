@@ -12,7 +12,8 @@ if make ('tests'):
         print (str (uncommited))
         exit (1)
 
-    dch (--changelog='ChangeLog.rst', --newversion=ayrton.__version__, --release=True)
+    dch (--changelog='ChangeLog.rst', --newversion=ayrton.__version__)
+    dch (--changelog='ChangeLog.rst', --release=True)
 
     # docs
     make ('docs')
