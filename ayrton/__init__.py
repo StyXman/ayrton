@@ -177,7 +177,8 @@ class Ayrton (object):
         logger.debug2 ('AST: %s', ast.dump (tree))
         logger.debug2 ('code: \n%s', pprint (tree))
 
-        return self.run_code (compile (tree, file_name, 'exec'), file_name, argv)
+        code= compile (tree, file_name, 'exec')
+        return self.run_code (code, file_name, argv)
 
 
     def run_code (self, code, file_name, argv=None):
