@@ -110,6 +110,10 @@ except IndexError:
     print (usage)
     sys.exit (1)
 
+if file_name is None and script is None:
+    print (usage)
+    sys.exit (1)
+
 try:
     v= ayrton.run_file_or_script (file_name=file_name, script=script,
                                   argv=script_args, trace=trace)
