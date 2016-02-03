@@ -67,7 +67,8 @@ class Environment (dict):
         # weed out some stuff
         for weed in ('copyright', '__doc__', 'help', '__package__', 'credits',
                      'license', '__name__', 'quit', 'exit'):
-            del self[weed]
+            if weed in self:
+                del self[weed]
 
         # these functions will be loaded from each module and put in the globals
         # tuples (src, dst) renames function src to dst
