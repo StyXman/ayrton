@@ -108,7 +108,7 @@ try:
 except IndexError:
     print (reason)
     print (usage)
-    sys,exit (1)
+    sys.exit (1)
 
 try:
     v= ayrton.run_file_or_script (file_name=file_name, script=script,
