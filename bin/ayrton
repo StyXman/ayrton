@@ -32,8 +32,8 @@ Usage:
 
     ayrton [-h|--help]
     ayrton [-v|--version]
-    ayrton [-c|--script] SCRIPT [argv ...]
-    ayrton [-f|--file] file [argv ...]
+    ayrton [-x|--trace] -c|--script SCRIPT [argv ...]
+    ayrton [-x|--trace] [-f|--file] file [argv ...]
 
 Options:
   -h, --help            show this help message and exit
@@ -42,6 +42,7 @@ Options:
                         argument.
   -v, --version         show program's version number and exit
   [-f, --file] FILE     Name of the file from which the script is read.
+  -x, --trace           Trace execution
 
 Arguments:
   argv                  Arguments to be passed to the script."""
@@ -50,8 +51,10 @@ Arguments:
 # it *is* kinda idiotic, but I can't tell any of the parsing modules to just parse those options
 # and the options are not many and are simple to handle, anyways
 
+file_name= None
 script= None
 file= None
+trace= False
 # sys.argv[0] is 'ayrton'
 args= sys.argv[1:]
 reason= None
@@ -79,6 +82,10 @@ try:
             # stop parsing, anything else is passed to the script
             break
 
+        if arg in ('-x', '--trace'):
+            trace= True
+            continue
+
         if arg in ('-f', '--file'):
             reason= 'Missing argument to option %s' % arg
             # -f|--file is optional (because idiot /usr/bin/env ayrton -f does not work)
@@ -105,7 +112,7 @@ except IndexError:
 
 try:
     v= ayrton.run_file_or_script (file_name=file_name, script=script,
-                                  argv=script_args)
+                                  argv=script_args, trace=trace)
 
     if type(v)==bool:
         if v:

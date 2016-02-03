@@ -24,6 +24,7 @@ import ast
 import logging
 import dis
 import traceback
+import linecache
 
 # patch logging so we have debug2 and debug3
 import ayrton.utils
@@ -146,6 +147,8 @@ class Ayrton (object):
 
         self.options= {}
         self.pending_children= []
+        self.file_name= None
+        self.script= None
 
         # HACK to update the singleton
         # this might break if we implement subinstances
@@ -153,7 +156,7 @@ class Ayrton (object):
         runner= self
 
 
-    def run_file (self, file_name, argv=None):
+    def run_file (self, file_name, argv=None, trace=False):
         # it's a pity that parse() does not accept a file as input
         # so we could avoid reading the whole file
         logger.debug ('running from file %s', file_name)
@@ -162,27 +165,30 @@ class Ayrton (object):
         script= f.read ()
         f.close ()
 
-        return self.run_script (script, file_name, argv)
+        return self.run_script (script, file_name, argv, trace=trace)
 
 
-    def run_script (self, script, file_name, argv=None):
+    def run_script (self, script, file_name, argv=None, trace=False):
         logger.debug ('running script:\n-----------\n%s\n-----------', script)
+        self.file_name= file_name
+        self.script= script.split ('\n')
+
         tree= parse (script, file_name)
         # TODO: self.locals?
         tree= CrazyASTTransformer (self.globals, file_name).modify (tree)
 
-        return self.run_tree (tree, file_name, argv)
+        return self.run_tree (tree, file_name, argv, trace=trace)
 
 
-    def run_tree (self, tree, file_name, argv=None):
+    def run_tree (self, tree, file_name, argv=None, trace=False):
         logger.debug2 ('AST: %s', ast.dump (tree))
         logger.debug2 ('code: \n%s', pprint (tree))
 
         code= compile (tree, file_name, 'exec')
-        return self.run_code (code, file_name, argv)
+        return self.run_code (code, file_name, argv, trace=trace)
 
 
-    def run_code (self, code, file_name, argv=None):
+    def run_code (self, code, file_name, argv=None, trace=False):
         if logger.parent.level<=logging.DEBUG2:
             logger.debug2 ('------------------')
             logger.debug2 ('main (gobal) code:')
@@ -240,11 +246,15 @@ class Ayrton (object):
         error= None
         try:
             logger.debug3 ('globals for script: %s', ayrton.utils.dump_dict (self.globals))
+            if trace:
+                sys.settrace (self.global_tracer)
             exec (code, self.globals, self.locals)
         except Exception as e:
             logger.debug ('script finished by Exception')
             logger.debug (traceback.format_exc ())
             error= e
+        finally:
+            sys.settrace (None)
 
         logger.debug3 ('globals at script exit: %s', ayrton.utils.dump_dict (self.globals))
         logger.debug3 ('locals at script exit: %s', ayrton.utils.dump_dict (self.locals))
@@ -263,19 +273,42 @@ class Ayrton (object):
             child.wait ()
 
 
+    def global_tracer (self, frame, event, arg):
+        """"""
+        logger.debug2 ('global_tracer: %s', event)
+        if event in ('call', 'line'):
+            return self.local_tracer
+        else:
+            return None
+
+
+    def local_tracer (self, frame, event, arg):
+        if event=='line':
+            filename= frame.f_code.co_filename
+            if filename==self.file_name:
+                lineno= frame.f_lineno
+
+                line= linecache.getline (filename, lineno)
+                if line=='':
+                    line= self.script[lineno-1]  # line numbers start at 1
+
+                logger.debug2 ('trace e: %s, f: %s, n: %d, l: %s', event, filename, lineno, line)
+                print ("+ %s" % line, end='', file=sys.stderr)  # line already has a \n
+
+
 def run_tree (tree, g, l):
     """main entry point for remote()"""
     runner= Ayrton (g=g, l=l)
     return runner.run_tree (tree, 'unknown_tree')
 
-def run_file_or_script (script=None, file_name='script_from_command_line', argv=None,
-                        **kwargs):
+def run_file_or_script (script=None, file_name='script_from_command_line',
+                        argv=None, trace=False, **kwargs):
     """Main entry point for bin/ayrton and unittests."""
     runner= Ayrton (**kwargs)
     if script is None:
-        v= runner.run_file (file_name, argv)
+        v= runner.run_file (file_name, argv, trace=trace)
     else:
-        v= runner.run_script (script, file_name, argv)
+        v= runner.run_script (script, file_name, argv, trace=trace)
 
     return v
 
