@@ -30,17 +30,17 @@ usage="""ayrton - A Python-based shell-like scripting language.
 
 Usage:
 
-    ayrton [-h|--help]
-    ayrton [-v|--version]
+    ayrton -h|--help
+    ayrton -v|--version
     ayrton [-x|--trace] -c|--script SCRIPT [argv ...]
     ayrton [-x|--trace] [-f|--file] file [argv ...]
 
 Options:
-  -h, --help            show this help message and exit
+  -h, --help            Show this help message and exit
   -c SCRIPT, --script SCRIPT
                         If this option is present, the script is read from its
                         argument.
-  -v, --version         show program's version number and exit
+  -v, --version         Show program's version number and exit
   [-f, --file] FILE     Name of the file from which the script is read.
   -x, --trace           Trace execution
 
