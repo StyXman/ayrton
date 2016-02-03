@@ -94,6 +94,12 @@ def resolve_program(program):
 
     return path
 
+def isiterable (o):
+    """Returns True if o is iterable but not str/bytes type."""
+    # TODO: what about Mappings?
+    return (    isinstance (o, Iterable) and
+            not isinstance (o, (bytes, str)) )
+
 class Command:
     default_options= dict (
         _in_tty= False,
@@ -342,7 +348,12 @@ class Command:
             if isinstance (arg, o):
                 self.prepare_arg (ans, arg.key, arg.value)
             else:
-                ans.append (str (arg))
+                if isiterable (arg):
+                    # a sequence type that is not string like
+                    for elem in arg:
+                        ans.append (str (elem))
+                else:
+                    ans.append (str (arg))
 
         for k, v in kwargs.items ():
             self.prepare_arg (ans, k, v)
@@ -351,12 +362,18 @@ class Command:
 
     def prepare_arg (self, seq, name, value):
         if value!=False:
-            seq.append (name)
+            if isiterable (value):
+                for elem in value:
+                    seq.append (name)
+                    seq.append (str (elem))
 
-            # this is not the same as 'not value'
-            # because value can have any, well, value of any kind
-            if value!=True:
-                seq.append (str (value))
+            else:
+                seq.append (name)
+
+                # this is not the same as 'not value'
+                # because value can have any, well, value of any kind
+                if value!=True:
+                    seq.append (str (value))
         else:
             # TODO: --no-option?
             pass

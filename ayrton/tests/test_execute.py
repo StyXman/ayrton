@@ -292,3 +292,27 @@ class CommandExecution (unittest.TestCase):
 
         # runner.options['errexit']= True
         pass
+
+class HelperFunctions (unittest.TestCase):
+    def setUp (self):
+        self.c= Command ('/bin/true')
+
+    def testPrepareArgsSimple (self):
+        self.assertEqual (self.c.prepare_args ('foo', [], {}),
+                          [ 'foo' ])
+
+    def testPrepareArgsSingleArg (self):
+        self.assertEqual (self.c.prepare_args ('foo', ['bar'], {}),
+                          [ 'foo', 'bar' ])
+
+    def testPrepareArgsSingleKwarg (self):
+        self.assertEqual (self.c.prepare_args ('foo', [], { 'bar': 'quux' }),
+                          [ 'foo', 'bar', 'quux' ])
+
+    def testPrepareArgsIterableArg (self):
+        self.assertEqual (self.c.prepare_args ('foo', [ [ 1, 2 ] ], {}),
+                          [ 'foo', '1', '2' ])
+
+    def testPrepareArgsIterableKwarg (self):
+        self.assertEqual (self.c.prepare_args ('foo', [], { 'bar': [ 1, 2 ]}),
+                          [ 'foo', 'bar', '1', 'bar', '2' ])
