@@ -29,7 +29,7 @@ If you're unsure on how this apply to your interpreted programs, check
 Currently `ayrton` is under heavy development, so if you're following it and
 clone it, use the branch `develop`.
 
-# Instalation
+# Installation
 
 `ayrton` depends on two pieces of code. Python is the most obvious; it has been
 developed in its version 3.3. Python 3.2 is not enough, sorry. On the other hand,
