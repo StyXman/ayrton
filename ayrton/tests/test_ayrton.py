@@ -112,12 +112,15 @@ class ScriptExecution (unittest.TestCase):
         self.runner= ayrton.Ayrton ()
 
 
-    def doTest (self, script, expected=None, argv=None):
+    def doTest (self, file_name, expected=None, argv=None):
         if argv is not None:
-            argv.insert (0, script)
+            argv.insert (0, file_name)
+        else:
+            argv= [ file_name ]
 
         logger.debug (argv)
-        result= self.runner.run_file (os.path.join ('ayrton/tests/scripts', script), argv=argv)
+        result= self.runner.run_file (os.path.join ('ayrton/tests/scripts', file_name),
+                                      argv=argv)
         if expected is not None:
             self.assertEqual (result, expected)
 
