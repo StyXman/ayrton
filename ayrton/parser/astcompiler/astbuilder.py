@@ -345,6 +345,7 @@ class ASTBuilder(object):
     def handle_if_stmt(self, if_node):
         child_count = len(if_node.children)
         if child_count == 4:
+            # simple if-then
             test = self.handle_expr(if_node.children[1])
             suite = self.handle_suite(if_node.children[3])
             new_node = ast.If (test, suite, [])
@@ -353,6 +354,7 @@ class ASTBuilder(object):
             return new_node
         otherwise_string = if_node.children[4].value
         if otherwise_string == "else":
+            # if-then-else
             test = self.handle_expr(if_node.children[1])
             suite = self.handle_suite(if_node.children[3])
             else_suite = self.handle_suite(if_node.children[6])
@@ -361,6 +363,7 @@ class ASTBuilder(object):
             new_node.col_offset = if_node.col_offset
             return new_node
         elif otherwise_string == "elif":
+            # if-then-elif...
             elif_count = child_count - 4
             after_elif = if_node.children[elif_count + 1]
             if after_elif.type == tokens.NAME and \
@@ -369,7 +372,7 @@ class ASTBuilder(object):
                 elif_count -= 3
             else:
                 has_else = False
-            elif_count /= 4
+            elif_count //= 4
             if has_else:
                 last_elif = if_node.children[-6]
                 last_elif_test = self.handle_expr(last_elif)

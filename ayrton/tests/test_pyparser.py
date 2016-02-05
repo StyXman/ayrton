@@ -84,3 +84,12 @@ class Parser(unittest.TestCase):
 
     def test_comp_if (self):
         self.parse ('[ x for x in foo() if x ]')
+
+
+    def test_elif (self):
+        self.parse ('''if True:
+    pass
+elif False:
+    pass
+else:
+    pass''')
