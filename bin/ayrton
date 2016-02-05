@@ -54,7 +54,7 @@ Arguments:
 file_name= None
 script= None
 file= None
-trace= False
+params= ayrton.ExecParams ()
 # sys.argv[0] is 'ayrton'
 args= sys.argv[1:]
 reason= None
@@ -83,7 +83,7 @@ try:
             break
 
         if arg in ('-x', '--trace'):
-            trace= True
+            params.trace= True
             continue
 
         if arg in ('-f', '--file'):
@@ -116,7 +116,7 @@ if file_name is None and script is None:
 
 try:
     v= ayrton.run_file_or_script (file_name=file_name, script=script,
-                                  argv=script_args, trace=trace)
+                                  argv=script_args, params=params)
 
     if type(v)==bool:
         if v:
