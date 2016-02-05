@@ -54,6 +54,7 @@ class ExecParams:
     def __init__ (self, **kwargs):
         # defaults
         self.trace= False
+        self.linenos= False
 
         self.__dict__.update (kwargs)
 
@@ -265,6 +266,7 @@ class Ayrton (object):
             logger.debug3 ('globals for script: %s', ayrton.utils.dump_dict (self.globals))
             if self.params.trace:
                 sys.settrace (self.global_tracer)
+
             exec (code, self.globals, self.locals)
         except Exception as e:
             logger.debug ('script finished by Exception')
@@ -301,16 +303,19 @@ class Ayrton (object):
 
     def local_tracer (self, frame, event, arg):
         if event=='line':
-            filename= frame.f_code.co_filename
-            if filename==self.file_name:
+            file_name= frame.f_code.co_filename
+            if self.params.trace_all or file_name==self.file_name:
                 lineno= frame.f_lineno
 
-                line= linecache.getline (filename, lineno)
+                line= linecache.getline (file_name, lineno).rstrip ()
                 if line=='':
-                    line= self.script[lineno-1]  # line numbers start at 1
+                    line= self.script[lineno-1].rstrip ()  # line numbers start at 1
 
-                logger.debug2 ('trace e: %s, f: %s, n: %d, l: %s', event, filename, lineno, line)
-                print ("+ %s" % line, end='', file=sys.stderr)  # line already has a \n
+                logger.debug2 ('trace e: %s, f: %s, n: %d, l: %s', event, file_name, lineno, line)
+                if self.params.linenos:
+                    print ("+ [%6d] %s" % (lineno, line), file=sys.stderr)
+                else:
+                    print ("+ %s" % line, file=sys.stderr)
 
 
 def run_tree (tree, g, l):

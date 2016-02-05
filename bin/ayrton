@@ -32,17 +32,22 @@ Usage:
 
     ayrton -h|--help
     ayrton -v|--version
-    ayrton [-x|--trace] -c|--script SCRIPT [argv ...]
-    ayrton [-x|--trace] [-f|--file] file [argv ...]
+    ayrton [TRACE_OPTS] -c|--script SCRIPT [argv ...]
+    ayrton [TRACE_OPTS] [-f|--file] file [argv ...]
 
 Options:
-  -h, --help            Show this help message and exit
+  -h, --help            Show this help message and exit.
   -c SCRIPT, --script SCRIPT
                         If this option is present, the script is read from its
                         argument.
-  -v, --version         Show program's version number and exit
+  -v, --version         Show program's version number and exit.
   [-f, --file] FILE     Name of the file from which the script is read.
-  -x, --trace           Trace execution
+
+Trace Options:
+  -x, --trace           Trace script execution. It does not trace other modules
+                        used.
+  -xx, --trace-with-lineno
+                        Trace and print the line number.
 
 Arguments:
   argv                  Arguments to be passed to the script."""
@@ -84,6 +89,11 @@ try:
 
         if arg in ('-x', '--trace'):
             params.trace= True
+            continue
+
+        if arg in ('-xx', '--trace-with-linenos'):
+            params.trace= True
+            params.linenos= True
             continue
 
         if arg in ('-f', '--file'):
