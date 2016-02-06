@@ -217,14 +217,15 @@ A: (Short version) We think nobody provides all of `ayrton`'s features.
 A: ... [`sh`](https://amoffat.github.io/sh/)? Well, we started with `sh` as a basis
 of `ayrton`, but its buffered output didn't allow us to run editors and other TIU's.
 
-A: ... [`xonsh`](http://xonsh.org/)? `xonsh` keeps environment variables well
-separated from Python ones; it even has a Python mode and a 'subprocess' mode;
+A: ... [`xonsh`](http://xonsh.org/)? `xonsh` keeps environment variables in a different
+namespace than the Python ones; it even has a Python mode and a 'subprocess' mode
+(although lots of Python characteristics can be used in the subprocess mode and vice versa);
 and is more oriented to being a shell. `ayrton` aims directly in the opposite
 direction.
 
 A: ... [`plumbum`](https://plumbum.readthedocs.org/en/latest/)? You could say that we
 independently thought of its piping and redirection syntax (but in reality we just
-based ours on `bash`'s). Still, the fact that you fisrt build pipes and then execute
+based ours on `bash`'s). Still, the fact that you first build pipes and then execute
 them looks weird for a SysAdmin.
 
 A: ... [`fabric`](http://www.fabfile.org/)? `fabric` is the only one that has remote
