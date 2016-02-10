@@ -1,10 +1,10 @@
-ayrton (0.7.1) UNRELEASED; urgency=medium
+ayrton (0.7.1) unstable; urgency=medium
 
   * Iterable parameters to executables are expanded in situ, so `foo(..., i, ...)` is expanded to `foo (..., i[0], i[1], ...` and `foo(..., k=i, ...)` is expanded to `foo (..., k=i[0], k=i[1], ...`.
   * `-x|--trace` allows for minimal execution tracing.
   * `-xx|--trace-with-linenos` allows for execution tracing that also prints the line number.
 
- -- Marcos Dione <mdione@grulic.org.ar>  Wed, 03 Feb 2016 10:29:40 +0100
+ -- Marcos Dione <mdione@grulic.org.ar>  Wed, 10 Feb 2016 10:14:17 +0100
 
 ayrton (0.7) unstable; urgency=medium
 
