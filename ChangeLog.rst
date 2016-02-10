@@ -1,4 +1,12 @@
-ayrton (0.7) UNRELEASED; urgency=medium
+ayrton (0.7.1) UNRELEASED; urgency=medium
+
+  * Iterable parameters to executables are expanded in situ, so `foo(..., i, ...)` is expanded to `foo (..., i[0], i[1], ...` and `foo(..., k=i, ...)` is expanded to `foo (..., k=i[0], k=i[1], ...`.
+  * `-x|--trace` allows for minimal execution tracing.
+  * `-xx|--trace-with-linenos` allows for execution tracing that also prints the line number.
+
+ -- Marcos Dione <mdione@grulic.org.ar>  Wed, 03 Feb 2016 10:29:40 +0100
+
+ayrton (0.7) unstable; urgency=medium
 
   * Send data to/from the remote via another `ssh` channel, which is more stable than using `stdin`.
   * Stabilized a lot all tests, specially those using a mocked stdout for getting test validation.
@@ -11,7 +19,7 @@ ayrton (0.7) UNRELEASED; urgency=medium
   * `argv` is handled at the last time possible, allowing it being passed from test invoction.
   * `shift` complains on negative values.
   * Lazy `pprint()`, so debug statemens do not do useless work.
-  * `stdin/out/err` handling in `remote()` is done by a single thread. 
+  * `stdin/out/err` handling in `remote()` is done by a single thread.
   * Modify a lot the local terminal when in `remote()` so, among other things, we have no local echo.
   * Properly pass the terminal type and size to the remote. These last three features allows programs like `vi` be run in the remote.
   * Paved the road to make `remote()`s more like `Command()`s.
