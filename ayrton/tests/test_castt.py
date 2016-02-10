@@ -200,6 +200,13 @@ class TestHelperFunctions (unittest.TestCase):
         # this is a very strange but possible executable name
         self.assertEqual (combined, 'argv[3].split[:54]')
 
+    def testDottedCall (self):
+        single, combined= castt.func_name2dotted_exec (parse_expression ('str (foo).strip ()'))
+
+        self.assertEqual (single, 'str')
+        # this is a very strange but possible executable name
+        self.assertEqual (combined, 'str (foo, ).strip ()')
+
 class TestWeirdErrors (unittest.TestCase):
     check_attrs= check_attrs
 

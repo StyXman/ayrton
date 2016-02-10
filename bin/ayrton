@@ -30,18 +30,24 @@ usage="""ayrton - A Python-based shell-like scripting language.
 
 Usage:
 
-    ayrton [-h|--help]
-    ayrton [-v|--version]
-    ayrton [-c|--script] SCRIPT [argv ...]
-    ayrton [-f|--file] file [argv ...]
+    ayrton -h|--help
+    ayrton -v|--version
+    ayrton [TRACE_OPTS] -c|--script SCRIPT [argv ...]
+    ayrton [TRACE_OPTS] [-f|--file] file [argv ...]
 
 Options:
-  -h, --help            show this help message and exit
+  -h, --help            Show this help message and exit.
   -c SCRIPT, --script SCRIPT
                         If this option is present, the script is read from its
                         argument.
-  -v, --version         show program's version number and exit
+  -v, --version         Show program's version number and exit.
   [-f, --file] FILE     Name of the file from which the script is read.
+
+Trace Options:
+  -x, --trace           Trace script execution. It does not trace other modules
+                        used.
+  -xx, --trace-with-lineno
+                        Trace and print the line number.
 
 Arguments:
   argv                  Arguments to be passed to the script."""
@@ -50,8 +56,10 @@ Arguments:
 # it *is* kinda idiotic, but I can't tell any of the parsing modules to just parse those options
 # and the options are not many and are simple to handle, anyways
 
+file_name= None
 script= None
 file= None
+params= ayrton.ExecParams ()
 # sys.argv[0] is 'ayrton'
 args= sys.argv[1:]
 reason= None
@@ -79,6 +87,15 @@ try:
             # stop parsing, anything else is passed to the script
             break
 
+        if arg in ('-x', '--trace'):
+            params.trace= True
+            continue
+
+        if arg in ('-xx', '--trace-with-linenos'):
+            params.trace= True
+            params.linenos= True
+            continue
+
         if arg in ('-f', '--file'):
             reason= 'Missing argument to option %s' % arg
             # -f|--file is optional (because idiot /usr/bin/env ayrton -f does not work)
@@ -101,11 +118,15 @@ try:
 except IndexError:
     print (reason)
     print (usage)
-    sys,exit (1)
+    sys.exit (1)
+
+if file_name is None and script is None:
+    print (usage)
+    sys.exit (1)
 
 try:
     v= ayrton.run_file_or_script (file_name=file_name, script=script,
-                                  argv=script_args)
+                                  argv=script_args, params=params)
 
     if type(v)==bool:
         if v:

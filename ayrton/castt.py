@@ -74,8 +74,11 @@ def func_name2dotted_exec (node):
 
     complete_name= str (pprint (node))
 
-    while type (node) in (Attribute, Subscript):
-        node= node.value
+    while type (node) in (Attribute, Subscript, Call):
+        if type (node) in (Attribute, Subscript):
+            node= node.value
+        elif type (node) in (Call, ):
+            node= node.func
 
     return (node.id, complete_name)
 

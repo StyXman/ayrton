@@ -16,8 +16,8 @@ from shell like languages.
 
     This variable holds a list of strings, each one representing a directory.
     When binaries are executed (see :py:func:`foo`), they're searched in these
-    directories by appending *foo* to each of the directory until an executable
-    is found.
+    directories by appending *foo* to each one of the directories until an
+    executable is found.
 
 Exceptions
 ----------
@@ -106,10 +106,17 @@ Functions
     Executes the binary *foo*, searching the binary using :py:data:`path`.
     Arguments are used as positional arguments for the command, except for the
     special keyword arguments listed below. This
-    returns a :py:class:`Command`. The syntaxis for Commands departs a little from
+    returns a :py:class:`Command`.
+
+    The syntaxis for Commands departs a little from
     pure Python. Python expressions are allowed as keyword names, so `-o` and
     `--long-option` are valid. Also, keywords and positional arguments can be mixed,
-    as in `find (-L=True, '/', -name='*.so')`
+    as in `find (-L=True, '/', -name='*.so')`.
+
+    Iterable arguments that are not
+    :py:class:`str` or :py:class:`bytes` are expanded in situ, so `foo(..., i, ...)`
+    is expanded to `foo (..., i[0], i[1], ...` and `foo(..., k=i, ...)` is expanded
+    to `foo (..., k=i[0], k=i[1], ...`.
 
 .. py:attribute:: _in
 
