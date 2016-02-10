@@ -16,8 +16,8 @@ from shell like languages.
 
     This variable holds a list of strings, each one representing a directory.
     When binaries are executed (see :py:func:`foo`), they're searched in these
-    directories by appending *foo* to each of the directory until an executable
-    is found.
+    directories by appending *foo* to each one of the directories until an
+    executable is found.
 
 Exceptions
 ----------
