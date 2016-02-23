@@ -461,6 +461,12 @@ class CommandDetection (ScriptExecution):
         self.assertRaises (NameError, ayrton.main, '''fff()''')
         self.assertRaises (CommandNotFound, ayrton.main, '''fff()''')
 
+    def testForDefinesTarget (self):
+        self.doTest ('testForDefinesTarget.ay')
+
+    def testForDefinesTargets (self):
+        self.doTest ('testForDefinesTargets.ay')
+
 class ParsingErrors (unittest.TestCase):
 
     def testTupleAssign (self):

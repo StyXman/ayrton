@@ -148,6 +148,7 @@ class CrazyASTTransformer (ast.NodeTransformer):
             name= o.id
 
         elif type (o)==str:
+            # NOTE: when?
             name= o
 
         elif type (o)==Tuple:
@@ -160,11 +161,13 @@ class CrazyASTTransformer (ast.NodeTransformer):
                 self.bind (e)
 
         if name is not None:
+            logger.debug ('binding "%s"', name)
             self.known_names[name]+= 1
             self.defined_names[self.stack].append (name)
             self.seen_names.add (name)
 
     def unbind (self, name, remove_from_stack=False):
+        logger.debug ('unbinding "%s"', name)
         self.known_names[name]-= 1
         if remove_from_stack:
             self.defined_names[self.stack].remove (name)
@@ -244,10 +247,10 @@ class CrazyASTTransformer (ast.NodeTransformer):
         # For(target=Tuple(elts=[Name(id='band', ctx=Store()), Name(id='color', ctx=Store())], ctx=Store()),
         #     iter=Tuple(elts=[...], ctx=Load()),
         #     body=[Pass()], orelse=[])
-        self.generic_visit (node)
         self.bind (node.target)
+        self.generic_visit (node)
 
-        # if iter is Command, _out=Capture
+        # if iter is Command, set _out=Capture
         # so this works as expected:
         # for line in ls(): ...
 
