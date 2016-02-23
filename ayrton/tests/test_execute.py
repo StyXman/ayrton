@@ -25,14 +25,15 @@ import ayrton
 # create one of these
 ayrton.runner= ayrton.Ayrton ()
 
-echo= Command ('echo', )
-cat= Command ('cat', )
+echo= Command ('echo')
+cat= Command ('cat')
 ls= Command ('ls')
 ssh= Command ('ssh')
 mcedit= Command ('mcedit')
 true= Command ('true')
 false= Command ('false')
 grep= Command ('grep')
+stderr= Command ('./ayrton/tests/scripts/stderr.sh')
 
 def setUpMockStdOut (self):
     # this is a trick to (hopefulliy) save the original stdout fd
@@ -212,27 +213,28 @@ class Redirected (unittest.TestCase):
     def testErrToFile (self):
         file_path= 'ayrton/tests/data/string_stderr.txt'
         r= random.randint (0, 1000000)
+        s= 'stderr_to_file: %d' % r
 
         f= open (file_path, 'wb+')
-        a= ls ('stderr_to_file: %d' % r, _err=f)
+        a= stderr (s, _err=f)
         f.close ()
 
         f= open (file_path, 'rb')
-        self.assertEqual (f.read (), bytes ('/bin/ls: cannot access stderr_to_file: %d: No such file or directory\n' % r, 'ascii'))
+        self.assertEqual (f.read (), bytes (s+'\n', 'ascii'))
         f.close ()
         os.unlink (file_path)
 
     def testErrCapture (self):
-        a= ls ('_err=Capture', _err=Capture)
+        a= stderr ('_err=Capture', _err=Capture)
         for i in a:
-            self.assertEqual (i, '/bin/ls: cannot access _err=Capture: No such file or directory')
+            self.assertEqual (i, '_err=Capture')
 
     def testOutErrCaptured (self):
-        a= ls ('Makefile', '_err=Capture', _out=Capture, _err=Capture)
+        a= stderr ('Makefile', '_err=Capture', _out=Capture, _err=Capture)
         # list() exercises __iter__()
         l= list (a)
-        self.assertEqual (l[0], '/bin/ls: cannot access _err=Capture: No such file or directory')
-        self.assertEqual (l[1], 'Makefile')
+        self.assertEqual (l[0], 'Makefile')
+        self.assertEqual (l[1], '_err=Capture')
 
     def testPipe (self):
         r, w= os.pipe ()
