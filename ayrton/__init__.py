@@ -293,7 +293,11 @@ class Ayrton (object):
     def wait_for_pending_children (self):
         for i in range (len (self.pending_children)):
             child= self.pending_children.pop (0)
-            child.wait ()
+            try:
+                child.wait ()
+            except ChildProcessError:
+                # most probably is was alredy waited
+                logger.debug ('waiting for %s failed; ignoring', child)
 
 
     def global_tracer (self, frame, event, arg):
