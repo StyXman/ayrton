@@ -416,21 +416,8 @@ class Command:
             ayrton.runner.pending_children.append (self)
 
     def wait (self):
+        logger.debug (self.child_pid)
         self._exit_code= os.waitpid (self.child_pid, 0)[1] >> 8
-
-        reader_pipe= None
-
-        if self.stdout_pipe is not None:
-            # this will also read stderr if both are Capture'd
-            reader_pipe= self.stdout_pipe
-        if self.stderr_pipe is not None:
-            reader_pipe= self.stderr_pipe
-
-        if reader_pipe is not None and self.options.get ('_out', None)!=Pipe:
-            r, w= reader_pipe
-            logger.debug ('closing %d', w)
-            os.close (w)
-            self.capture_file= open (r)
 
         if self._exit_code==127:
             # NOTE: when running bash, it returns 127 when it can't find the script to run
@@ -499,32 +486,67 @@ class Command:
             self.wait ()
         return self._exit_code==0
 
+
+    def prepare_capture_file (self):
+        if self.capture_file is None:
+            reader_pipe= None
+
+            if self.stdout_pipe is not None:
+                # this will also read stderr if both are Capture'd
+                reader_pipe= self.stdout_pipe
+            if self.stderr_pipe is not None:
+                reader_pipe= self.stderr_pipe
+
+            if reader_pipe is not None and self.options.get ('_out', None)!=Pipe:
+                r, w= reader_pipe
+                logger.debug ('closing %d', w)
+                os.close (w)
+                self.capture_file= open (r, encoding=encoding)
+
+
     def __str__ (self):
         if self._exit_code is None:
             self.wait ()
+
+        self.prepare_capture_file ()
+
         return self.capture_file.read ()
 
     def __iter__ (self):
-        if self._exit_code is None:
-            self.wait ()
+        logger.debug ('iterating!')
+
+        self.prepare_capture_file ()
+
         if self.capture_file is not None:
             for line in self.capture_file.readlines ():
                 if self.options['_chomp']:
                     line= line.rstrip (os.linesep)
 
+                logger.debug2 ('read line: %s', line)
                 yield line
 
             # finish him!
+            logger.debug ('finished!')
             self.capture_file.close ()
+            if self._exit_code is None:
+                self.wait ()
         else:
-            # TODO
-            pass
+            logger.debug ('dunno what to do!')
+
+    def readlines (self):
+        if self._exit_code is None:
+            self.wait ()
+
+        # ugly way to not leak the file()
+        return ( line for line in self )
 
     # BUG this method is leaking an opend file()
     # self.capture_file
     def readline (self):
         if self._exit_code is None:
             self.wait ()
+
+        self.prepare_capture_file ()
         line= self.capture_file.readline ()
         if self.options['_chomp']:
             line= line.rstrip (os.linesep)
@@ -535,12 +557,6 @@ class Command:
         if self._exit_code is None:
             self.wait ()
         self.capture_file.close ()
-
-    def readlines (self):
-        if self._exit_code is None:
-            self.wait ()
-        # ugly way to not leak the file()
-        return ( line for line in self )
 
     def __del__ (self):
         # finish it

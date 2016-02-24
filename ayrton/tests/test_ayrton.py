@@ -392,6 +392,11 @@ class MiscTests (ScriptExecution):
         self.doTest ('testShortIter.ay', 'yes!')
         self.runner.wait_for_pending_children ()
 
+    def testLongIter (self):
+        '''This test takes some time...'''
+        self.doTest ('testLongIter.ay', 'yes!')
+        self.runner.wait_for_pending_children ()
+
 class CommandDetection (ScriptExecution):
 
     def testSimpleCase (self):
