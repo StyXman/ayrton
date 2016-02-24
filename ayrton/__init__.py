@@ -32,9 +32,12 @@ import ayrton.utils
 log_format= "%(asctime)s %(name)16s:%(lineno)-4d (%(funcName)-21s) %(levelname)-8s %(message)s"
 date_format= "%H:%M:%S"
 
-# uncomment one of these for way too much debugging :)
-# logging.basicConfig(filename='ayrton.%d.log' % os.getpid (), level=logging.DEBUG, format=log_format, datefmt=date_format)
-# logging.basicConfig(filename='ayrton.log', level=logging.DEBUG, format=log_format, datefmt=date_format)
+def debug (level=logging.DEBUG, filename='ayrton.log'):
+    logging.basicConfig(filename=filename, filemode='a', level=level,
+                        format=log_format, datefmt=date_format)
+
+# uncomment next line and change level for way too much debugging during test execution
+# debug (level=logging.DEBUG, filename='ayrton.%d.log' % os.getpid ())
 logger= logging.getLogger ('ayrton')
 
 # things that have to be defined before importing ayton.execute :(
@@ -55,6 +58,7 @@ class ExecParams:
         # defaults
         self.trace= False
         self.linenos= False
+        self.debug= False
 
         self.__dict__.update (kwargs)
 
@@ -313,9 +317,16 @@ class Ayrton (object):
 
                 logger.debug2 ('trace e: %s, f: %s, n: %d, l: %s', event, file_name, lineno, line)
                 if self.params.linenos:
-                    print ("+ [%6d] %s" % (lineno, line), file=sys.stderr)
+                    self.trace_line ("+ [%6d] %s", lineno, line)
                 else:
-                    print ("+ %s" % line, file=sys.stderr)
+                    self.trace_line ("+ %s", line)
+
+
+    def trace_line (self, msg, *args):
+        if self.params.debug and False:
+            logger.debug (msg, *args)
+        else:
+            print (msg % args, file=sys.stderr)
 
 
 def run_tree (tree, g, l):
