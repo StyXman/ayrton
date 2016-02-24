@@ -384,6 +384,7 @@ client.close ()                                                           # 45"
             (self.result_channel, addr)= self.result_listen.accept ()
 
         logger.debug ('sending ast, globals, locals')
+        # TODO: compress?
         self.result_channel.sendall (self.ast)
         self.result_channel.sendall (global_env)
         self.result_channel.sendall (local_env)

@@ -21,7 +21,7 @@
 # cannot be simpler :)
 import ayrton
 
-# well, actually, it can :)
+# well, actually, it could :)
 import sys
 import os.path
 import traceback
@@ -41,7 +41,7 @@ Options:
   -c SCRIPT, --script SCRIPT
                         If this option is present, the script is read from its
                         argument.
-  -v, --version         Show program's version number and exit.
+  -v, --version         Show the version number and exit.
   [-f, --file] FILE     Name of the file from which the script is read.
 
 Debug Options:
@@ -66,7 +66,7 @@ file_name= None
 script= None
 file= None
 params= ayrton.ExecParams ()
-# sys.argv[0] is 'ayrton'
+# sys.argv[0] is 'ayrton', always defined
 args= sys.argv[1:]
 reason= None
 
