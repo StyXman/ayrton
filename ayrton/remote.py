@@ -222,6 +222,8 @@ class remote:
         self.param ('_debug', kwargs)
         self.param ('_test', kwargs)
         self.kwargs= kwargs
+        # NOTE: uncomment to connect to the debugserver
+        # self.kwargs['port']= 2244
 
         # socket/transport where we wait for connection for the result
         self.result_listen= None
@@ -272,14 +274,14 @@ class remote:
         logger.debug3 ('locals passed to remote: %s', ayrton.utils.dump_dict (l))
         local_env= pickle.dumps (l)
 
-        port= 4227
+        backchannel_port= 4227
 
         if not self._debug and not self._test:
             precommand= ''
         else:
             precommand= '''import os; os.chdir (%r)''' % os.getcwd ()
 
-        command= '''python3 -c "#!                                        #  1
+        command= '''python3.4 -c "#!                                      #  1
 import pickle                                                             #  2
 # names needed for unpickling                                             #  3
 from ast import Module, Assign, Name, Store, Call, Load, Expr             #  4
@@ -324,7 +326,7 @@ logger.debug ('sending %%d bytes', len (data))                            # 42
 client.sendall (data)                                                     # 43
 logger.debug ('exit status sent')                                         # 44
 client.close ()                                                           # 45"
-''' % (precommand, port, len (self.ast), len (global_env), len (local_env))
+''' % (precommand, backchannel_port, len (self.ast), len (global_env), len (local_env))
 
         logger.debug ('code to execute remote: %s', command)
 
@@ -334,6 +336,7 @@ client.close ()                                                           # 45"
             # self.client.load_host_keys (bash ('~/.ssh/known_hosts'))
             # self.client.set_missing_host_key_policy (ShutUpPolicy ())
             self.client.set_missing_host_key_policy (paramiko.WarningPolicy ())
+            logger.debug ('connecting...')
             self.client.connect (self.hostname, *self.args, **self.kwargs)
 
             # create the backchannel
@@ -345,7 +348,8 @@ client.close ()                                                           # 45"
             # the remote will see this channel as a localhost port
             # and it's seen on the local side as self.con defined below
             self.result_listen= self.client.get_transport ()
-            self.result_listen.request_port_forward ('localhost', port)
+            logger.debug ('setting backchannel_port...')
+            self.result_listen.request_port_forward ('localhost', backchannel_port)
 
             # taken from paramiko/client.py:SSHClient.exec_command()
             channel= self.client.get_transport ().open_session ()
@@ -354,15 +358,17 @@ client.close ()                                                           # 45"
             #19:44:54.953852 setsockopt(3, SOL_TCP, TCP_NODELAY, [1], 4) = 0 <0.000014>
 
             try:
-                # TODO signal handler from SIGWINCH
+                # TODO signal handler for SIGWINCH
                 term= shutil.get_terminal_size ()
                 channel.get_pty (os.environ['TERM'], term.columns, term.lines)
             except OSError:
                 channel.get_pty (os.environ['TERM'], )
 
+            logger.debug ('exec!')
             channel.exec_command (command)
             i= o= e= channel
 
+            logger.debug ('waiting for backchannel...')
             self.result_channel= self.result_listen.accept ()
         else:
             self.client= socket ()
@@ -374,7 +380,7 @@ client.close ()                                                           # 45"
 
             self.result_listen= socket ()
             # self.result_listen.setsockopt (SO_REUSEADDR, )
-            self.result_listen.bind (('', port))
+            self.result_listen.bind (('', backchannel_port))
             self.result_listen.listen (1)
 
             # so bash does not hang waiting from more input
@@ -384,6 +390,7 @@ client.close ()                                                           # 45"
             (self.result_channel, addr)= self.result_listen.accept ()
 
         logger.debug ('sending ast, globals, locals')
+        # TODO: compress?
         self.result_channel.sendall (self.ast)
         self.result_channel.sendall (global_env)
         self.result_channel.sendall (local_env)

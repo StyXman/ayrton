@@ -411,9 +411,11 @@ class Command:
         # successfully.
         if not self.options['_bg']:
             self.wait ()
+            # NOTE: uhm?
             ayrton.runner.wait_for_pending_children ()
         else:
             ayrton.runner.pending_children.append (self)
+
 
     def wait (self):
         logger.debug (self.child_pid)
@@ -429,10 +431,12 @@ class Command:
 
             raise CommandFailed (self)
 
+
     def exit_code (self):
         if self._exit_code is None:
             self.wait ()
         return self._exit_code
+
 
     def __call__ (self, *args, **kwargs):
         if self.exe is None:
@@ -481,6 +485,7 @@ class Command:
 
         return self
 
+
     def __bool__ (self):
         if self._exit_code is None:
             self.wait ()
@@ -512,6 +517,7 @@ class Command:
 
         return self.capture_file.read ()
 
+
     def __iter__ (self):
         logger.debug ('iterating!')
 
@@ -540,7 +546,7 @@ class Command:
         # ugly way to not leak the file()
         return ( line for line in self )
 
-    # BUG this method is leaking an opend file()
+    # BUG this method is leaking an opened file()
     # self.capture_file
     def readline (self):
         if self._exit_code is None:

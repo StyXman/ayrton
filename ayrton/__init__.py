@@ -36,7 +36,8 @@ def debug (level=logging.DEBUG, filename='ayrton.log'):
     logging.basicConfig(filename=filename, filemode='a', level=level,
                         format=log_format, datefmt=date_format)
 
-# uncomment next line and change level for way too much debugging during test execution
+# uncomment next line and change level for way too much debugging
+# during test execution
 # debug (level=logging.DEBUG, filename='ayrton.%d.log' % os.getpid ())
 logger= logging.getLogger ('ayrton')
 
@@ -50,7 +51,7 @@ from ayrton.parser.pyparser.pyparse import CompileInfo, PythonParser
 from ayrton.parser.astcompiler.astbuilder import ast_from_node
 from ayrton.ast_pprinter import pprint
 
-__version__= '0.7.1'
+__version__= '0.7.2'
 
 
 class ExecParams:
@@ -58,6 +59,7 @@ class ExecParams:
         # defaults
         self.trace= False
         self.linenos= False
+        self.trace_all= False
         self.debug= False
 
         self.__dict__.update (kwargs)
@@ -313,6 +315,12 @@ class Ayrton (object):
         if event=='line':
             file_name= frame.f_code.co_filename
             if self.params.trace_all or file_name==self.file_name:
+                l= len (file_name)
+                if l>32:
+                    short_file_name= file_name[l-32:]
+                else:
+                    short_file_name= file_name
+
                 lineno= frame.f_lineno
 
                 line= linecache.getline (file_name, lineno).rstrip ()
@@ -320,7 +328,9 @@ class Ayrton (object):
                     line= self.script[lineno-1].rstrip ()  # line numbers start at 1
 
                 logger.debug2 ('trace e: %s, f: %s, n: %d, l: %s', event, file_name, lineno, line)
-                if self.params.linenos:
+                if self.params.trace_all:
+                    self.trace_line ("+ [%32s:%-6d] %s", short_file_name, lineno, line)
+                elif self.params.linenos:
                     self.trace_line ("+ [%6d] %s", lineno, line)
                 else:
                     self.trace_line ("+ %s", line)
@@ -337,6 +347,7 @@ def run_tree (tree, g, l):
     """main entry point for remote()"""
     runner= Ayrton (g=g, l=l)
     return runner.run_tree (tree, 'unknown_tree')
+
 
 def run_file_or_script (script=None, file_name='script_from_command_line',
                         argv=None, params=None, **kwargs):
