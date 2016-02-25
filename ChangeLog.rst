@@ -1,4 +1,4 @@
-ayrton (0.7.2) UNRELEASED; urgency=medium
+ayrton (0.7.2) unstable; urgency=medium
 
   * Fix running remote tests with other versions of python.
   * Fix tests borken by a change in `ls`'s output.
@@ -7,7 +7,7 @@ ayrton (0.7.2) UNRELEASED; urgency=medium
   * Added options `-d|--debug`, `-dd|--debug2` and `-ddd|--debug3` for enabling debug logs.
   * Added option `-xxx|--trace-all` for tracing all python execution. Use with caution, it generates lots of output.
 
- -- Marcos Dione <mdione@grulic.org.ar>  Thu, 25 Feb 2016 12:40:04 +0100
+ -- Marcos Dione <mdione@grulic.org.ar>  Thu, 25 Feb 2016 13:09:08 +0100
 
 ayrton (0.7.1) unstable; urgency=medium
 
