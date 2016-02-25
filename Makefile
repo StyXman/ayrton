@@ -1,5 +1,5 @@
-DEBUG_MULTI=strace -tt -T -ff -o runner -s 128
-DEBUG_SIMPLE=strace -tt -T -o runner -s 128
+DEBUG_MULTI=strace -tt -T -ff -o debug/runner -s 128
+DEBUG_SIMPLE=strace -tt -T -o debug/runner -s 128
 PYTHON=python3.4
 
 all: docs
@@ -9,7 +9,7 @@ INSTALL_DIR=$(HOME)/local
 tests:
 	LC_ALL=C $(PYTHON) -m unittest discover -v ayrton
 
-slowtest:
+slowtest: debug
 	# LC_ALL=C $(DEBUG_SIMPLE) $(PYTHON) -m unittest discover -f -v ayrton
 	LC_ALL=C $(DEBUG_MULTI) $(PYTHON) -m unittest discover -f -v ayrton
 
@@ -40,7 +40,10 @@ check:
 	flake8 --ignore E201,E211,E225,E221,E226,E202 --show-source --statistics --max-line-length 130 ayrton/*.py
 
 testclean:
-	rm -rfv ayrton.*log runner.*
+	rm -f ayrton.*log debug/runner* debug/remote*
+
+debug:
+	mkdir -pv debug
 
 debugserver:
 	# generate an rsa server key
