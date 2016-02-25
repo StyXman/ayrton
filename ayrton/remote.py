@@ -279,7 +279,7 @@ class remote:
         else:
             precommand= '''import os; os.chdir (%r)''' % os.getcwd ()
 
-        command= '''python3 -c "#!                                        #  1
+        command= '''python3.4 -c "#!                                      #  1
 import pickle                                                             #  2
 # names needed for unpickling                                             #  3
 from ast import Module, Assign, Name, Store, Call, Load, Expr             #  4
