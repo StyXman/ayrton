@@ -272,7 +272,7 @@ class remote:
         logger.debug3 ('locals passed to remote: %s', ayrton.utils.dump_dict (l))
         local_env= pickle.dumps (l)
 
-        port= 4227
+        backchannel_port= 4227
 
         if not self._debug and not self._test:
             precommand= ''
@@ -324,7 +324,7 @@ logger.debug ('sending %%d bytes', len (data))                            # 42
 client.sendall (data)                                                     # 43
 logger.debug ('exit status sent')                                         # 44
 client.close ()                                                           # 45"
-''' % (precommand, port, len (self.ast), len (global_env), len (local_env))
+''' % (precommand, backchannel_port, len (self.ast), len (global_env), len (local_env))
 
         logger.debug ('code to execute remote: %s', command)
 
@@ -345,7 +345,7 @@ client.close ()                                                           # 45"
             # the remote will see this channel as a localhost port
             # and it's seen on the local side as self.con defined below
             self.result_listen= self.client.get_transport ()
-            self.result_listen.request_port_forward ('localhost', port)
+            self.result_listen.request_port_forward ('localhost', backchannel_port)
 
             # taken from paramiko/client.py:SSHClient.exec_command()
             channel= self.client.get_transport ().open_session ()
@@ -374,7 +374,7 @@ client.close ()                                                           # 45"
 
             self.result_listen= socket ()
             # self.result_listen.setsockopt (SO_REUSEADDR, )
-            self.result_listen.bind (('', port))
+            self.result_listen.bind (('', backchannel_port))
             self.result_listen.listen (1)
 
             # so bash does not hang waiting from more input
