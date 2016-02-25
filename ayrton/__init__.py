@@ -36,7 +36,8 @@ def debug (level=logging.DEBUG, filename='ayrton.log'):
     logging.basicConfig(filename=filename, filemode='a', level=level,
                         format=log_format, datefmt=date_format)
 
-# uncomment next line and change level for way too much debugging during test execution
+# uncomment next line and change level for way too much debugging
+# during test execution
 # debug (level=logging.DEBUG, filename='ayrton.%d.log' % os.getpid ())
 logger= logging.getLogger ('ayrton')
 
