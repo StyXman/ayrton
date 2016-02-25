@@ -43,9 +43,9 @@ testclean:
 	rm -rfv ayrton.*log runner.*
 
 debugserver:
-	# TODO: generate the server key
+	# generate an rsa server key
 	if ! [ -f rsa_server_key ]; then \
-		true; \
+		ssh-keygen -f rsa_server_key -N '' -t rsa; \
 	fi
-	# TODO: discover path?
+	# TODO: discover sshd's path?
 	/usr/sbin/sshd -dd -e -h $(shell pwd)/rsa_server_key -p 2244
