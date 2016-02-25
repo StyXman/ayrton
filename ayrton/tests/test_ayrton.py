@@ -387,6 +387,16 @@ class MiscTests (ScriptExecution):
         self.doTest ('testBg.ay', 'yes!')
         self.runner.wait_for_pending_children ()
 
+    def testShortIter (self):
+        '''This test takes some time...'''
+        self.doTest ('testShortIter.ay', 'yes!')
+        self.runner.wait_for_pending_children ()
+
+    def testLongIter (self):
+        '''This test takes some time...'''
+        self.doTest ('testLongIter.ay', 'yes!')
+        self.runner.wait_for_pending_children ()
+
 class CommandDetection (ScriptExecution):
 
     def testSimpleCase (self):
@@ -455,6 +465,12 @@ class CommandDetection (ScriptExecution):
             pass
         self.assertRaises (NameError, ayrton.main, '''fff()''')
         self.assertRaises (CommandNotFound, ayrton.main, '''fff()''')
+
+    def testForDefinesTarget (self):
+        self.doTest ('testForDefinesTarget.ay')
+
+    def testForDefinesTargets (self):
+        self.doTest ('testForDefinesTargets.ay')
 
 class ParsingErrors (unittest.TestCase):
 

@@ -32,9 +32,13 @@ import ayrton.utils
 log_format= "%(asctime)s %(name)16s:%(lineno)-4d (%(funcName)-21s) %(levelname)-8s %(message)s"
 date_format= "%H:%M:%S"
 
-# uncomment one of these for way too much debugging :)
-# logging.basicConfig(filename='ayrton.%d.log' % os.getpid (), level=logging.DEBUG, format=log_format, datefmt=date_format)
-# logging.basicConfig(filename='ayrton.log', level=logging.DEBUG, format=log_format, datefmt=date_format)
+def debug (level=logging.DEBUG, filename='ayrton.log'):
+    logging.basicConfig(filename=filename, filemode='a', level=level,
+                        format=log_format, datefmt=date_format)
+
+# uncomment next line and change level for way too much debugging
+# during test execution
+# debug (level=logging.DEBUG, filename='ayrton.%d.log' % os.getpid ())
 logger= logging.getLogger ('ayrton')
 
 # things that have to be defined before importing ayton.execute :(
@@ -47,7 +51,7 @@ from ayrton.parser.pyparser.pyparse import CompileInfo, PythonParser
 from ayrton.parser.astcompiler.astbuilder import ast_from_node
 from ayrton.ast_pprinter import pprint
 
-__version__= '0.7.1'
+__version__= '0.7.2'
 
 
 class ExecParams:
@@ -55,6 +59,8 @@ class ExecParams:
         # defaults
         self.trace= False
         self.linenos= False
+        self.trace_all= False
+        self.debug= False
 
         self.__dict__.update (kwargs)
 
@@ -289,7 +295,11 @@ class Ayrton (object):
     def wait_for_pending_children (self):
         for i in range (len (self.pending_children)):
             child= self.pending_children.pop (0)
-            child.wait ()
+            try:
+                child.wait ()
+            except ChildProcessError:
+                # most probably is was alredy waited
+                logger.debug ('waiting for %s failed; ignoring', child)
 
 
     def global_tracer (self, frame, event, arg):
@@ -305,6 +315,12 @@ class Ayrton (object):
         if event=='line':
             file_name= frame.f_code.co_filename
             if self.params.trace_all or file_name==self.file_name:
+                l= len (file_name)
+                if l>32:
+                    short_file_name= file_name[l-32:]
+                else:
+                    short_file_name= file_name
+
                 lineno= frame.f_lineno
 
                 line= linecache.getline (file_name, lineno).rstrip ()
@@ -312,16 +328,26 @@ class Ayrton (object):
                     line= self.script[lineno-1].rstrip ()  # line numbers start at 1
 
                 logger.debug2 ('trace e: %s, f: %s, n: %d, l: %s', event, file_name, lineno, line)
-                if self.params.linenos:
-                    print ("+ [%6d] %s" % (lineno, line), file=sys.stderr)
+                if self.params.trace_all:
+                    self.trace_line ("+ [%32s:%-6d] %s", short_file_name, lineno, line)
+                elif self.params.linenos:
+                    self.trace_line ("+ [%6d] %s", lineno, line)
                 else:
-                    print ("+ %s" % line, file=sys.stderr)
+                    self.trace_line ("+ %s", line)
+
+
+    def trace_line (self, msg, *args):
+        if self.params.debug and False:
+            logger.debug (msg, *args)
+        else:
+            print (msg % args, file=sys.stderr)
 
 
 def run_tree (tree, g, l):
     """main entry point for remote()"""
     runner= Ayrton (g=g, l=l)
     return runner.run_tree (tree, 'unknown_tree')
+
 
 def run_file_or_script (script=None, file_name='script_from_command_line',
                         argv=None, params=None, **kwargs):

@@ -1,0 +1,5 @@
+#! /usr/bin/env ayrton
+
+for i, line in enumerate ([ '0' ]):
+    line.strip ()
+    line[i]
