@@ -222,6 +222,8 @@ class remote:
         self.param ('_debug', kwargs)
         self.param ('_test', kwargs)
         self.kwargs= kwargs
+        # NOTE: uncomment to connect to the debugserver
+        # self.kwargs['port']= 2244
 
         # socket/transport where we wait for connection for the result
         self.result_listen= None
@@ -334,6 +336,7 @@ client.close ()                                                           # 45"
             # self.client.load_host_keys (bash ('~/.ssh/known_hosts'))
             # self.client.set_missing_host_key_policy (ShutUpPolicy ())
             self.client.set_missing_host_key_policy (paramiko.WarningPolicy ())
+            logger.debug ('connecting...')
             self.client.connect (self.hostname, *self.args, **self.kwargs)
 
             # create the backchannel
@@ -345,6 +348,7 @@ client.close ()                                                           # 45"
             # the remote will see this channel as a localhost port
             # and it's seen on the local side as self.con defined below
             self.result_listen= self.client.get_transport ()
+            logger.debug ('setting backchannel_port...')
             self.result_listen.request_port_forward ('localhost', backchannel_port)
 
             # taken from paramiko/client.py:SSHClient.exec_command()
@@ -360,9 +364,11 @@ client.close ()                                                           # 45"
             except OSError:
                 channel.get_pty (os.environ['TERM'], )
 
+            logger.debug ('exec!')
             channel.exec_command (command)
             i= o= e= channel
 
+            logger.debug ('waiting for backchannel...')
             self.result_channel= self.result_listen.accept ()
         else:
             self.client= socket ()
