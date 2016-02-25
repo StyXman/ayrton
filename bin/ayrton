@@ -54,6 +54,9 @@ Debug Options:
                         used. If debug is enabled, trace goes to log.
   -xx, --trace-with-lineno
                         Trace and print the line number.
+  -xxx, --trace-all     Trace all executed lines, including in used modules.
+                        File name and line number will be printed.
+                        WARNING: Too much info will be in the output.
 
 Arguments:
   argv                  Arguments to be passed to the script."""
@@ -100,6 +103,12 @@ try:
         if arg in ('-xx', '--trace-with-linenos'):
             params.trace= True
             params.linenos= True
+            continue
+
+        if arg in ('-xxx', '--trace_all'):
+            params.trace= True
+            params.linenos= True
+            params.trace_all= True
             continue
 
         if arg in ('-d', '--debug'):
