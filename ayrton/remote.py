@@ -354,7 +354,7 @@ client.close ()                                                           # 45"
             #19:44:54.953852 setsockopt(3, SOL_TCP, TCP_NODELAY, [1], 4) = 0 <0.000014>
 
             try:
-                # TODO signal handler from SIGWINCH
+                # TODO signal handler for SIGWINCH
                 term= shutil.get_terminal_size ()
                 channel.get_pty (os.environ['TERM'], term.columns, term.lines)
             except OSError:
