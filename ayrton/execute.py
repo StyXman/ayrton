@@ -50,7 +50,7 @@ class CommandFailed (Exception):
         self.command= command
 
     def __str__ (self):
-        return "%s: %d" % (' '.join ([ repr (arg) for arg in self.command.args]), self.command.exit_code)
+        return "%s: %d" % (' '.join ([ repr (arg) for arg in self.command.args]), self.command._exit_code)
 
 class CommandNotFound (NameError):
     def __init__ (self, name):
@@ -124,7 +124,7 @@ class Command:
         self.stdout_pipe= None
         self.stderr_pipe= None
 
-        self.exit_code= None
+        self._exit_code= None
         self.capture_file= None
 
         self.child_pid= None
@@ -419,23 +419,23 @@ class Command:
 
     def wait (self):
         logger.debug (self.child_pid)
-        self.exit_code= os.waitpid (self.child_pid, 0)[1] >> 8
+        self._exit_code= os.waitpid (self.child_pid, 0)[1] >> 8
 
-        if self.exit_code==127:
+        if self._exit_code==127:
             # NOTE: when running bash, it returns 127 when it can't find the script to run
             raise CommandNotFound (self.path)
 
         if (ayrton.runner.options.get ('errexit', False) and
-            self.exit_code!=0 and
+            self._exit_code!=0 and
             not self.options.get ('_fails', False)):
 
             raise CommandFailed (self)
 
 
     def exit_code (self):
-        if self.exit_code is None:
+        if self._exit_code is None:
             self.wait ()
-        return self.exit_code
+        return self._exit_code
 
 
     def __call__ (self, *args, **kwargs):
@@ -460,7 +460,7 @@ class Command:
         self.stdout_pipe= None
         self.stderr_pipe= None
 
-        self.exit_code= None
+        self._exit_code= None
         self.capture_file= None
 
         self.prepare_fds ()
@@ -487,9 +487,9 @@ class Command:
 
 
     def __bool__ (self):
-        if self.exit_code is None:
+        if self._exit_code is None:
             self.wait ()
-        return self.exit_code==0
+        return self._exit_code==0
 
 
     def prepare_capture_file (self):
@@ -510,7 +510,7 @@ class Command:
 
 
     def __str__ (self):
-        if self.exit_code is None:
+        if self._exit_code is None:
             self.wait ()
 
         self.prepare_capture_file ()
@@ -534,14 +534,13 @@ class Command:
             # finish him!
             logger.debug ('finished!')
             self.capture_file.close ()
-
-            # if we're iterating, then the Command is in _bg
-            self.wait ()
+            if self._exit_code is None:
+                self.wait ()
         else:
             logger.debug ('dunno what to do!')
 
     def readlines (self):
-        if self.exit_code is None:
+        if self._exit_code is None:
             self.wait ()
 
         # ugly way to not leak the file()
@@ -550,7 +549,7 @@ class Command:
     # BUG this method is leaking an opened file()
     # self.capture_file
     def readline (self):
-        if self.exit_code is None:
+        if self._exit_code is None:
             self.wait ()
 
         self.prepare_capture_file ()
@@ -561,11 +560,11 @@ class Command:
         return line
 
     def close (self):
-        if self.exit_code is None:
+        if self._exit_code is None:
             self.wait ()
         self.capture_file.close ()
 
     def __del__ (self):
         # finish it
-        if self.exit_code is None and self.child_pid is not None:
+        if self._exit_code is None and self.child_pid is not None:
             self.wait ()
