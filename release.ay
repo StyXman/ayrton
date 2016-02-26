@@ -5,6 +5,12 @@ import ayrton
 option ('-e')
 
 if make ('tests'):
+    with remote ('mustang'):
+        cd (bash ('~/src/projects/ayrton'))
+        git ('pull', 'devel')
+        # if this fails, hopefully the whole script stops :)
+        make ('tests')
+
     # this command might fail if it wants to
     uncommited= git ('status', --short=True) | grep ('^ M', _out=Capture, _fails=True)
     if uncommited:

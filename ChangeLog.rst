@@ -1,9 +1,9 @@
 ayrton (0.7.2) unstable; urgency=medium
 
-  * Fix running remote tests with other versions of python.
-  * Fix tests borken by a change in `ls`'s output.
+  * Fix running remote tests with other versions of Python.
+  * Fix tests broken by a change in `ls`'s output.
   * Fix iterating over the long output of a command à la `for line in foo(...): ...`. Currently you must add `_bg=True` to the execution options.
-  * Fix recognizing names bound by for loops.
+  * Fix recognizing names bound by `for` loops.
   * Added options `-d|--debug`, `-dd|--debug2` and `-ddd|--debug3` for enabling debug logs.
   * Added option `-xxx|--trace-all` for tracing all python execution. Use with caution, it generates lots of output.
 

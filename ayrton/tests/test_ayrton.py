@@ -385,17 +385,21 @@ class MiscTests (ScriptExecution):
     def testBg (self):
         '''This test takes some time...'''
         self.doTest ('testBg.ay', 'yes!')
+        # the tests script does not wait for find to finish
+        # so we do it here
         self.runner.wait_for_pending_children ()
 
     def testShortIter (self):
         '''This test takes some time...'''
         self.doTest ('testShortIter.ay', 'yes!')
-        self.runner.wait_for_pending_children ()
 
     def testLongIter (self):
         '''This test takes some time...'''
         self.doTest ('testLongIter.ay', 'yes!')
-        self.runner.wait_for_pending_children ()
+
+    def testLongOutput (self):
+        '''This test takes some time...'''
+        self.doTest ('testLongOutput.ay', 'yes!')
 
 class CommandDetection (ScriptExecution):
 
