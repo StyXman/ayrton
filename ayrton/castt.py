@@ -21,7 +21,7 @@ import ast
 from ast import Pass, Module, Bytes, copy_location, Call, Name, Load, Str, BitOr
 from ast import fix_missing_locations, Import, alias, Attribute, ImportFrom
 from ast import keyword, Gt, Lt, GtE, RShift, Tuple, FunctionDef, arguments
-from ast import Store, Assign, Subscript
+from ast import Store, Assign, Subscript, NameConstant
 import pickle
 from collections import defaultdict
 import logging
@@ -259,6 +259,8 @@ class CrazyASTTransformer (ast.NodeTransformer):
         if is_executable (node.iter):
             update_keyword (node.iter,
                             keyword (arg='_out', value=Name (id='Capture', ctx=Load ())))
+            update_keyword (node.iter,
+                            keyword (arg='_bg', value=NameConstant (value=True)))
 
         return node
 
