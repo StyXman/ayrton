@@ -194,7 +194,7 @@ class Redirected (unittest.TestCase):
         text= '_out=Capture'
         a= echo (text, _out=Capture)
         for i in a:
-            # notice that here there's no \n
+            # NOTE: that here there's no \n!
             self.assertEqual (i, text)
 
     def testOutAsFd (self):
