@@ -4,7 +4,7 @@ import ayrton
 
 option ('-e')
 
-if make ('tests'):
+if make ('install'):  # this includes tests
     # with remote ('mustang'):
     #     cd (bash ('~/src/projects/ayrton'))
     #     git ('pull', 'devel')
