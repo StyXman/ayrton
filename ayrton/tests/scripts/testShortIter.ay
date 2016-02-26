@@ -1,4 +1,4 @@
 #! /usr/bin/env ayrton
 
-for line in echo ('yes!'):
+for line in echo ('yes!', _bg=True):
     ayrton_return_value= line.strip ()

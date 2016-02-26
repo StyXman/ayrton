@@ -1,13 +1,19 @@
-ayrton (0.7.2) UNRELEASED; urgency=medium
+ayrton (0.7.2.1) unstable; urgency=medium
 
-  * Fix running remote tests with other versions of python.
-  * Fix tests borken by a change in `ls`'s output.
-  * Fix iterating over the long output of a command à la `for line in foo(...): ...`. Currently you must add `_bg=True` to the execution options.
-  * Fix recognizing names bound by for loops.
+  * Fix iterating over the log ouput of a `Command` in synchronous mode (that is, not running in the `_bg`). This complements the fix in the previous release.
+
+ -- Marcos Dione <mdione@grulic.org.ar>  Fri, 26 Feb 2016 13:54:46 +0100
+
+ayrton (0.7.2) unstable; urgency=medium
+
+  * Fix running remote tests with other versions of Python.
+  * Fix tests broken by a change in `ls`'s output.
+  * Fix iterating over the long output of a `Command` à la `for line in foo(...): ...`. Currently you must add `_bg=True` to the execution options.
+  * Fix recognizing names bound by `for` loops.
   * Added options `-d|--debug`, `-dd|--debug2` and `-ddd|--debug3` for enabling debug logs.
   * Added option `-xxx|--trace-all` for tracing all python execution. Use with caution, it generates lots of output.
 
- -- Marcos Dione <mdione@grulic.org.ar>  Thu, 25 Feb 2016 12:40:04 +0100
+ -- Marcos Dione <mdione@grulic.org.ar>  Thu, 25 Feb 2016 13:09:08 +0100
 
 ayrton (0.7.1) unstable; urgency=medium
 

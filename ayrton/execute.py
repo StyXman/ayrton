@@ -115,6 +115,7 @@ class Command:
     supported_options= ('_in', '_out', '_err', '_end', '_chomp', '_encoding',
                         '_env', '_bg', '_fails')
 
+
     def __init__ (self, path):
         self.path= path
         self.exe= resolve_program (path)
@@ -126,8 +127,10 @@ class Command:
 
         self._exit_code= None
         self.capture_file= None
+        self.captured_lines= None
 
         self.child_pid= None
+
 
     def prepare_fds (self):
         if '_in' in self.options:
@@ -203,6 +206,7 @@ class Command:
                 self.stderr_pipe= os.pipe ()
 
         logger.debug ("stderr_pipe: %s", self.stderr_pipe)
+
 
     def child (self):
         logger.debug ('child')
@@ -360,6 +364,7 @@ class Command:
 
         return ans
 
+
     def prepare_arg (self, seq, name, value):
         if value!=False:
             if isiterable (value):
@@ -410,6 +415,14 @@ class Command:
         # command to exit with a non-zero status, or zero if all commands exit
         # successfully.
         if not self.options['_bg']:
+            if self.options.get ('_out', None)==Capture:
+                # if we don't do this, a program with lots of output freezes
+                # when its output buffer is full
+                # on the other hand, this might take a lot of memory
+                # but it's the same as in foo=$(long_output)
+                self.prepare_capture_file ()
+                self.captured_lines= self.capture_file.readlines ()
+
             self.wait ()
             # NOTE: uhm?
             ayrton.runner.wait_for_pending_children ()
@@ -419,17 +432,19 @@ class Command:
 
     def wait (self):
         logger.debug (self.child_pid)
-        self._exit_code= os.waitpid (self.child_pid, 0)[1] >> 8
 
-        if self._exit_code==127:
-            # NOTE: when running bash, it returns 127 when it can't find the script to run
-            raise CommandNotFound (self.path)
+        if self._exit_code is None:
+            self._exit_code= os.waitpid (self.child_pid, 0)[1] >> 8
 
-        if (ayrton.runner.options.get ('errexit', False) and
-            self._exit_code!=0 and
-            not self.options.get ('_fails', False)):
+            if self._exit_code==127:
+                # NOTE: when running bash, it returns 127 when it can't find the script to run
+                raise CommandNotFound (self.path)
 
-            raise CommandFailed (self)
+            if (ayrton.runner.options.get ('errexit', False) and
+                self._exit_code!=0 and
+                not self.options.get ('_fails', False)):
+
+                raise CommandFailed (self)
 
 
     def exit_code (self):
@@ -460,6 +475,7 @@ class Command:
         self.stdout_pipe= None
         self.stderr_pipe= None
 
+        # TODO: why this again here? see __init__()
         self._exit_code= None
         self.capture_file= None
 
@@ -510,23 +526,31 @@ class Command:
 
 
     def __str__ (self):
-        if self._exit_code is None:
-            self.wait ()
+        self.wait ()
 
-        self.prepare_capture_file ()
+        if self.captured_lines:
+            s= ''.join (self.captured_lines)
+        else:
+            self.prepare_capture_file ()
+            s= self.capture_file.read ()
 
-        return self.capture_file.read ()
+        return s
 
 
     def __iter__ (self):
         logger.debug ('iterating!')
 
-        self.prepare_capture_file ()
+        if self.captured_lines:
+            for line in self.captured_lines:
+                # while iterating we always remove the trailing \n
+                line= line.rstrip (os.linesep)
+                yield line
+        else:
+            self.prepare_capture_file ()
 
-        if self.capture_file is not None:
             for line in self.capture_file.readlines ():
-                if self.options['_chomp']:
-                    line= line.rstrip (os.linesep)
+                # while iterating we always remove the trailing \n
+                line= line.rstrip (os.linesep)
 
                 logger.debug2 ('read line: %s', line)
                 yield line
@@ -534,35 +558,44 @@ class Command:
             # finish him!
             logger.debug ('finished!')
             self.capture_file.close ()
-            if self._exit_code is None:
-                self.wait ()
-        else:
-            logger.debug ('dunno what to do!')
-
-    def readlines (self):
-        if self._exit_code is None:
+            # if we're iterating, then the Command is in _bg
             self.wait ()
 
-        # ugly way to not leak the file()
-        return ( line for line in self )
+
+    def readlines (self):
+        self.wait ()
+
+        if self.captured_lines:
+            lines= self.captured_lines
+        else:
+            self.prepare_capture_file ()
+            lines= self.capture_file.readlines ()
+            self.capture_file.close ()
+
+        return lines
+
 
     # BUG this method is leaking an opened file()
     # self.capture_file
     def readline (self):
-        if self._exit_code is None:
-            self.wait ()
+        self.wait ()
 
-        self.prepare_capture_file ()
-        line= self.capture_file.readline ()
+        if self.captured_lines:
+            line= self.captured_lines.pop (0)
+        else:
+            self.prepare_capture_file ()
+            line= self.capture_file.readline ()
+
         if self.options['_chomp']:
             line= line.rstrip (os.linesep)
 
         return line
 
+
     def close (self):
-        if self._exit_code is None:
-            self.wait ()
+        self.wait ()
         self.capture_file.close ()
+
 
     def __del__ (self):
         # finish it
