@@ -79,7 +79,7 @@ class Argv (list):
 
     def __iter__ (self):
         # [1:] works even with empty lists
-        for v in self.l[1:]:
+        for v in self[1:]:
             yield v
 
 
