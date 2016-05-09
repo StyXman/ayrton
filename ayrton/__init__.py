@@ -71,6 +71,18 @@ def parse (script, file_name=''):
     return ast_from_node (None, parser.parse_source (script, info), info)
 
 
+class Argv (list):
+    """A class that mostly behaves like an list,
+    but skips the first element when being iterated,
+    but allows accessing it by indexing"""
+
+
+    def __iter__ (self):
+        # [1:] works even with empty lists
+        for v in self.l[1:]:
+            yield v
+
+
 class Environment (dict):
     def __init__ (self, *args, **kwargs):
         super ().__init__ (*args, **kwargs)
@@ -238,7 +250,7 @@ class Ayrton (object):
         logger.debug (argv)
         if argv is None:
             argv= [ file_name ]
-        self.globals['argv']= argv
+        self.globals['argv']= Argv (argv)
 
         '''
         exec(): If only globals is provided, it must be a dictionary, which will
