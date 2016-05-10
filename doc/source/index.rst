@@ -104,3 +104,5 @@ enough that the benefits will overweight this.
   eclipse a Python variable from an outer scope, and similar to when you define a function
   in `bash` with the same names as the executable (but that you can go around by giving
   the full path if you know it, which you can't do in `ayrton`).
+* You can't use Python keywords except where they are valit Python code. For instance,
+  you can't use an ``--continue`` option).
