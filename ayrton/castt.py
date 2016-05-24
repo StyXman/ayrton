@@ -80,7 +80,11 @@ def func_name2dotted_exec (node):
         elif type (node) in (Call, ):
             node= node.func
 
-    return (node.id, complete_name)
+    if type (node)==Name:
+        return (node.id, complete_name)
+    else:
+        return (None, None)
+
 
 class CrazyASTTransformer (ast.NodeTransformer):
     def __init__ (self, environ, file_name=None):
