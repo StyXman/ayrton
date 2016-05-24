@@ -432,6 +432,11 @@ class CrazyASTTransformer (ast.NodeTransformer):
 
         elif type (node.func)==Attribute:
             name, func_name= func_name2dotted_exec (node.func)
+            # node.func is not completely formed by Names
+            # so leave it alone
+            if name is None:
+                return node
+
             defs= self.known_names[name]
             if defs==0:
                 unknown= True
