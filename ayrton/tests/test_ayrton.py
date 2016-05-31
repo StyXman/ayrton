@@ -262,6 +262,10 @@ class NonWordExecutableNames (ScriptExecution):
         self.doTest ('testAbsoluteExecutables.ay')
 
 
+    def testNotExecuteLiteralMethods (self):
+        self.doTest ('testNotExecuteLiteralMethods.ay')
+
+
 class TempFile (ScriptExecution):
 
     def doTempFileTest (self, script, final_contents, initial_contents=None,
