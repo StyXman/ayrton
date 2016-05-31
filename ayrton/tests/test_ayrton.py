@@ -258,10 +258,6 @@ class NonWordExecutableNames (ScriptExecution):
         self.doTest ('testRelativeExecutables.ay')
 
 
-    def __testAbsoluteExecutables (self):
-        self.doTest ('testAbsoluteExecutables.ay')
-
-
 class TempFile (ScriptExecution):
 
     def doTempFileTest (self, script, final_contents, initial_contents=None,
@@ -452,7 +448,7 @@ class CommandDetection (ScriptExecution):
         self.doTest ('testImport.ay')
 
     def testImportLocalAy (self):
-        self.doTest ('testImportLocal.ay')
+        self.doTest ('testImportLocalAy.ay')
 
     def testImportCallFromFunc (self):
         self.doTest ('testImportCallFromFunc.ay')
