@@ -258,6 +258,10 @@ class NonWordExecutableNames (ScriptExecution):
         self.doTest ('testRelativeExecutables.ay')
 
 
+    def __testAbsoluteExecutables (self):
+        self.doTest ('testAbsoluteExecutables.ay')
+
+
 class TempFile (ScriptExecution):
 
     def doTempFileTest (self, script, final_contents, initial_contents=None,
