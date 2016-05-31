@@ -26,6 +26,7 @@ import dis
 import traceback
 import linecache
 import pdb
+import os.path
 
 # patch logging so we have debug2 and debug3
 import ayrton.utils
@@ -195,6 +196,14 @@ class Ayrton (object):
         f= open (file_name)
         script= f.read ()
         f.close ()
+
+        # we need to add the file's parent dir to the PYTHONPATH
+        # so we can find relative modules to it
+        # this is mostly because the python interpreter is running ayrton
+        # and not the script, so the inerpreter only adds ayrton's path
+        file_name_parent_dir= os.path.abspath (os.path.dirname (file_name))
+        if file_name_parent_dir not in sys.path:
+            sys.path.insert (0, file_name_parent_dir)
 
         return self.run_script (script, file_name, argv, params)
 
