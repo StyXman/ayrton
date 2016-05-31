@@ -1,4 +1,4 @@
 #! /usr/bin/env ayrton
 
-# importing local modules still works
+# importing local ayrton modules works
 import testImportLocalAyModule
