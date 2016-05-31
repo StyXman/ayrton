@@ -451,6 +451,9 @@ class CommandDetection (ScriptExecution):
     def testImport (self):
         self.doTest ('testImport.ay')
 
+    def testImportLocalAy (self):
+        self.doTest ('testImportLocal.ay')
+
     def testImportCallFromFunc (self):
         self.doTest ('testImportCallFromFunc.ay')
 
