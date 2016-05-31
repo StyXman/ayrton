@@ -25,6 +25,7 @@ import logging
 import dis
 import traceback
 import linecache
+import pdb
 
 # patch logging so we have debug2 and debug3
 import ayrton.utils
@@ -61,6 +62,7 @@ class ExecParams:
         self.linenos= False
         self.trace_all= False
         self.debug= False
+        self.pdb= False
 
         self.__dict__.update (kwargs)
 
@@ -287,6 +289,9 @@ class Ayrton (object):
 
             exec (code, self.globals, self.locals)
         except Exception as e:
+            if self.params.pdb:
+                pdb.set_trace ()
+
             logger.debug ('script finished by Exception')
             logger.debug (traceback.format_exc ())
             error= e
