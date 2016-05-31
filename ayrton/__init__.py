@@ -208,16 +208,21 @@ class Ayrton (object):
         return self.run_script (script, file_name, argv, params)
 
 
-    def run_script (self, script, file_name, argv=None, params=None):
-        logger.debug ('running script:\n-----------\n%s\n-----------', script)
-        self.file_name= file_name
-        self.script= script.split ('\n')
-
+    def parse (self, script, file_name):
         # up to this point the script is the whole script in one string
         # because parse() needs it that way
         tree= parse (script, file_name)
         # TODO: self.locals?
         tree= CrazyASTTransformer (self.globals, file_name).modify (tree)
+
+        return tree
+
+    def run_script (self, script, file_name, argv=None, params=None):
+        logger.debug ('running script:\n-----------\n%s\n-----------', script)
+        self.file_name= file_name
+        self.script= script.split ('\n')
+
+        tree= self.parse (script, file_name)
 
         return self.run_tree (tree, file_name, argv, params)
 
