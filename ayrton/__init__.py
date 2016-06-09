@@ -94,12 +94,12 @@ class Environment (dict):
 
 
     def polute (self):
-        self.update (__builtins__)
-        # weed out some stuff
-        for weed in ('copyright', '__doc__', 'help', '__package__', 'credits',
-                     'license', '__name__', 'quit', 'exit'):
-            if weed in self:
-                del self[weed]
+        # we can't just .update() becasue we can be overwriting module info with __builtins__'
+        for name, value in __builtins__.items ():
+            if name not in ('__doc__', '__name__', '__loader__', '__package__',
+                            '__spec__', 'copyright', 'credits', 'exit', 'help',
+                            'license', 'quit'):
+                self[name]= value
 
         # these functions will be loaded from each module and put in the globals
         # tuples (src, dst) renames function src to dst
