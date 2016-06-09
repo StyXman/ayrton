@@ -26,7 +26,7 @@ import logging
 
 logger= logging.getLogger ('ayrton.importer')
 
-from ayrton.file_test import _a
+from ayrton.file_test import _a, _d
 from ayrton import Ayrton
 import ayrton.utils
 
@@ -38,10 +38,19 @@ class AyrtonLoader (Loader):
         # module is a freshly created, empty module
         # «the loader should execute the module’s code
         # in the module’s global name space (module.__dict__).»
-        logger.debug ('loading %s [%s]', module, module.__spec__.origin)
+        load_path= module.__spec__.origin
+        logger.debug ('loading %s [%s]', module, load_path)
         # I *need* to polute the globals, so modules can use any of ayrton's builtins
         loader= Ayrton (g=module.__dict__)
-        loader.run_file (module.__spec__.origin)
+        loader.run_file (load_path)
+
+        # set the __path__
+        # TODO: read PEP 420
+        init_file_name= '__init__.ay'
+        if load_path.endswith (init_file_name):
+            # also remove the '/'
+            module.__path__= [ load_path[:-len (init_file_name)-1] ]
+
         logger.debug3 ('module.__dict__: %s ', ayrton.utils.dump_dict (module.__dict__))
 
 loader= AyrtonLoader ()
@@ -50,13 +59,14 @@ loader= AyrtonLoader ()
 class AyrtonFinder (MetaPathFinder):
 
     @classmethod
-    def find_spec (klass, fullname, paths=None, target=None):
-        # fullname is the full python path (as in grandparent.parent.child)
-        # and path is the path of the parent (in a list, dunno why);
+    def find_spec (klass, full_name, paths=None, target=None):
+        # full_name is the full python path (as in grandparent.parent.child)
+        # and path is the path of the parent (in a list, see PEP 420);
         # if None, then we're loading a root module
         # let's start with a single file
-        logger.debug ('searching for %s under %s for %s', fullname, paths, target)
-        file_path= fullname.replace ('.', os.sep)+'.ay'
+        # TODO: read PEP 420 :)
+        logger.debug ('searching for %s under %s for %s', full_name, paths, target)
+        last_mile= full_name.split ('.')[-1]
 
         if paths is not None:
             python_path= paths  # search only there
@@ -65,10 +75,20 @@ class AyrtonFinder (MetaPathFinder):
 
         logger.debug (python_path)
         for path in python_path:
-            full_path= os.path.join (path, file_path)
-            if _a (full_path):
-                logger.debug ('found simple file %s', full_path)
-                return ModuleSpec (fullname, loader, origin=full_path)
+            full_path= os.path.join (path, last_mile)
+            init_full_path= os.path.join (full_path, '__init__.ay')
+            module_full_path= full_path+'.ay'
+
+            logger.debug ('trying %s', init_full_path)
+            if _d (full_path) and _a (init_full_path):
+                logger.debug ('found package %s', full_path)
+                return ModuleSpec (full_name, loader, origin=init_full_path)
+
+            else:
+                logger.debug ('trying %s', module_full_path)
+                if _a (module_full_path):
+                    logger.debug ('found module %s', module_full_path)
+                    return ModuleSpec (full_name, loader, origin=module_full_path)
 
         return None
 

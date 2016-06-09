@@ -1,0 +1,4 @@
+#! /usr/bin/env ayrton
+
+# importing python modules in ayrton packages works
+import package.py_module

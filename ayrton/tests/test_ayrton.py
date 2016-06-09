@@ -457,6 +457,22 @@ class CommandDetection (ScriptExecution):
 
     def testImportLocalAy (self):
         self.doTest ('testImportLocalAy.ay')
+        self.assertEqual (self.runner.globals['testImportLocalAyModule'].foo, 42)
+
+    def testImportLocalAyPackage (self):
+        self.doTest ('testImportLocalAyPackage.ay')
+        self.assertEqual (self.runner.globals['package'].bar, 24)
+        package_relative_path= 'ayrton/tests/scripts/package'
+        self.assertTrue (self.runner.globals['package'].__path__[0][-len (package_relative_path):],
+                         package_relative_path)
+
+    def testImportLocalAyPackageAyModule (self):
+        self.doTest ('testImportLocalAyPackageAyModule.ay')
+        self.assertTrue (self.runner.globals['package'].ay_module.ay)
+
+    def testImportLocalAyPackagePyModule (self):
+        self.doTest ('testImportLocalAyPackagePyModule.ay')
+        self.assertTrue (self.runner.globals['package'].py_module.py)
 
     def testImportLocalPy (self):
         self.doTest ('testImportLocalPy.ay')
