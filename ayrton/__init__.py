@@ -138,6 +138,9 @@ class Environment (dict):
 
 class Ayrton (object):
     def __init__ (self, g=None, l=None, polute_globals=True, **kwargs):
+        # patch import system after ayrton is loaded but before anything else happens
+        import ayrton.importer
+
         logger.debug ('===========================================================')
         logger.debug ('new interpreter')
         logger.debug3 ('globals: %s', ayrton.utils.dump_dict (g))
