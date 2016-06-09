@@ -143,9 +143,13 @@ class Ayrton (object):
         logger.debug3 ('globals: %s', ayrton.utils.dump_dict (g))
         logger.debug3 ('locals: %s', ayrton.utils.dump_dict (l))
 
-        self.globals= Environment ()
+        env= Environment ()
         if g is not None:
-            self.globals.update (g)
+            g.update (env)
+        else:
+            g= env
+
+        self.globals= g
         self.globals.update (kwargs)
 
         if l is None:
