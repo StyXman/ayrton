@@ -20,6 +20,8 @@
 from importlib.abc import MetaPathFinder, Loader
 from importlib.machinery import ModuleSpec
 import sys
+import os
+import os.path
 import logging
 
 logger= logging.getLogger ('ayrton.importer')
@@ -48,17 +50,27 @@ loader= AyrtonLoader ()
 class AyrtonFinder (MetaPathFinder):
 
     @classmethod
-    def find_spec (klass, fullname, path=None, target=None):
-        # fullname is actually the 'basename' of the module
-        # and path is the 'dirname'; if None, then we're loading a root module
+    def find_spec (klass, fullname, paths=None, target=None):
+        # fullname is the full python path (as in grandparent.parent.child)
+        # and path is the path of the parent (in a list, dunno why);
+        # if None, then we're loading a root module
         # let's start with a single file
-        logger.debug ('searching for %s under %s for %s', fullname, path, target)
-        file_path= fullname+'.ay'
-        if _a (file_path):
-            logger.debug ('found simple file %s', file_path)
-            return ModuleSpec (fullname, loader, origin=file_path)
+        logger.debug ('searching for %s under %s for %s', fullname, paths, target)
+        file_path= fullname.replace ('.', os.sep)+'.ay'
+
+        if paths is not None:
+            python_path= paths  # search only there
         else:
-            return None
+            python_path= sys.path
+
+        logger.debug (python_path)
+        for path in python_path:
+            full_path= os.path.join (path, file_path)
+            if _a (full_path):
+                logger.debug ('found simple file %s', full_path)
+                return ModuleSpec (fullname, loader, origin=full_path)
+
+        return None
 
 finder= AyrtonFinder ()
 
