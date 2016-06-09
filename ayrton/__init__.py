@@ -137,17 +137,23 @@ class Environment (dict):
 
 
 class Ayrton (object):
-    def __init__ (self, g=None, l=None, **kwargs):
+    def __init__ (self, g=None, l=None, polute_globals=True, **kwargs):
         logger.debug ('===========================================================')
         logger.debug ('new interpreter')
         logger.debug3 ('globals: %s', ayrton.utils.dump_dict (g))
         logger.debug3 ('locals: %s', ayrton.utils.dump_dict (l))
 
-        env= Environment ()
-        if g is not None:
-            g.update (env)
+        self.polute_globals= polute_globals
+
+        if self.polute_globals:
+            env= Environment ()
+            if g is not None:
+                g.update (env)
+            else:
+                g= env
         else:
-            g= env
+            if g is None:
+                raise ValueError ('If polute_globals is False, g must be not None')
 
         self.globals= g
         self.globals.update (kwargs)
@@ -265,12 +271,13 @@ class Ayrton (object):
                         logger.debug ("last function is called: %s", inst.argval)
 
         # prepare environment
-        self.globals.update (os.environ)
+        if self.polute_globals:
+            self.globals.update (os.environ)
 
-        logger.debug (argv)
-        if argv is None:
-            argv= [ file_name ]
-        self.globals['argv']= Argv (argv)
+            logger.debug (argv)
+            if argv is None:
+                argv= [ file_name ]
+            self.globals['argv']= Argv (argv)
 
         '''
         exec(): If only globals is provided, it must be a dictionary, which will
