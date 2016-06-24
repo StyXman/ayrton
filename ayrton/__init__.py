@@ -34,13 +34,36 @@ import ayrton.utils
 log_format= "%(asctime)s %(name)16s:%(lineno)-4d (%(funcName)-21s) %(levelname)-8s %(message)s"
 date_format= "%H:%M:%S"
 
-def debug (level=logging.DEBUG, filename='ayrton.log'):
-    logging.basicConfig(filename=filename, filemode='a', level=level,
+def set_debug (handler, level=logging.DEBUG):
+    logging.basicConfig(handlers=[ handler ], level=level,
                         format=log_format, datefmt=date_format)
 
+
+def pid_based_handler (level=logging.DEBUG):
+    """When we fork(), a new ppid based logger needs to be created
+    so the child logs to another file."""
+    handler= logging.FileHandler ('ayrton.%d.log' % os.getpid ())
+    logger= logging.root
+
+    # most of the following logging internals were found out by reading
+    # the module's code
+    if len (logger.handlers)>0 and logger.handlers[0].formatter is not None:
+        # we already had a handler, so we just use the same formatter for the
+        # new handler
+        handler.setFormatter (logger.handlers[0].formatter)
+    else:
+        # this is the first time, so we have to create them
+        formatter= logging.Formatter (log_format, date_format, '%')
+        handler.setFormatter (formatter)
+
+    return handler
+
+
 # uncomment next line and change level for way too much debugging
-# during test execution
-# debug (level=logging.DEBUG, filename='ayrton.%d.log' % os.getpid ())
+# during tests execution
+# for running ayrton in the same mode, use the -d options
+set_debug (pid_based_handler (), level=logging.DEBUG)
+
 logger= logging.getLogger ('ayrton')
 
 # things that have to be defined before importing ayton.execute :(
