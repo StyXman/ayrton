@@ -115,19 +115,19 @@ try:
         if arg in ('-d', '--debug'):
             params.debug= True
             # set this ASAP
-            ayrton.debug ()
+            ayrton.set_debug ()
             continue
 
         if arg in ('-dd', '--debug2'):
             params.debug= True
             # set this ASAP
-            ayrton.debug (logging.DEBUG2)
+            ayrton.set_debug (logging.DEBUG2)
             continue
 
         if arg in ('-ddd', '--debug3'):
             params.debug= True
             # set this ASAP
-            ayrton.debug (logging.DEBUG3)
+            ayrton.set_debug (logging.DEBUG3)
             continue
 
         if arg in ('-p', '--pdb'):
