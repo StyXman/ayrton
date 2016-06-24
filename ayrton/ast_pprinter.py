@@ -397,7 +397,7 @@ class pprint:
             yield node.id
 
         elif t==NameConstant:
-            yield node.value
+            yield str (node.value)
 
         elif t==Not:
             yield 'not '
