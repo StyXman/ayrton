@@ -34,9 +34,13 @@ import ayrton.utils
 log_format= "%(asctime)s %(name)16s:%(lineno)-4d (%(funcName)-21s) %(levelname)-8s %(message)s"
 date_format= "%H:%M:%S"
 
-def set_debug (handler, level=logging.DEBUG):
-    logging.basicConfig(handlers=[ handler ], level=level,
-                        format=log_format, datefmt=date_format)
+def set_debug (handler=None, level=logging.DEBUG):
+    if handler is None:
+        logging.basicConfig(handlers=[ pid_based_handler () ], level=level,
+                            format=log_format, datefmt=date_format)
+    else:
+        logging.basicConfig(handlers=[ handler ], level=level,
+                            format=log_format, datefmt=date_format)
 
 
 def pid_based_handler (level=logging.DEBUG):
@@ -62,7 +66,7 @@ def pid_based_handler (level=logging.DEBUG):
 # uncomment next line and change level for way too much debugging
 # during tests execution
 # for running ayrton in the same mode, use the -d options
-set_debug (pid_based_handler (), level=logging.DEBUG)
+# set_debug (level=logging.DEBUG)
 
 logger= logging.getLogger ('ayrton')
 
