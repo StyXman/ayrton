@@ -15,6 +15,9 @@ try:
 except ImportError:
     AsyncFor= AsyncFunctionDef= AsyncWith= Await= object()
 
+import logging
+logger= logging.getLogger ('ayrton.ast_pprint')
+
 class pprint:
     """Lazy pprinter that only does something when converted to string"""
     def __init__ (self, node):
@@ -60,7 +63,9 @@ class pprint:
                 yield ', '
 
     def __str__ (self):
-        return ''.join (self.pprint_inner (self.node, 0))
+        data= list (self.pprint_inner (self.node, 0))
+        logger.debug2 (data)
+        return ''.join (data)
 
     def pprint_inner (self, node, level=0):
         t= type (node)
