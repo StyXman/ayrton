@@ -75,13 +75,12 @@ def parse (script, file_name=''):
 
 
 class Argv (list):
-    """A class that mostly behaves like an list,
-    but skips the first element when being iterated,
-    but allows accessing it by indexing"""
-
+    """A class that mostly behaves like a list,
+    that skips the first element when being iterated,
+    but allows accessing it by indexing (argv[0])."""
 
     def __iter__ (self):
-        # [1:] works even with empty lists
+        # [1:] works even with empty lists! \o/
         for v in self[1:]:
             yield v
 
@@ -184,6 +183,7 @@ class Ayrton (object):
             /home/mdione/src/projects/ayrton/foo.py in foo()
             NameError: name 'math' is not defined
             """
+            # see longer comment in run_code()
             self.locals= self.globals
         else:
             self.locals= l
@@ -213,7 +213,7 @@ class Ayrton (object):
         # we need to add the file's parent dir to the PYTHONPATH
         # so we can find relative modules to it
         # this is mostly because the python interpreter is running ayrton
-        # and not the script, so the inerpreter only adds ayrton's path
+        # and not the script, so the interpreter only adds ayrton's path
         file_name_parent_dir= os.path.abspath (os.path.dirname (file_name))
         if file_name_parent_dir not in sys.path:
             sys.path.insert (0, file_name_parent_dir)
