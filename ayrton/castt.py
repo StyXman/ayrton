@@ -374,8 +374,7 @@ class CrazyASTTransformer (ast.NodeTransformer):
                                 keyword (arg='_out',
                                          value=Call (func=Name (id='open', ctx=Load ()),
                                                      args=[node.right, Str (s='ab')],
-                                                     keywords=[], starargs=None,
-                                                     kwargs=None)))
+                                                     keywords=[])))
                 ast.fix_missing_locations (node.left)
                 node= node.left
 
@@ -449,8 +448,7 @@ class CrazyASTTransformer (ast.NodeTransformer):
                 # I guess I have no other option but to try to execute
                 # something here...
                 new_node= Call (func=Name (id='Command', ctx=Load ()),
-                                args=[Str (s=func_name)], keywords=[],
-                                starargs=None, kwargs=None)
+                                args=[Str (s=func_name)], keywords=[])
 
                 # check if the first parameter is a Command; if so, redirect
                 # its output, remove it from the args and put it in the _in

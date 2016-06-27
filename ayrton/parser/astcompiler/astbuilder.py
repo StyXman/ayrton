@@ -528,14 +528,14 @@ class ASTBuilder(object):
         if len(classdef_node.children) == 4:
             # class NAME ':' suite
             body = self.handle_suite(classdef_node.children[3])
-            new_node = ast.ClassDef (name, [], [], None, None, body, decorators)
+            new_node = ast.ClassDef (name, [], [], body, decorators)
             new_node.lineno = classdef_node.lineno
             new_node.col_offset = classdef_node.col_offset
             return new_node
         if classdef_node.children[3].type == tokens.RPAR:
             # class NAME '(' ')' ':' suite
             body = self.handle_suite(classdef_node.children[5])
-            new_node = ast.ClassDef (name, [], [], None, None, body, decorators)
+            new_node = ast.ClassDef (name, [], [], body, decorators)
             new_node.lineno = classdef_node.lineno
             new_node.col_offset = classdef_node.col_offset
             return new_node
@@ -550,7 +550,7 @@ class ASTBuilder(object):
         call_name.col_offset = classdef_node.col_offset
         call = self.handle_call(classdef_node.children[3], call_name)
         body = self.handle_suite(classdef_node.children[6])
-        new_node = ast.ClassDef (name, call.args, call.keywords, call.starargs, call.kwargs, body, decorators)
+        new_node = ast.ClassDef (name, call.args, call.keywords, body, decorators)
         new_node.lineno = classdef_node.lineno
         new_node.col_offset = classdef_node.col_offset
         return new_node
@@ -599,7 +599,7 @@ class ASTBuilder(object):
         if len(decorator_node.children) == 3:
             dec = dec_name
         elif len(decorator_node.children) == 5:
-            dec = ast.Call (dec_name, None, None, None, None)
+            dec = ast.Call (dec_name, None, None)
             dec.lineno = decorator_node.lineno
             dec.col_offset = decorator_node.col_offset
         else:
@@ -1116,7 +1116,7 @@ class ASTBuilder(object):
         first_child = trailer_node.children[0]
         if first_child.type == tokens.LPAR:
             if len(trailer_node.children) == 2:
-                new_node = ast.Call (left_expr, [], [], None, None)
+                new_node = ast.Call (left_expr, [], [])
                 new_node.lineno = trailer_node.lineno
                 new_node.col_offset = trailer_node.col_offset
                 return new_node
@@ -1184,6 +1184,13 @@ class ASTBuilder(object):
         variable_arg = None
         keywords_arg = None
         child_count = len(args_node.children)
+
+        # Call(func=Name(id='foo', ctx=Load()),
+        #      args=[Num(n=1),
+        #            Starred(value=Name(id='bar', ctx=Load()), ctx=Load())],
+        #      keywords=[keyword(arg='a', value=Num(n=3)),
+        #                keyword(arg=None, value=Name(id='baz', ctx=Load()))]))
+
         i = 0
         while i < child_count:
             argument = args_node.children[i]
@@ -1215,22 +1222,30 @@ class ASTBuilder(object):
                         name = ast.Name ('o', ast.Load())
                         name.lineno = keyword_node.lineno
                         name.col_offset = keyword_node.col_offset
-                        arg = ast.Call(name, [], [ kw ], None, None)
+                        arg = ast.Call(name, [], [ kw ])
                         arg.lineno = keyword_node.lineno
                         arg.col_offset = keyword.col_offset
                         args.append(arg)
             elif argument.type == tokens.STAR:
-                variable_arg = self.handle_expr(args_node.children[i + 1])
+                # variable_arg = self.handle_expr(args_node.children[i + 1])
+                # Starred(value=Name(id='bar', ctx=Load()), ctx=Load())],
+                variable_arg = ast.Starred(value=self.handle_expr(args_node.children[i + 1]),
+                                           ctx=ast.Load())
+                args.append(variable_arg)
                 i += 1
             elif argument.type == tokens.DOUBLESTAR:
-                keywords_arg = self.handle_expr(args_node.children[i + 1])
+                # keywords_arg = self.handle_expr(args_node.children[i + 1])
+                # keyword(arg=None, value=Name(id='baz', ctx=Load()))]))
+                keywords_arg = ast.keyword(arg=None,
+                                           value=self.handle_expr(args_node.children[i + 1]))
+                keywords.append(keywords_arg)
                 i += 1
             i += 1
         if not args:
             args = []
         if not keywords:
             keywords = []
-        new_node = ast.Call(callable_expr, args, keywords, variable_arg, keywords_arg)
+        new_node = ast.Call(callable_expr, args, keywords)
         new_node.lineno = callable_expr.lineno
         new_node.col_offset = callable_expr.col_offset
         return new_node

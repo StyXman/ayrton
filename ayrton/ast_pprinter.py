@@ -28,11 +28,7 @@ from ast import Assert, Set, SetComp, LtE, IfExp, FloorDiv, GtE, With, Continue
 from ast import YieldFrom, UAdd, LShift, DictComp, Div, Starred, BitXor, Pow
 from _ast import arguments, arg as arg_type, keyword as keyword_type
 from _ast import alias as alias_type, comprehension, withitem
-try:
-    # python3.5 support
-    from _ast import AsyncFor, AsyncFunctionDef, AsyncWith, Await
-except ImportError:
-    AsyncFor= AsyncFunctionDef= AsyncWith= Await= object()
+from _ast import AsyncFor, AsyncFunctionDef, AsyncWith, Await, Starred
 
 import logging
 logger= logging.getLogger ('ayrton.ast_pprint')
@@ -175,36 +171,20 @@ class pprint:
             yield repr (node.s)
 
         elif t==Call:
-            # Call(func=Name(id='foo', ctx=Load()), args=[], keywords=[], starargs=None, kwargs=None)
+            # Call(func=Name(id='foo', ctx=Load()), args=[], keywords=[])
+            # Call(func=Name(id='foo', ctx=Load()),
+            #      args=[Num(n=1), Starred(value=Name(id='bar', ctx=Load()), ctx=Load())],
+            #      keywords=[keyword(arg='a', value=Num(n=3)),
+            #                keyword(arg=None, value=Name(id='baz', ctx=Load()))]))
             # TODO: annotations
             yield from self.pprint_inner (node.func)
             yield ' ('
             yield from self.pprint_seq (node.args)
 
-            if len (node.args)>0 and (len (node.keywords)>0 or
-                                      node.starargs is not None or
-                                      node.kwargs is not None):
+            if len (node.args)>0 and len (node.keywords)>0:
                 yield ', '
 
             yield from self.pprint_seq (node.keywords)
-
-            if ((len (node.args)>0 or len (node.keywords)>0) and
-                (node.starargs is not None or node.kwargs is not None)):
-                yield ', '
-
-            if node.starargs is not None:
-                yield '*'
-                yield from self.pprint_inner (node.starargs)
-
-            if ((len (node.args)>0 or
-                 len (node.keywords)>0 or
-                 (node.starargs is not None) and node.kwargs is not None)):
-                yield ', '
-
-            if node.kwargs is not None:
-                yield '**'
-                yield from self.pprint_inner (node.kwargs)
-
             yield ')'
 
         elif t==ClassDef:
@@ -484,6 +464,11 @@ class pprint:
                 yield ':'
                 yield from self.pprint_inner (node.step)
 
+        elif t==Starred:
+            # Starred(value=Name(id='bar', ctx=Load()), ctx=Load())
+            yield '*'
+            yield from self.pprint_inner (node.value)
+
         elif t==Str:
             # Str(s='true')
             yield repr (node.s)
@@ -626,8 +611,12 @@ class pprint:
 
         elif t==keyword_type:
             # keyword(arg='end', value=Str(s=''))
-            yield node.arg
-            yield '='
+            # keyword(arg=None, value=Name(id='baz', ctx=Load()))]))
+            if node.arg is not None:
+                yield node.arg
+                yield '='
+            else:
+                yield '**'
             yield from self.pprint_inner (node.value)
 
         elif t==withitem:

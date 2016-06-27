@@ -1,6 +1,6 @@
 DEBUG_MULTI=strace -tt -T -ff -o debug/runner -s 128
 DEBUG_SIMPLE=strace -tt -T -o debug/runner -s 128
-PYTHON=python3.4
+PYTHON=python3.5
 
 all: docs
 
