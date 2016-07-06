@@ -211,6 +211,13 @@ class RemoteStub:
         self.interactive.join ()
 
 
+def clean_environment (d):
+    return dict ([ (k, v) for k, v in d.items ()
+                          if type (v)!=types.ModuleType
+                             and k not in ('stdin', 'stdout', 'stderr',
+                                           '__cffi_backend_extern_py',
+                                           '__builtins__') ])
+
 class remote:
     "Uses the same arguments as paramiko.SSHClient.connect ()"
     def __init__ (self, ast, hostname, *args, **kwargs):
@@ -253,8 +260,7 @@ class remote:
         # the imports and hold them in another ayrton.Environment attribute
         # or we just weed them out here. so far this is the simpler option
         # but forces the user to reimport what's going to be used in the remote
-        g= dict ([ (k, v) for k, v in ayrton.runner.globals.items ()
-                          if type (v)!=types.ModuleType and k not in ('stdin', 'stdout', 'stderr') ])
+        g= clean_environment (ayrton.runner.globals)
 
         # get the locals from the runtime
         # this is not so easy: for some reason, ayrton.runner.locals is not up to
@@ -262,9 +268,7 @@ class remote:
         # via exec() in Ayrton.run_code())
         # another option is to go through the frames
         inception_locals= sys._getframe().f_back.f_locals
-
-        l= dict ([ (k, v) for (k, v) in inception_locals.items ()
-                          if type (v)!=types.ModuleType and k not in ('stdin', 'stdout', 'stderr') ])
+        l= clean_environment (inception_locals)
 
         # special treatment for argv
         g['argv']= ayrton.runner.globals['argv']
