@@ -211,6 +211,10 @@ class Command:
     def child (self):
         # set the new log handler so we start our own pid based logs
         if len (logging.root.handlers)>0:
+            # close them so we don't get ResourceWarnings
+            for handler in logging.root.handlers:
+                handler.close ()
+
             logging.root.handlers= [ ayrton.pid_based_handler () ]
 
         logger.debug ('child')
