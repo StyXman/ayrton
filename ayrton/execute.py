@@ -560,7 +560,7 @@ class Command:
                 # while iterating we always remove the trailing \n
                 line= line.rstrip (os.linesep)
 
-                logger.debug2 ('read line: %s', line)
+                logger.debug2 ('read line: %s', line.encode(encoding))
                 yield line
 
             # finish him!
