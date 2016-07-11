@@ -52,10 +52,10 @@ testclean:
 debug:
 	mkdir -pv debug
 
-debugserver:
-	# generate an rsa server key
-	if ! [ -f rsa_server_key ]; then \
-		ssh-keygen -f rsa_server_key -N '' -t rsa; \
-	fi
+rsa_server_key:
+	# generate a rsa server key
+	ssh-keygen -f rsa_server_key -N '' -t rsa; \
+
+debugserver: rsa_server_key
 	# TODO: discover sshd's path?
 	/usr/sbin/sshd -dd -e -h $(shell pwd)/rsa_server_key -p 2244
