@@ -37,14 +37,28 @@ class cd (object):
     def __exit__ (self, *args):
         os.chdir (self.old_dir)
 
+
+class Exit (Exception):
+    # exit() has to be implemented with a exception
+    # because sys.exit() make the whole interpreter go down
+    # that is, the interpreter interpreting ayton :)
+    def __init__ (self, exit_value):
+        self.exit_value= exit_value
+
+def exit (value):
+    raise Exit (value)
+
+
 def export (**kwargs):
     for k, v in kwargs.items ():
         ayrton.runner.globals[k]= str (v)
         os.environ[k]= str (v)
 
+
 option_map= dict (
     e= 'errexit',
     )
+
 
 def option (option, value=True):
     if len (option)==2:

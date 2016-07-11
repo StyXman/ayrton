@@ -30,6 +30,7 @@ import os.path
 
 # patch logging so we have debug2 and debug3
 import ayrton.utils
+from ayrton.functions import Exit
 
 log_format= "%(asctime)s %(name)16s:%(lineno)-4d (%(funcName)-21s) %(levelname)-8s %(message)s"
 date_format= "%H:%M:%S"
@@ -133,14 +134,14 @@ class Environment (dict):
             'os': [ ('getcwd', 'pwd'), 'uname', 'listdir', 'makedirs', 'stat' ],
             'os.path': [ 'abspath', 'basename', 'commonprefix', 'dirname',  ],
             'time': [ 'sleep', ],
-            'sys': [ 'exit', ],  # argv is handled just before execution
+            'sys': [  ],  # argv is handled just before execution
 
             'ayrton.file_test': [ '_a', '_b', '_c', '_d', '_e', '_f', '_g', '_h',
                                   '_k', '_p', '_r', '_s', '_u', '_w', '_x', '_L',
                                   '_N', '_S', '_nt', '_ot' ],
             'ayrton.expansion': [ 'bash', ],
-            'ayrton.functions': [ 'cd', ('cd', 'chdir'), 'export', 'option', 'run',
-                                   'shift', 'unset', ],
+            'ayrton.functions': [ 'cd', ('cd', 'chdir'), 'exit', 'export',
+                                  'option', 'run', 'shift', 'unset', ],
             'ayrton.execute': [ 'o', 'Capture', 'CommandFailed', 'CommandNotFound',
                                 'Pipe', 'Command'],
             'ayrton.remote': [ 'remote' ]
@@ -337,12 +338,16 @@ class Ayrton (object):
         affect the values of local and free variables used by the interpreter.
         '''
         error= None
+        result= None
         try:
             logger.debug3 ('globals for script: %s', ayrton.utils.dump_dict (self.globals))
             if self.params.trace:
                 sys.settrace (self.global_tracer)
 
             exec (code, self.globals, self.locals)
+            result= self.locals.get ('ayrton_return_value', None)
+        except Exit as e:
+            result= e.exit_value
         except Exception as e:
             if self.params.pdb:
                 pdb.set_trace ()
@@ -355,7 +360,6 @@ class Ayrton (object):
 
         logger.debug3 ('globals at script exit: %s', ayrton.utils.dump_dict (self.globals))
         logger.debug3 ('locals at script exit: %s', ayrton.utils.dump_dict (self.locals))
-        result= self.locals.get ('ayrton_return_value', None)
         logger.debug ('ayrton_return_value: %r', result)
 
         if error is not None:
