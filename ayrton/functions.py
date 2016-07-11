@@ -24,7 +24,7 @@ import os
 import logging
 logger= logging.getLogger ('ayrton.functions')
 
-# NOTE: all this code is excuted in the script's environment
+# NOTE: all this code is executed in the script's environment
 
 class cd (object):
     def __init__ (self, dir):
@@ -73,12 +73,14 @@ def option (option, value=True):
 
     ayrton.runner.options[option]= value
 
+
 def run (path, *args, **kwargs):
     c= ayrton.execute.Command (path)
     return c (*args, **kwargs)
 
+
 def shift (n=1):
-    # we start at 1 becasuse 0 is the script's path
+    # we start at 1 because 0 is the script's path
     # this closely follows bash's behavior
     if n==1:
         ans= ayrton.runner.globals['argv'].pop (1)

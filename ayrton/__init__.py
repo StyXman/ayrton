@@ -51,7 +51,7 @@ def pid_based_handler (level=logging.DEBUG):
     logger= logging.root
 
     # most of the following logging internals were found out by reading
-    # the module's code
+    # logging's code
     if len (logger.handlers)>0 and logger.handlers[0].formatter is not None:
         # we already had a handler, so we just use the same formatter for the
         # new handler
