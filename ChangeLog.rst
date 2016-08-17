@@ -10,7 +10,7 @@ ayrton (0.8) unstable; urgency=medium
   * Better `Command()` detection.
   * A lot of internal fixes.
 
- -- Marcos Dione <mdione@grulic.org.ar>  Wed, 17 Aug 2016 12:43:50 +0200
+ -- Marcos Dione <mdione@grulic.org.ar>  Wed, 17 Aug 2016 12:55:34 +0200
 
 ayrton (0.7.2.1) unstable; urgency=medium
 
