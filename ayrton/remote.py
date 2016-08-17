@@ -291,15 +291,16 @@ import pickle                                                             #  2
 from ast import Module, Assign, Name, Store, Call, Load, Expr             #  4
 import sys                                                                #  5
 from socket import socket                                                 #  6
-import ayrton #  this means that ayrton has to be installed in the remote #  7
-import traceback                                                          #  8
-                                                                          #  9
-import logging                                                            # 10
-logger= logging.getLogger ('ayrton.remote.runner')                        # 11
-                                                                          # 12
-# precommand, used by tests to change to the proper directory             # 13
-# so it picks up the current version of the code.                         # 14
+import traceback                                                          #  7
+                                                                          #  8
+import logging                                                            #  9
+logger= logging.getLogger ('ayrton.remote.runner')                        # 10
+                                                                          # 11
+# precommand, used by tests to change to the proper directory             # 12
+# so it picks up the current version of the code.                         # 13
+logger.debug ('precommand: %%s', '%s')                                    # 14
 %s                                                                        # 15
+import ayrton #  this means that ayrton has to be installed in the remote # 16
                                                                           # 16
 client= socket ()                                                         # 17
 client.connect (('127.0.0.1', %d))                                        # 18
@@ -330,7 +331,8 @@ logger.debug ('sending %%d bytes', len (data))                            # 42
 client.sendall (data)                                                     # 43
 logger.debug ('exit status sent')                                         # 44
 client.close ()                                                           # 45"
-''' % (precommand, backchannel_port, len (self.ast), len (global_env), len (local_env))
+''' % (precommand, precommand, backchannel_port,
+       len (self.ast), len (global_env), len (local_env))
 
         logger.debug ('code to execute remote: %s', command)
 
