@@ -280,12 +280,23 @@ class remote:
 
         backchannel_port= 4227
 
+        # NOTE: becareful with the quoting here,
+        # there are several levels at which they're interpreted:
+        # 1) ayrton's local Python interpreter
+        # 2) the remote shell
+        # 3) the remote Python interpreter
+        # in particular, getcwd()'s output MUST be between single quotes (')
+        # so 2) does not think we're ending the double quotes (") around
+        # the invocation of 3)
+        # for the same reason, line #15 MUST have triple single quotes (''') too
+        # and that's why the whole string MUST be in triple double quotes (""")
         if not self._debug and not self._test:
             precommand= ''
         else:
-            precommand= '''import os; os.chdir (%r)''' % os.getcwd ()
+            precommand= '''import os; os.chdir ('%s')''' % os.getcwd ()
+        logger.debug ("precommand: %s", precommand)
 
-        command= '''python3.5 -c "#!                                      #  1
+        command= """python3.5 -c "#!                                      #  1
 import pickle                                                             #  2
 # names needed for unpickling                                             #  3
 from ast import Module, Assign, Name, Store, Call, Load, Expr             #  4
@@ -298,7 +309,7 @@ logger= logging.getLogger ('ayrton.remote.runner')                        # 10
                                                                           # 11
 # precommand, used by tests to change to the proper directory             # 12
 # so it picks up the current version of the code.                         # 13
-logger.debug ('precommand: %%s', '%s')                                    # 14
+logger.debug ('precommand: %%s', '''%s''')                                # 14
 %s                                                                        # 15
 import ayrton #  this means that ayrton has to be installed in the remote # 16
                                                                           # 16
@@ -331,7 +342,7 @@ logger.debug ('sending %%d bytes', len (data))                            # 42
 client.sendall (data)                                                     # 43
 logger.debug ('exit status sent')                                         # 44
 client.close ()                                                           # 45"
-''' % (precommand, precommand, backchannel_port,
+""" % (precommand, precommand, backchannel_port,
        len (self.ast), len (global_env), len (local_env))
 
         logger.debug ('code to execute remote: %s', command)
