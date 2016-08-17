@@ -40,8 +40,8 @@ class cd (object):
 
 class Exit (Exception):
     # exit() has to be implemented with a exception
-    # because sys.exit() make the whole interpreter go down
-    # that is, the interpreter interpreting ayton :)
+    # because sys.exit() makes the whole interpreter go down
+    # that is, the interpreter interpreting ayrton :)
     def __init__ (self, exit_value):
         self.exit_value= exit_value
 
