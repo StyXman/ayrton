@@ -35,19 +35,23 @@ from ayrton.functions import Exit
 log_format= "%(asctime)s %(name)16s:%(lineno)-4d (%(funcName)-21s) %(levelname)-8s %(message)s"
 date_format= "%H:%M:%S"
 
-def set_debug (handler=None, level=logging.DEBUG):
-    if handler is None:
-        logging.basicConfig(handlers=[ pid_based_handler () ], level=level,
-                            format=log_format, datefmt=date_format)
-    else:
-        logging.basicConfig(handlers=[ handler ], level=level,
-                            format=log_format, datefmt=date_format)
+
+def set_logging_handler (handler):
+    # replace the old handler only if there was one to begin with
+    if len (logging.root.handlers)>0:
+        # close them so we don't get ResourceWarnings
+        for handler in logging.root.handlers:
+            handler.close ()
+
+        logging.root.addHandler (handler)
 
 
-def pid_based_handler (level=logging.DEBUG):
-    """When we fork(), a new ppid based logger needs to be created
-    so the child logs to another file."""
-    handler= logging.FileHandler ('ayrton.%d.log' % os.getpid ())
+def set_debug (level=logging.DEBUG):
+    logging.basicConfig(handlers=[ counter_handler () ], level=level,
+                        format=log_format)
+
+
+def setup_handler (handler):
     logger= logging.root
 
     # most of the following logging internals were found out by reading
@@ -55,11 +59,34 @@ def pid_based_handler (level=logging.DEBUG):
     if len (logger.handlers)>0 and logger.handlers[0].formatter is not None:
         # we already had a handler, so we just use the same formatter for the
         # new handler
-        handler.setFormatter (logger.handlers[0].formatter)
+        formatter= logger.handlers[0].formatter
     else:
         # this is the first time, so we have to create them
         formatter= logging.Formatter (log_format, date_format, '%')
-        handler.setFormatter (formatter)
+
+    handler.setFormatter (formatter)
+
+
+def pid_based_handler ():
+    """When we fork(), a new PID based logger needs to be created
+    so the child logs to another file."""
+    handler= logging.FileHandler ('ayrton.%d.log' % os.getpid ())
+    setup_handler (handler)
+
+    return handler
+
+
+def instance_handler (instance):
+    handler= logging.FileHandler ('ayrton.%x.log' % id(instance))
+    setup_handler (handler)
+
+    return handler
+
+instance_count= 0
+def counter_handler ():
+    handler= logging.FileHandler ('ayrton.%04d.log' % ayrton.instance_count)
+    ayrton.instance_count+= 1
+    setup_handler (handler)
 
     return handler
 
@@ -166,11 +193,25 @@ class Environment (dict):
 
         # now the IO files
         for std in ('stdin', 'stdout', 'stderr'):
+            # NOTE: why the buffer?
             self[std]= getattr (sys, std).buffer
 
 
 class Ayrton (object):
     def __init__ (self, g=None, l=None, polute_globals=True, **kwargs):
+        # HACK: figure out why this call, which is equivalent to
+        # the following code, does not work
+        # set_logging_handler (instance_handler (self))
+
+        # replace the old handler only if there was one to begin with
+        if len (logging.root.handlers)>0:
+            # close them so we don't get ResourceWarnings
+            for handler in logging.root.handlers:
+                logging.root.removeHandler (handler)
+                handler.close ()
+
+            logging.root.addHandler (counter_handler ())
+
         # patch import system after ayrton is loaded but before anything else happens
         import ayrton.importer
 
