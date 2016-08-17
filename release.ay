@@ -20,7 +20,9 @@ if make ('install'):  # this includes tests
 
     dch (--changelog='ChangeLog.rst', --newversion=ayrton.__version__)
     dch (--changelog='ChangeLog.rst', --release=True)
-    git ('commit', 'ChangeLog.rst', --message="[*] new entry for %s." % ayrton.__version__)
+    commited= git ('commit', 'ChangeLog.rst', --message="[*] new entry for %s." % ayrton.__version__)
+    if not commited and 'nothing added to commit' not in commited:
+        exit (1)
 
     # docs
     make ('docs')
