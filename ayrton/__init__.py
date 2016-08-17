@@ -112,6 +112,9 @@ class Argv (list):
         for v in self[1:]:
             yield v
 
+    def __len__ (self):
+        return super ().__len__ ()-1
+
 
 class Environment (dict):
     def __init__ (self, *args, **kwargs):
