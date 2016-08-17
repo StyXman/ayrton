@@ -89,9 +89,9 @@ def shift (n=1):
     # we start at 1 because 0 is the script's path
     # this closely follows bash's behavior
     if n==1:
-        ans= ayrton.runner.globals['argv'].pop (1)
+        ans= ayrton.runner.globals['argv'].pop ()
     elif n>1:
-        ans= [ ayrton.runner.globals['argv'].pop (1)
+        ans= [ ayrton.runner.globals['argv'].pop ()
                for i in range (n) ]
     else:
         raise ValueError ()
