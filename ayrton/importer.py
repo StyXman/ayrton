@@ -79,17 +79,18 @@ class AyrtonFinder (MetaPathFinder):
             init_full_path= os.path.join (full_path, '__init__.ay')
             module_full_path= full_path+'.ay'
 
-            logger.debug ('trying %s', init_full_path)
+            logger.debug2 ('trying %s', init_full_path)
             if _d (full_path) and _a (init_full_path):
                 logger.debug ('found package %s', full_path)
                 return ModuleSpec (full_name, loader, origin=init_full_path)
 
             else:
-                logger.debug ('trying %s', module_full_path)
+                logger.debug2 ('trying %s', module_full_path)
                 if _a (module_full_path):
                     logger.debug ('found module %s', module_full_path)
                     return ModuleSpec (full_name, loader, origin=module_full_path)
 
+        logger.debug ('404 Not Found')
         return None
 
 finder= AyrtonFinder ()
