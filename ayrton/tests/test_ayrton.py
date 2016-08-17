@@ -484,12 +484,14 @@ class Importing (ScriptExecution):
         self.addCleanup (self.del_module, 'testImportLocalAyModule')
 
         self.doTest ('testImportLocalAy.ay')
+
         self.assertEqual (self.runner.globals['testImportLocalAyModule'].foo, 42)
 
     def testImportLocalAyPackage (self):
         self.addCleanup (self.del_module, 'package')
 
         self.doTest ('testImportLocalAyPackage.ay')
+
         self.assertEqual (self.runner.globals['package'].bar, 24)
         package_relative_path= 'ayrton/tests/scripts/package'
         self.assertTrue (self.runner.globals['package'].__path__[0][-len (package_relative_path):],
@@ -500,6 +502,7 @@ class Importing (ScriptExecution):
         self.addCleanup (self.del_module, 'package')
 
         self.doTest ('testImportLocalAyPackageAyModule.ay')
+
         self.assertTrue (self.runner.globals['package'].ay_module.ay)
 
     def testImportLocalAyPackagePyModule (self):
@@ -507,6 +510,7 @@ class Importing (ScriptExecution):
         self.addCleanup (self.del_module, 'package')
 
         self.doTest ('testImportLocalAyPackagePyModule.ay')
+
         self.assertTrue (self.runner.globals['package'].py_module.py)
 
     def testImportLocalPy (self):
