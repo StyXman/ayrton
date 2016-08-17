@@ -226,8 +226,8 @@ class remote:
         self.hostname= hostname
         self.args= args
 
-        self.param ('_debug', kwargs)
-        self.param ('_test', kwargs)
+        self.param ('_debug', kwargs)  # we're debugging, so we'll have lots of output
+        self.param ('_test', kwargs)   # we're testing, so we'll use nc instead of ssh
         self.kwargs= kwargs
         # NOTE: uncomment to connect to the debugserver
         # self.kwargs['port']= 2244

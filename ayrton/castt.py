@@ -345,6 +345,7 @@ class CrazyASTTransformer (ast.NodeTransformer):
 
                 # I can't believe it's this easy
                 # TODO: check if _err is not being captured instead
+                # TODO: warn about keywords being rewritten
                 update_keyword (node.left,
                                 keyword (arg='_out', value=Name (id='Pipe', ctx=Load ())))
                 update_keyword (node.left,

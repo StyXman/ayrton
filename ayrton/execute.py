@@ -209,7 +209,11 @@ class Command:
 
 
     def child (self):
-        # set the new log handler so we start our own pid based logs
+        # HACK: figure out why this call, which is equivalent to
+        # the following code, does not work
+        # ayrton.set_logging_handler (ayrton.pid_based_handler ())
+
+        # replace the old handler only if there was one to begin with
         if len (logging.root.handlers)>0:
             # close them so we don't get ResourceWarnings
             for handler in logging.root.handlers:
@@ -305,6 +309,7 @@ class Command:
                     # connect to /dev/null
                     e= os.open (os.devnull, os.O_WRONLY) # no need to create it
                     logger.debug ("_err==None, redirects stderr 2 -> %d (%s)", e, os.devnull)
+                    # this will be continued later in the next if
                 elif isinstance (e, io.IOBase):
                     # this does not work with file like objects
                     efile= e
