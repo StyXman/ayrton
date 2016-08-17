@@ -494,7 +494,9 @@ class Importing (ScriptExecution):
 
         self.assertEqual (self.runner.globals['package'].bar, 24)
         package_relative_path= 'ayrton/tests/scripts/package'
-        self.assertTrue (self.runner.globals['package'].__path__[0][-len (package_relative_path):],
+        # so we ignore the leading abs path
+        suffix_length= -len (package_relative_path)
+        self.assertTrue (self.runner.globals['package'].__path__[0][suffix_length:],
                          package_relative_path)
 
     def testImportLocalAyPackageAyModule (self):
