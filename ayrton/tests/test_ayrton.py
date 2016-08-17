@@ -470,14 +470,25 @@ class CommandDetection (ScriptExecution):
 
 class Importing (ScriptExecution):
 
+    def del_module (self, module_name):
+        try:
+            del sys.modules[module_name]
+        except KeyError:
+            # the module was not even created, ignore
+            pass
+
     def testImport (self):
         self.doTest ('testImport.ay')
 
     def testImportLocalAy (self):
+        self.addCleanup (self.del_module, 'testImportLocalAyModule')
+
         self.doTest ('testImportLocalAy.ay')
         self.assertEqual (self.runner.globals['testImportLocalAyModule'].foo, 42)
 
     def testImportLocalAyPackage (self):
+        self.addCleanup (self.del_module, 'package')
+
         self.doTest ('testImportLocalAyPackage.ay')
         self.assertEqual (self.runner.globals['package'].bar, 24)
         package_relative_path= 'ayrton/tests/scripts/package'
@@ -485,10 +496,16 @@ class Importing (ScriptExecution):
                          package_relative_path)
 
     def testImportLocalAyPackageAyModule (self):
+        self.addCleanup (self.del_module, 'package.ay_module')
+        self.addCleanup (self.del_module, 'package')
+
         self.doTest ('testImportLocalAyPackageAyModule.ay')
         self.assertTrue (self.runner.globals['package'].ay_module.ay)
 
     def testImportLocalAyPackagePyModule (self):
+        self.addCleanup (self.del_module, 'package.py_module')
+        self.addCleanup (self.del_module, 'package')
+
         self.doTest ('testImportLocalAyPackagePyModule.ay')
         self.assertTrue (self.runner.globals['package'].py_module.py)
 
