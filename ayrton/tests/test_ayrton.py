@@ -452,6 +452,24 @@ class CommandDetection (ScriptExecution):
     def testInstantiateClass (self):
         self.doTest ('testInstantiateClass.ay')
 
+    def testUnknown (self):
+        try:
+            ayrton.main ('''foo''')
+        except CommandNotFound:
+            raise
+        except NameError:
+            pass
+        self.assertRaises (NameError, ayrton.main, '''fff()''')
+        self.assertRaises (CommandNotFound, ayrton.main, '''fff()''')
+
+    def testForDefinesTarget (self):
+        self.doTest ('testForDefinesTarget.ay')
+
+    def testForDefinesTargets (self):
+        self.doTest ('testForDefinesTargets.ay')
+
+class Importing (ScriptExecution):
+
     def testImport (self):
         self.doTest ('testImport.ay')
 
@@ -485,22 +503,6 @@ class CommandDetection (ScriptExecution):
 
     def testImportFromCallFromFunc (self):
         self.doTest ('testImportFromCallFromFunc.ay')
-
-    def testUnknown (self):
-        try:
-            ayrton.main ('''foo''')
-        except CommandNotFound:
-            raise
-        except NameError:
-            pass
-        self.assertRaises (NameError, ayrton.main, '''fff()''')
-        self.assertRaises (CommandNotFound, ayrton.main, '''fff()''')
-
-    def testForDefinesTarget (self):
-        self.doTest ('testForDefinesTarget.ay')
-
-    def testForDefinesTargets (self):
-        self.doTest ('testForDefinesTargets.ay')
 
 class ParsingErrors (unittest.TestCase):
 
