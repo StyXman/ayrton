@@ -1,3 +1,17 @@
+ayrton (0.8) unstable; urgency=medium
+
+  * You can import ayrton modules and packages!
+  * Depends on Python3.5 now.
+  * `argv` is not quite a list: for some operations (`len()`, `iter()`, `pop()`), `argv[0]` is left alone.
+  * `option()` raises KeyError or ValueError if the option or its 'argument' is wrong.
+  * `makedirs()` and `stat()` are available as functions.
+  * `-p|--pdb` launches `pdb` when there is an unhandled exception.
+  * Fix `for line in foo(...): ...` by automatically adding the `_bg=True` option.
+  * Better `Command()` detection.
+  * A lot of internal fixes.
+
+ -- Marcos Dione <mdione@grulic.org.ar>  Wed, 17 Aug 2016 12:43:50 +0200
+
 ayrton (0.7.2.1) unstable; urgency=medium
 
   * Fix iterating over the log ouput of a `Command` in synchronous mode (that is, not running in the `_bg`). This complements the fix in the previous release.
