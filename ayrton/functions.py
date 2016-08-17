@@ -67,9 +67,15 @@ def option (option, value=True):
         elif option[0]=='+':
             value= False
         else:
-            # TODO: syntax error:
-            pass
-        option= option_map[option[1]]
+            raise ValueError ("Malformed option %r" % option)
+
+        try:
+            option= option_map[option[1]]
+        except KeyError:
+            raise KeyError ("Unrecognized option %r" % option)
+
+    if option not in option_map.values ():
+        raise KeyError ("Unrecognized option %r" % option)
 
     ayrton.runner.options[option]= value
 
