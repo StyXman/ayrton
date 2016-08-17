@@ -50,6 +50,7 @@ Debug Options:
                         directory.
   -dd, --debug2         More execution info.
   -ddd, --debug3        Even more execution info.
+  -p, --pdb             Launch pdb on any unhandled exception.
   -x, --trace           Trace script execution. It does not trace other modules
                         used. If debug is enabled, trace goes to log.
   -xx, --trace-with-lineno
@@ -114,19 +115,23 @@ try:
         if arg in ('-d', '--debug'):
             params.debug= True
             # set this ASAP
-            ayrton.debug ()
+            ayrton.set_debug ()
             continue
 
         if arg in ('-dd', '--debug2'):
             params.debug= True
             # set this ASAP
-            ayrton.debug (logging.DEBUG2)
+            ayrton.set_debug (logging.DEBUG2)
             continue
 
         if arg in ('-ddd', '--debug3'):
             params.debug= True
             # set this ASAP
-            ayrton.debug (logging.DEBUG3)
+            ayrton.set_debug (logging.DEBUG3)
+            continue
+
+        if arg in ('-p', '--pdb'):
+            params.pdb= True
             continue
 
         if arg in ('-f', '--file'):

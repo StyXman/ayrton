@@ -1,0 +1,4 @@
+#! /usr/bin/env ayrton
+
+# importing ayrton modules in ayrton packages works
+import package.ay_module

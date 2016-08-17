@@ -1,0 +1,4 @@
+#! /usr/bin/env ayrton
+
+# importing local modules still works
+import testImportLocalPyModule

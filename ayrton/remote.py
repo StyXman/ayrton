@@ -211,6 +211,13 @@ class RemoteStub:
         self.interactive.join ()
 
 
+def clean_environment (d):
+    return dict ([ (k, v) for k, v in d.items ()
+                          if type (v)!=types.ModuleType
+                             and k not in ('stdin', 'stdout', 'stderr',
+                                           '__cffi_backend_extern_py',
+                                           '__builtins__') ])
+
 class remote:
     "Uses the same arguments as paramiko.SSHClient.connect ()"
     def __init__ (self, ast, hostname, *args, **kwargs):
@@ -219,8 +226,8 @@ class remote:
         self.hostname= hostname
         self.args= args
 
-        self.param ('_debug', kwargs)
-        self.param ('_test', kwargs)
+        self.param ('_debug', kwargs)  # we're debugging, so we'll have lots of output
+        self.param ('_test', kwargs)   # we're testing, so we'll use nc instead of ssh
         self.kwargs= kwargs
         # NOTE: uncomment to connect to the debugserver
         # self.kwargs['port']= 2244
@@ -253,8 +260,7 @@ class remote:
         # the imports and hold them in another ayrton.Environment attribute
         # or we just weed them out here. so far this is the simpler option
         # but forces the user to reimport what's going to be used in the remote
-        g= dict ([ (k, v) for k, v in ayrton.runner.globals.items ()
-                          if type (v)!=types.ModuleType and k not in ('stdin', 'stdout', 'stderr') ])
+        g= clean_environment (ayrton.runner.globals)
 
         # get the locals from the runtime
         # this is not so easy: for some reason, ayrton.runner.locals is not up to
@@ -262,9 +268,7 @@ class remote:
         # via exec() in Ayrton.run_code())
         # another option is to go through the frames
         inception_locals= sys._getframe().f_back.f_locals
-
-        l= dict ([ (k, v) for (k, v) in inception_locals.items ()
-                          if type (v)!=types.ModuleType and k not in ('stdin', 'stdout', 'stderr') ])
+        l= clean_environment (inception_locals)
 
         # special treatment for argv
         g['argv']= ayrton.runner.globals['argv']
@@ -276,57 +280,70 @@ class remote:
 
         backchannel_port= 4227
 
+        # NOTE: becareful with the quoting here,
+        # there are several levels at which they're interpreted:
+        # 1) ayrton's local Python interpreter
+        # 2) the remote shell
+        # 3) the remote Python interpreter
+        # in particular, getcwd()'s output MUST be between single quotes (')
+        # so 2) does not think we're ending the double quotes (") around
+        # the invocation of 3)
+        # for the same reason, line #15 MUST have triple single quotes (''') too
+        # and that's why the whole string MUST be in triple double quotes (""")
         if not self._debug and not self._test:
             precommand= ''
         else:
-            precommand= '''import os; os.chdir (%r)''' % os.getcwd ()
+            precommand= '''import os; os.chdir ('%s')''' % os.getcwd ()
+        logger.debug ("precommand: %s", precommand)
 
-        command= '''python3.4 -c "#!                                      #  1
+        command= """python3.5 -c "#!                                      #  1
 import pickle                                                             #  2
 # names needed for unpickling                                             #  3
 from ast import Module, Assign, Name, Store, Call, Load, Expr             #  4
 import sys                                                                #  5
 from socket import socket                                                 #  6
-import ayrton #  this means that ayrton has to be installed in the remote #  7
-import traceback                                                          #  8
-                                                                          #  9
-import logging                                                            # 10
-logger= logging.getLogger ('ayrton.remote.runner')                        # 11
-                                                                          # 12
-# precommand, used by tests to change to the proper directory             # 13
-# so it picks up the current version of the code.                         # 14
+import traceback                                                          #  7
+                                                                          #  8
+import logging                                                            #  9
+logger= logging.getLogger ('ayrton.remote.runner')                        # 10
+                                                                          # 11
+# precommand, used by tests to change to the proper directory             # 12
+# so it picks up the current version of the code.                         # 13
+logger.debug ('precommand: %%s', '''%s''')                                # 14
 %s                                                                        # 15
-                                                                          # 16
-client= socket ()                                                         # 17
-client.connect (('127.0.0.1', %d))                                        # 18
-ast= pickle.loads (client.recv (%d))                                      # 19
-logger.debug ('code to run:\\n%%s', ayrton.ast_pprinter.pprint (ast))     # 20
-g= pickle.loads (client.recv (%d))                                        # 21
-logger.debug2 ('globals received: %%s', ayrton.utils.dump_dict (g))       # 22
-l= pickle.loads (client.recv (%d))                                        # 23
-logger.debug2 ('locals received: %%s', ayrton.utils.dump_dict (l))        # 24
-                                                                          # 25
-# set the global runner so functions and Commands work                    # 26
-ayrton.runner= ayrton.Ayrton (g, l)                                       # 27
-caught= None                                                              # 28
-result= None                                                              # 29
-                                                                          # 30
-try:                                                                      # 31
-    result= ayrton.runner.run_tree (ast, 'from_remote')                   # 32
-except Exception as e:                                                    # 33
-    logger.debug ('run raised: %%r', e)                                   # 34
-    logger.debug (traceback.format_exc())                                 # 35
-    caught= e                                                             # 36
-                                                                          # 37
-logger.debug2 ('runner.locals: %%s', ayrton.utils.dump_dict (ayrton.runner.locals)) # 38
-                                                                          # 39
-logger.debug ('about to send exit status')                                # 40
-data = pickle.dumps ( (ayrton.runner.locals, result, caught) )            # 41
-logger.debug ('sending %%d bytes', len (data))                            # 42
-client.sendall (data)                                                     # 43
-logger.debug ('exit status sent')                                         # 44
-client.close ()                                                           # 45"
-''' % (precommand, backchannel_port, len (self.ast), len (global_env), len (local_env))
+import ayrton #  this means that ayrton has to be installed in the remote # 16
+                                                                          # 17
+client= socket ()                                                         # 18
+client.connect (('127.0.0.1', %d))                                        # 19
+ast= pickle.loads (client.recv (%d))                                      # 20
+logger.debug ('code to run:\\n%%s', ayrton.ast_pprinter.pprint (ast))     # 21
+g= pickle.loads (client.recv (%d))                                        # 22
+logger.debug2 ('globals received: %%s', ayrton.utils.dump_dict (g))       # 23
+l= pickle.loads (client.recv (%d))                                        # 24
+logger.debug2 ('locals received: %%s', ayrton.utils.dump_dict (l))        # 25
+                                                                          # 26
+# set the global runner so functions and Commands work                    # 27
+ayrton.runner= ayrton.Ayrton (g, l)                                       # 28
+caught= None                                                              # 29
+result= None                                                              # 30
+                                                                          # 31
+try:                                                                      # 32
+    result= ayrton.runner.run_tree (ast, 'from_remote')                   # 33
+except Exception as e:                                                    # 34
+    logger.debug ('run raised: %%r', e)                                   # 35
+    logger.debug (traceback.format_exc())                                 # 36
+    caught= e                                                             # 37
+                                                                          # 38
+logger.debug2 ('runner.locals: %%s', ayrton.utils.dump_dict (ayrton.runner.locals)) # 39
+                                                                          # 40
+logger.debug ('about to send exit status')                                # 41
+data = pickle.dumps ( (ayrton.runner.locals, result, caught) )            # 42
+logger.debug ('sending %%d bytes', len (data))                            # 43
+client.sendall (data)                                                     # 44
+logger.debug ('exit status sent')                                         # 45
+client.close ()                                                           # 46"
+""" % (precommand, precommand, backchannel_port,
+       len (self.ast), len (global_env), len (local_env))
 
         logger.debug ('code to execute remote: %s', command)
 

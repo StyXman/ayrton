@@ -1,3 +1,22 @@
+# -*- coding: utf-8 -*-
+
+# (c) 2013 Marcos Dione <mdione@grulic.org.ar>
+
+# This file is part of ayrton.
+#
+# ayrton is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# ayrton is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with ayrton.  If not, see <http://www.gnu.org/licenses/>.
+
 from ast import Module, ImportFrom, Expr, Call, Name, FunctionDef, Assign, Str
 from ast import dump, If, Compare, Eq, For, Attribute, Gt, Num, IsNot, BinOp
 from ast import NameConstant, Mult, Add, Import, List, Dict, Is, BoolOp, And
@@ -9,11 +28,10 @@ from ast import Assert, Set, SetComp, LtE, IfExp, FloorDiv, GtE, With, Continue
 from ast import YieldFrom, UAdd, LShift, DictComp, Div, Starred, BitXor, Pow
 from _ast import arguments, arg as arg_type, keyword as keyword_type
 from _ast import alias as alias_type, comprehension, withitem
-try:
-    # python3.5 support
-    from _ast import AsyncFor, AsyncFunctionDef, AsyncWith, Await
-except ImportError:
-    AsyncFor= AsyncFunctionDef= AsyncWith= Await= object()
+from _ast import AsyncFor, AsyncFunctionDef, AsyncWith, Await, Starred
+
+import logging
+logger= logging.getLogger ('ayrton.ast_pprint')
 
 class pprint:
     """Lazy pprinter that only does something when converted to string"""
@@ -60,7 +78,9 @@ class pprint:
                 yield ', '
 
     def __str__ (self):
-        return ''.join (self.pprint_inner (self.node, 0))
+        data= list (self.pprint_inner (self.node, 0))
+        logger.debug2 (data)
+        return ''.join (data)
 
     def pprint_inner (self, node, level=0):
         t= type (node)
@@ -151,36 +171,20 @@ class pprint:
             yield repr (node.s)
 
         elif t==Call:
-            # Call(func=Name(id='foo', ctx=Load()), args=[], keywords=[], starargs=None, kwargs=None)
+            # Call(func=Name(id='foo', ctx=Load()), args=[], keywords=[])
+            # Call(func=Name(id='foo', ctx=Load()),
+            #      args=[Num(n=1), Starred(value=Name(id='bar', ctx=Load()), ctx=Load())],
+            #      keywords=[keyword(arg='a', value=Num(n=3)),
+            #                keyword(arg=None, value=Name(id='baz', ctx=Load()))]))
             # TODO: annotations
             yield from self.pprint_inner (node.func)
             yield ' ('
             yield from self.pprint_seq (node.args)
 
-            if len (node.args)>0 and (len (node.keywords)>0 or
-                                      node.starargs is not None or
-                                      node.kwargs is not None):
+            if len (node.args)>0 and len (node.keywords)>0:
                 yield ', '
 
             yield from self.pprint_seq (node.keywords)
-
-            if ((len (node.args)>0 or len (node.keywords)>0) and
-                (node.starargs is not None or node.kwargs is not None)):
-                yield ', '
-
-            if node.starargs is not None:
-                yield '*'
-                yield from self.pprint_inner (node.starargs)
-
-            if ((len (node.args)>0 or
-                 len (node.keywords)>0 or
-                 (node.starargs is not None) and node.kwargs is not None)):
-                yield ', '
-
-            if node.kwargs is not None:
-                yield '**'
-                yield from self.pprint_inner (node.kwargs)
-
             yield ')'
 
         elif t==ClassDef:
@@ -392,7 +396,7 @@ class pprint:
             yield node.id
 
         elif t==NameConstant:
-            yield node.value
+            yield str (node.value)
 
         elif t==Not:
             yield 'not '
@@ -459,6 +463,11 @@ class pprint:
             if node.step is not None:
                 yield ':'
                 yield from self.pprint_inner (node.step)
+
+        elif t==Starred:
+            # Starred(value=Name(id='bar', ctx=Load()), ctx=Load())
+            yield '*'
+            yield from self.pprint_inner (node.value)
 
         elif t==Str:
             # Str(s='true')
@@ -602,8 +611,12 @@ class pprint:
 
         elif t==keyword_type:
             # keyword(arg='end', value=Str(s=''))
-            yield node.arg
-            yield '='
+            # keyword(arg=None, value=Name(id='baz', ctx=Load()))]))
+            if node.arg is not None:
+                yield node.arg
+                yield '='
+            else:
+                yield '**'
             yield from self.pprint_inner (node.value)
 
         elif t==withitem:

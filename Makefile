@@ -1,20 +1,27 @@
 DEBUG_MULTI=strace -tt -T -ff -o debug/runner -s 128
 DEBUG_SIMPLE=strace -tt -T -o debug/runner -s 128
-PYTHON=python3.4
+PYTHON=python3.5
+# can't use --buffer because:
+#   File "/home/mdione/src/projects/ayrton/ayrton/__init__.py", line 191, in polute
+#     self[std]= getattr (sys, std).buffer
+# AttributeError: '_io.StringIO' object has no attribute 'buffer'
+UNITTEST_OPTS=--verbose
 
 all: docs
 
 INSTALL_DIR=$(HOME)/local
 
 tests:
-	LC_ALL=C $(PYTHON) -m unittest discover -v ayrton
+	LC_ALL=C $(PYTHON) -m unittest discover $(UNITTEST_OPTS) ayrton
 
 slowtest: debug
-	# LC_ALL=C $(DEBUG_SIMPLE) $(PYTHON) -m unittest discover -f -v ayrton
-	LC_ALL=C $(DEBUG_MULTI) $(PYTHON) -m unittest discover -f -v ayrton
+	# LC_ALL=C $(DEBUG_SIMPLE) $(PYTHON) -m unittest discover --failfast \
+	#       $(UNITTEST_OPTS) ayrton
+	LC_ALL=C $(DEBUG_MULTI) $(PYTHON) -m unittest discover --failfast \
+		$(UNITTEST_OPTS) ayrton
 
 quicktest:
-	LC_ALL=C $(PYTHON) -m unittest discover -f -v ayrton
+	LC_ALL=C $(PYTHON) -m unittest discover --failfast $(UNITTEST_OPTS) ayrton
 
 docs:
 	PYTHONPATH=${PWD} make -C doc html
@@ -45,10 +52,10 @@ testclean:
 debug:
 	mkdir -pv debug
 
-debugserver:
-	# generate an rsa server key
-	if ! [ -f rsa_server_key ]; then \
-		ssh-keygen -f rsa_server_key -N '' -t rsa; \
-	fi
+rsa_server_key:
+	# generate a rsa server key
+	ssh-keygen -f rsa_server_key -N '' -t rsa; \
+
+debugserver: rsa_server_key
 	# TODO: discover sshd's path?
 	/usr/sbin/sshd -dd -e -h $(shell pwd)/rsa_server_key -p 2244

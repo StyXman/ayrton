@@ -25,20 +25,77 @@ import logging
 import dis
 import traceback
 import linecache
+import pdb
+import os.path
 
 # patch logging so we have debug2 and debug3
 import ayrton.utils
+from ayrton.functions import Exit
 
 log_format= "%(asctime)s %(name)16s:%(lineno)-4d (%(funcName)-21s) %(levelname)-8s %(message)s"
 date_format= "%H:%M:%S"
 
-def debug (level=logging.DEBUG, filename='ayrton.log'):
-    logging.basicConfig(filename=filename, filemode='a', level=level,
-                        format=log_format, datefmt=date_format)
+
+def set_logging_handler (handler):
+    # replace the old handler only if there was one to begin with
+    if len (logging.root.handlers)>0:
+        # close them so we don't get ResourceWarnings
+        for handler in logging.root.handlers:
+            handler.close ()
+
+        logging.root.addHandler (handler)
+
+
+def set_debug (level=logging.DEBUG):
+    logging.basicConfig(handlers=[ counter_handler () ], level=level,
+                        format=log_format)
+
+
+def setup_handler (handler):
+    logger= logging.root
+
+    # most of the following logging internals were found out by reading
+    # logging's code
+    if len (logger.handlers)>0 and logger.handlers[0].formatter is not None:
+        # we already had a handler, so we just use the same formatter for the
+        # new handler
+        formatter= logger.handlers[0].formatter
+    else:
+        # this is the first time, so we have to create them
+        formatter= logging.Formatter (log_format, date_format, '%')
+
+    handler.setFormatter (formatter)
+
+
+def pid_based_handler ():
+    """When we fork(), a new PID based logger needs to be created
+    so the child logs to another file."""
+    handler= logging.FileHandler ('ayrton.%d.log' % os.getpid ())
+    setup_handler (handler)
+
+    return handler
+
+
+def instance_handler (instance):
+    handler= logging.FileHandler ('ayrton.%x.log' % id(instance))
+    setup_handler (handler)
+
+    return handler
+
+instance_count= 0
+def counter_handler ():
+    handler= logging.FileHandler ('ayrton.%04d.log' % ayrton.instance_count)
+    ayrton.instance_count+= 1
+    setup_handler (handler)
+
+    return handler
+
 
 # uncomment next line and change level for way too much debugging
-# during test execution
-# debug (level=logging.DEBUG, filename='ayrton.%d.log' % os.getpid ())
+# during tests execution
+# for running ayrton in the same mode, use the -d options
+# set_debug (level=logging.DEBUG)
+
 logger= logging.getLogger ('ayrton')
 
 # things that have to be defined before importing ayton.execute :(
@@ -51,7 +108,7 @@ from ayrton.parser.pyparser.pyparse import CompileInfo, PythonParser
 from ayrton.parser.astcompiler.astbuilder import ast_from_node
 from ayrton.ast_pprinter import pprint
 
-__version__= '0.7.2.1'
+__version__= '0.8'
 
 
 class ExecParams:
@@ -61,6 +118,7 @@ class ExecParams:
         self.linenos= False
         self.trace_all= False
         self.debug= False
+        self.pdb= False
 
         self.__dict__.update (kwargs)
 
@@ -71,6 +129,23 @@ def parse (script, file_name=''):
     return ast_from_node (None, parser.parse_source (script, info), info)
 
 
+class Argv (list):
+    """A class that mostly behaves like a list,
+    that skips the first element when being iterated,
+    but allows accessing it by indexing (argv[0])."""
+
+    def __iter__ (self):
+        # [1:] works even with empty lists! \o/
+        for v in self[1:]:
+            yield v
+
+    def __len__ (self):
+        return super ().__len__ ()-1
+
+    def pop (self, i=0):
+        return super ().pop (i+1)
+
+
 class Environment (dict):
     def __init__ (self, *args, **kwargs):
         super ().__init__ (*args, **kwargs)
@@ -79,27 +154,27 @@ class Environment (dict):
 
 
     def polute (self):
-        self.update (__builtins__)
-        # weed out some stuff
-        for weed in ('copyright', '__doc__', 'help', '__package__', 'credits',
-                     'license', '__name__', 'quit', 'exit'):
-            if weed in self:
-                del self[weed]
+        # we can't just .update() becasue we can be overwriting module info with __builtins__'
+        for name, value in __builtins__.items ():
+            if name not in ('__doc__', '__name__', '__loader__', '__package__',
+                            '__spec__', 'copyright', 'credits', 'exit', 'help',
+                            'license', 'quit'):
+                self[name]= value
 
         # these functions will be loaded from each module and put in the globals
         # tuples (src, dst) renames function src to dst
         ayrton_builtins= {
-            'os': [ ('getcwd', 'pwd'), 'uname', 'listdir', ],
+            'os': [ ('getcwd', 'pwd'), 'uname', 'listdir', 'makedirs', 'stat' ],
             'os.path': [ 'abspath', 'basename', 'commonprefix', 'dirname',  ],
             'time': [ 'sleep', ],
-            'sys': [ 'exit', ],  # argv is handled just before execution
+            'sys': [  ],  # argv is handled just before execution
 
             'ayrton.file_test': [ '_a', '_b', '_c', '_d', '_e', '_f', '_g', '_h',
                                   '_k', '_p', '_r', '_s', '_u', '_w', '_x', '_L',
                                   '_N', '_S', '_nt', '_ot' ],
             'ayrton.expansion': [ 'bash', ],
-            'ayrton.functions': [ 'cd', ('cd', 'chdir'), 'export', 'option', 'run',
-                                   'shift', 'unset', ],
+            'ayrton.functions': [ 'cd', ('cd', 'chdir'), 'exit', 'export',
+                                  'option', 'run', 'shift', 'unset', ],
             'ayrton.execute': [ 'o', 'Capture', 'CommandFailed', 'CommandNotFound',
                                 'Pipe', 'Command'],
             'ayrton.remote': [ 'remote' ]
@@ -118,19 +193,46 @@ class Environment (dict):
 
         # now the IO files
         for std in ('stdin', 'stdout', 'stderr'):
+            # NOTE: why the buffer?
             self[std]= getattr (sys, std).buffer
 
 
 class Ayrton (object):
-    def __init__ (self, g=None, l=None, **kwargs):
+    def __init__ (self, g=None, l=None, polute_globals=True, **kwargs):
+        # HACK: figure out why this call, which is equivalent to
+        # the following code, does not work
+        # set_logging_handler (instance_handler (self))
+
+        # replace the old handler only if there was one to begin with
+        if len (logging.root.handlers)>0:
+            # close them so we don't get ResourceWarnings
+            for handler in logging.root.handlers:
+                logging.root.removeHandler (handler)
+                handler.close ()
+
+            logging.root.addHandler (counter_handler ())
+
+        # patch import system after ayrton is loaded but before anything else happens
+        import ayrton.importer
+
         logger.debug ('===========================================================')
         logger.debug ('new interpreter')
         logger.debug3 ('globals: %s', ayrton.utils.dump_dict (g))
         logger.debug3 ('locals: %s', ayrton.utils.dump_dict (l))
 
-        self.globals= Environment ()
-        if g is not None:
-            self.globals.update (g)
+        self.polute_globals= polute_globals
+
+        if self.polute_globals:
+            env= Environment ()
+            if g is not None:
+                g.update (env)
+            else:
+                g= env
+        else:
+            if g is None:
+                raise ValueError ('If polute_globals is False, g must be not None')
+
+        self.globals= g
         self.globals.update (kwargs)
 
         if l is None:
@@ -156,6 +258,7 @@ class Ayrton (object):
             /home/mdione/src/projects/ayrton/foo.py in foo()
             NameError: name 'math' is not defined
             """
+            # see longer comment in run_code()
             self.locals= self.globals
         else:
             self.locals= l
@@ -182,19 +285,32 @@ class Ayrton (object):
         script= f.read ()
         f.close ()
 
+        # we need to add the file's parent dir to the PYTHONPATH
+        # so we can find relative modules to it
+        # this is mostly because the python interpreter is running ayrton
+        # and not the script, so the interpreter only adds ayrton's path
+        file_name_parent_dir= os.path.abspath (os.path.dirname (file_name))
+        if file_name_parent_dir not in sys.path:
+            sys.path.insert (0, file_name_parent_dir)
+
         return self.run_script (script, file_name, argv, params)
 
+
+    def parse (self, script, file_name):
+        # up to this point the script is the whole script in one string
+        # because parse() needs it that way
+        tree= parse (script, file_name)
+        # TODO: self.locals?
+        tree= CrazyASTTransformer (self.globals, file_name).modify (tree)
+
+        return tree
 
     def run_script (self, script, file_name, argv=None, params=None):
         logger.debug ('running script:\n-----------\n%s\n-----------', script)
         self.file_name= file_name
         self.script= script.split ('\n')
 
-        # up to this point the script is the whole script in one string
-        # because parse() needs it that way
-        tree= parse (script, file_name)
-        # TODO: self.locals?
-        tree= CrazyASTTransformer (self.globals, file_name).modify (tree)
+        tree= self.parse (script, file_name)
 
         return self.run_tree (tree, file_name, argv, params)
 
@@ -233,12 +349,13 @@ class Ayrton (object):
                         logger.debug ("last function is called: %s", inst.argval)
 
         # prepare environment
-        self.globals.update (os.environ)
+        if self.polute_globals:
+            self.globals.update (os.environ)
 
-        logger.debug (argv)
-        if argv is None:
-            argv= [ file_name ]
-        self.globals['argv']= argv
+            logger.debug (argv)
+            if argv is None:
+                argv= [ file_name ]
+            self.globals['argv']= Argv (argv)
 
         '''
         exec(): If only globals is provided, it must be a dictionary, which will
@@ -268,13 +385,20 @@ class Ayrton (object):
         affect the values of local and free variables used by the interpreter.
         '''
         error= None
+        result= None
         try:
             logger.debug3 ('globals for script: %s', ayrton.utils.dump_dict (self.globals))
             if self.params.trace:
                 sys.settrace (self.global_tracer)
 
             exec (code, self.globals, self.locals)
+            result= self.locals.get ('ayrton_return_value', None)
+        except Exit as e:
+            result= e.exit_value
         except Exception as e:
+            if self.params.pdb:
+                pdb.set_trace ()
+
             logger.debug ('script finished by Exception')
             logger.debug (traceback.format_exc ())
             error= e
@@ -283,7 +407,6 @@ class Ayrton (object):
 
         logger.debug3 ('globals at script exit: %s', ayrton.utils.dump_dict (self.globals))
         logger.debug3 ('locals at script exit: %s', ayrton.utils.dump_dict (self.locals))
-        result= self.locals.get ('ayrton_return_value', None)
         logger.debug ('ayrton_return_value: %r', result)
 
         if error is not None:

@@ -47,7 +47,7 @@ programmer. Here is where `ayrton` comes in and tries to fill in that gap.
 =======================================
 
 As mentioned, `ayrton` was originally heavily based on the `sh` module, but currently
-implements its own Command class which introduces
+implements its own Command class, which introduces
 some changes to make it look more like a shell language. This section lists all
 the places where it is different from that module and from Python vanilla:
 
@@ -70,7 +70,7 @@ Commands do not raise Exceptions
     When you run a command with ``sh`` and it either exited with a return code
     different from 0 or it was stopped/finished by a signal, it would raise an
     exception. You then can recover the exit code and the output from the
-    exception. In ``ayrton`` not only exceptions are not raised by defaut, you can ask the
+    exception. In ``ayrton`` not only exceptions are not raised by default, you can ask the
     exit code in the ``code`` attribute and the output in the ``stdout`` and
     ``stderr`` attributes. You can also use commands as booleans in conditions
     to ``if``, ``while``, etc: ``if ls(): then echo ("yes!")``. Exceptions are raised when
@@ -104,3 +104,5 @@ enough that the benefits will overweight this.
   eclipse a Python variable from an outer scope, and similar to when you define a function
   in `bash` with the same names as the executable (but that you can go around by giving
   the full path if you know it, which you can't do in `ayrton`).
+* You can't use Python keywords except where they are valid Python code. For instance,
+  you can't use an ``--continue`` option).

@@ -35,14 +35,12 @@ logger= logging.getLogger ('ayton.tests.remote')
 
 class RemoteTests (unittest.TestCase):
 
-
     def setUp (self):
         # create one of these
         self.runner= ayrton.Ayrton ()
 
 
 class DebugRemoteTests (RemoteTests):
-
 
     def setUp (self):
         super ().setUp ()

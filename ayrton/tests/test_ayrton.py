@@ -262,6 +262,10 @@ class NonWordExecutableNames (ScriptExecution):
         self.doTest ('testAbsoluteExecutables.ay')
 
 
+    def testNotExecuteLiteralMethods (self):
+        self.doTest ('testNotExecuteLiteralMethods.ay')
+
+
 class TempFile (ScriptExecution):
 
     def doTempFileTest (self, script, final_contents, initial_contents=None,
@@ -448,18 +452,6 @@ class CommandDetection (ScriptExecution):
     def testInstantiateClass (self):
         self.doTest ('testInstantiateClass.ay')
 
-    def testImport (self):
-        self.doTest ('testImport.ay')
-
-    def testImportCallFromFunc (self):
-        self.doTest ('testImportCallFromFunc.ay')
-
-    def testImportFrom (self):
-        self.doTest ('testImportFrom.ay')
-
-    def testImportFromCallFromFunc (self):
-        self.doTest ('testImportFromCallFromFunc.ay')
-
     def testUnknown (self):
         try:
             ayrton.main ('''foo''')
@@ -475,6 +467,65 @@ class CommandDetection (ScriptExecution):
 
     def testForDefinesTargets (self):
         self.doTest ('testForDefinesTargets.ay')
+
+class Importing (ScriptExecution):
+
+    def del_module (self, module_name):
+        try:
+            del sys.modules[module_name]
+        except KeyError:
+            # the module was not even created, ignore
+            pass
+
+    def testImport (self):
+        self.doTest ('testImport.ay')
+
+    def testImportLocalAy (self):
+        self.addCleanup (self.del_module, 'testImportLocalAyModule')
+
+        self.doTest ('testImportLocalAy.ay')
+
+        self.assertEqual (self.runner.globals['testImportLocalAyModule'].foo, 42)
+
+    def testImportLocalAyPackage (self):
+        self.addCleanup (self.del_module, 'package')
+
+        self.doTest ('testImportLocalAyPackage.ay')
+
+        self.assertEqual (self.runner.globals['package'].bar, 24)
+        package_relative_path= 'ayrton/tests/scripts/package'
+        # so we ignore the leading abs path
+        suffix_length= -len (package_relative_path)
+        self.assertTrue (self.runner.globals['package'].__path__[0][suffix_length:],
+                         package_relative_path)
+
+    def testImportLocalAyPackageAyModule (self):
+        self.addCleanup (self.del_module, 'package.ay_module')
+        self.addCleanup (self.del_module, 'package')
+
+        self.doTest ('testImportLocalAyPackageAyModule.ay')
+
+        self.assertTrue (self.runner.globals['package'].ay_module.ay)
+
+    def testImportLocalAyPackagePyModule (self):
+        self.addCleanup (self.del_module, 'package.py_module')
+        self.addCleanup (self.del_module, 'package')
+
+        self.doTest ('testImportLocalAyPackagePyModule.ay')
+
+        self.assertTrue (self.runner.globals['package'].py_module.py)
+
+    def testImportLocalPy (self):
+        self.doTest ('testImportLocalPy.ay')
+
+    def testImportCallFromFunc (self):
+        self.doTest ('testImportCallFromFunc.ay')
+
+    def testImportFrom (self):
+        self.doTest ('testImportFrom.ay')
+
+    def testImportFromCallFromFunc (self):
+        self.doTest ('testImportFromCallFromFunc.ay')
 
 class ParsingErrors (unittest.TestCase):
 

@@ -21,7 +21,7 @@ import ast
 from ast import Pass, Module, Bytes, copy_location, Call, Name, Load, Str, BitOr
 from ast import fix_missing_locations, Import, alias, Attribute, ImportFrom
 from ast import keyword, Gt, Lt, GtE, RShift, Tuple, FunctionDef, arguments
-from ast import Store, Assign, Subscript
+from ast import Store, Assign, Subscript, NameConstant
 import pickle
 from collections import defaultdict
 import logging
@@ -80,7 +80,11 @@ def func_name2dotted_exec (node):
         elif type (node) in (Call, ):
             node= node.func
 
-    return (node.id, complete_name)
+    if type (node)==Name:
+        return (node.id, complete_name)
+    else:
+        return (None, None)
+
 
 class CrazyASTTransformer (ast.NodeTransformer):
     def __init__ (self, environ, file_name=None):
@@ -259,6 +263,8 @@ class CrazyASTTransformer (ast.NodeTransformer):
         if is_executable (node.iter):
             update_keyword (node.iter,
                             keyword (arg='_out', value=Name (id='Capture', ctx=Load ())))
+            update_keyword (node.iter,
+                            keyword (arg='_bg', value=NameConstant (value=True)))
 
         return node
 
@@ -339,6 +345,7 @@ class CrazyASTTransformer (ast.NodeTransformer):
 
                 # I can't believe it's this easy
                 # TODO: check if _err is not being captured instead
+                # TODO: warn about keywords being rewritten
                 update_keyword (node.left,
                                 keyword (arg='_out', value=Name (id='Pipe', ctx=Load ())))
                 update_keyword (node.left,
@@ -368,8 +375,7 @@ class CrazyASTTransformer (ast.NodeTransformer):
                                 keyword (arg='_out',
                                          value=Call (func=Name (id='open', ctx=Load ()),
                                                      args=[node.right, Str (s='ab')],
-                                                     keywords=[], starargs=None,
-                                                     kwargs=None)))
+                                                     keywords=[])))
                 ast.fix_missing_locations (node.left)
                 node= node.left
 
@@ -426,6 +432,11 @@ class CrazyASTTransformer (ast.NodeTransformer):
 
         elif type (node.func)==Attribute:
             name, func_name= func_name2dotted_exec (node.func)
+            # node.func is not completely formed by Names
+            # so leave it alone
+            if name is None:
+                return node
+
             defs= self.known_names[name]
             if defs==0:
                 unknown= True
@@ -438,8 +449,7 @@ class CrazyASTTransformer (ast.NodeTransformer):
                 # I guess I have no other option but to try to execute
                 # something here...
                 new_node= Call (func=Name (id='Command', ctx=Load ()),
-                                args=[Str (s=func_name)], keywords=[],
-                                starargs=None, kwargs=None)
+                                args=[Str (s=func_name)], keywords=[])
 
                 # check if the first parameter is a Command; if so, redirect
                 # its output, remove it from the args and put it in the _in

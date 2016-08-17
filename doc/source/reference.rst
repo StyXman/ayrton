@@ -12,6 +12,9 @@ from shell like languages.
     This variable holds a list of the arguments passed to the script, with the
     script's path in the first position. In Python-speak, this is ``sys.argv``.
 
+    It's not quite a list: `len(argv)`, `iter(argv)` and `argv.pop()` don't
+    take in account `argv[0]`.
+
 .. py:data:: path
 
     This variable holds a list of strings, each one representing a directory.
@@ -68,6 +71,9 @@ Functions
     `errexit`/`-e`/`+e`
       If set, any command that exits with a code which is not 0 will raise a
       :py:exc:`CommandFailed` exception.
+
+    It raises a ValueError if the option is malformed, and KeyError if the option
+    is not recognized.
 
 .. py:function:: remote (..., )
 

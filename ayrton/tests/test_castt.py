@@ -205,7 +205,13 @@ class TestHelperFunctions (unittest.TestCase):
 
         self.assertEqual (single, 'str')
         # this is a very strange but possible executable name
-        self.assertEqual (combined, 'str (foo, ).strip ()')
+        self.assertEqual (combined, 'str (foo).strip ()')
+
+    def testObjectMethod (self):
+        single, combined= castt.func_name2dotted_exec (parse_expression ('".".join ([])'))
+
+        self.assertEqual (single, None)
+        self.assertEqual (combined, None)
 
 class TestWeirdErrors (unittest.TestCase):
     check_attrs= check_attrs

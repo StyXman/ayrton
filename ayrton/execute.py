@@ -209,6 +209,18 @@ class Command:
 
 
     def child (self):
+        # HACK: figure out why this call, which is equivalent to
+        # the following code, does not work
+        # ayrton.set_logging_handler (ayrton.pid_based_handler ())
+
+        # replace the old handler only if there was one to begin with
+        if len (logging.root.handlers)>0:
+            # close them so we don't get ResourceWarnings
+            for handler in logging.root.handlers:
+                handler.close ()
+
+            logging.root.handlers= [ ayrton.pid_based_handler () ]
+
         logger.debug ('child')
 
         ifile= ofile= efile= None  # these hold the IOBase object to close
@@ -297,6 +309,7 @@ class Command:
                     # connect to /dev/null
                     e= os.open (os.devnull, os.O_WRONLY) # no need to create it
                     logger.debug ("_err==None, redirects stderr 2 -> %d (%s)", e, os.devnull)
+                    # this will be continued later in the next if
                 elif isinstance (e, io.IOBase):
                     # this does not work with file like objects
                     efile= e
@@ -552,7 +565,7 @@ class Command:
                 # while iterating we always remove the trailing \n
                 line= line.rstrip (os.linesep)
 
-                logger.debug2 ('read line: %s', line)
+                logger.debug2 ('read line: %s', line.encode(encoding))
                 yield line
 
             # finish him!
