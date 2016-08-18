@@ -5,3 +5,7 @@ dist
 MANIFEST
 trash & toys
 .merge_message
+*.pyc
+*.pyo
+.tox
+rsa_server_key*
