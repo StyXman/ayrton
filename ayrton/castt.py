@@ -21,7 +21,18 @@ import ast
 from ast import Pass, Module, Bytes, copy_location, Call, Name, Load, Str, BitOr
 from ast import fix_missing_locations, Import, alias, Attribute, ImportFrom
 from ast import keyword, Gt, Lt, GtE, RShift, Tuple, FunctionDef, arguments
-from ast import Store, Assign, Subscript, NameConstant
+from ast import Store, Assign, Subscript
+try:
+    from ast import NameConstant
+except ImportError:
+    import _ast
+
+    # py3.3: Name(id='None', ctx=Load())
+    # py3.4: NameConstant(value=None)
+    class NameConstant (_ast.Name):
+        def __init__ (self, value, *args):
+            super ().__init__ (id=str (value), *args)
+
 import pickle
 from collections import defaultdict
 import logging

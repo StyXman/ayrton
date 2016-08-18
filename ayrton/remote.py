@@ -296,7 +296,7 @@ class remote:
             precommand= '''import os; os.chdir ('%s')''' % os.getcwd ()
         logger.debug ("precommand: %s", precommand)
 
-        command= """python3.5 -c "#!                                      #  1
+        command= """python3 -c "#!                                        #  1
 import pickle                                                             #  2
 # names needed for unpickling                                             #  3
 from ast import Module, Assign, Name, Store, Call, Load, Expr             #  4

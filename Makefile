@@ -1,6 +1,6 @@
 DEBUG_MULTI=strace -tt -T -ff -o debug/runner -s 128
 DEBUG_SIMPLE=strace -tt -T -o debug/runner -s 128
-PYTHON=python3.5
+PYTHON=python3
 # can't use --buffer because:
 #   File "/home/mdione/src/projects/ayrton/ayrton/__init__.py", line 191, in polute
 #     self[std]= getattr (sys, std).buffer

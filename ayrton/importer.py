@@ -18,7 +18,12 @@
 # along with ayrton.  If not, see <http://www.gnu.org/licenses/>.
 
 from importlib.abc import MetaPathFinder, Loader
-from importlib.machinery import ModuleSpec
+try:
+    # py3.4
+    from importlib.machinery import ModuleSpec
+except ImportError:
+    # py3.3
+
 import sys
 import os
 import os.path
