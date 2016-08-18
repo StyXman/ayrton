@@ -27,8 +27,8 @@ except ImportError:
 import sys
 import os
 import os.path
-import logging
 
+import logging
 logger= logging.getLogger ('ayrton.importer')
 
 from ayrton.file_test import _a, _d

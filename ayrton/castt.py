@@ -35,8 +35,8 @@ except ImportError:
 
 import pickle
 from collections import defaultdict
-import logging
 
+import logging
 logger= logging.getLogger ('ayrton.castt')
 
 import ayrton
