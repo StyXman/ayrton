@@ -431,7 +431,7 @@ class Ayrton (object):
                 logger.debug ('waiting for %s failed; ignoring', child)
 
 
-    def global_tracer (self, frame, event, arg):
+    def global_tracer (self, frame, event, arg):  # pragma: no cover
         """"""
         logger.debug2 ('global_tracer: %s', event)
         if event in ('call', 'line'):
@@ -440,7 +440,7 @@ class Ayrton (object):
             return None
 
 
-    def local_tracer (self, frame, event, arg):
+    def local_tracer (self, frame, event, arg):  # pragma: no cover
         if event=='line':
             file_name= frame.f_code.co_filename
             if self.params.trace_all or file_name==self.file_name:
@@ -465,7 +465,7 @@ class Ayrton (object):
                     self.trace_line ("+ %s", line)
 
 
-    def trace_line (self, msg, *args):
+    def trace_line (self, msg, *args):  # pragma: no cover
         if self.params.debug and False:
             logger.debug (msg, *args)
         else:
