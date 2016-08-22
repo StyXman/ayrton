@@ -1,6 +1,6 @@
 DEBUG_MULTI=strace -tt -T -ff -o debug/runner -s 128
 DEBUG_SIMPLE=strace -tt -T -o debug/runner -s 128
-PYTHON=python3
+PYTHON=python3-coverage run
 # can't use --buffer because:
 #   File "/home/mdione/src/projects/ayrton/ayrton/__init__.py", line 191, in polute
 #     self[std]= getattr (sys, std).buffer
@@ -59,3 +59,6 @@ rsa_server_key:
 debugserver: rsa_server_key
 	# TODO: discover sshd's path?
 	/usr/sbin/sshd -dd -e -h $(shell pwd)/rsa_server_key -p 2244
+
+covreport:
+	python3-coverage report -m | grep ayrton | egrep -v '/(parser|tests)/'
