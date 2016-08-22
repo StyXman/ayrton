@@ -23,6 +23,7 @@ try:
     from importlib.machinery import ModuleSpec
 except ImportError:  # pragma: no cover
     # py3.3
+    pass  # sorry, no support
 
 import sys
 import os
