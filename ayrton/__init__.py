@@ -133,6 +133,12 @@ class Argv (list):
     """A class that mostly behaves like a list,
     that skips the first element when being iterated,
     but allows accessing it by indexing (argv[0])."""
+    def __init__ (self, iterable):
+        argv= list (iterable)
+        if len (argv)==0:
+            raise ValueError ('''argv must have at least one value, the program's name''')
+
+        super ().__init__ (argv)
 
     def __iter__ (self):
         # [1:] works even with empty lists! \o/
