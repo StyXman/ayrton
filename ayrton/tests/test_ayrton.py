@@ -405,6 +405,13 @@ class MiscTests (ScriptExecution):
         '''This test takes some time...'''
         self.doTest ('testLongOutput.ay', 'yes!')
 
+    def testExit0 (self):
+        self.doTest ('testExit0.ay', 0)
+
+    def testExit1 (self):
+        self.doTest ('testExit1.ay', 1)
+
+
 class CommandDetection (ScriptExecution):
 
     def testSimpleCase (self):
