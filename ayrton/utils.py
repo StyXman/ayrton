@@ -21,7 +21,7 @@ import logging
 import functools
 
 # TODO: there's probably a better way to do this
-def debug2 (self, msg, *args, **kwargs):
+def debug2 (self, msg, *args, **kwargs):  # pragma: no cover
     if self.manager.disable>=logging.DEBUG2:
         return
 
@@ -29,7 +29,7 @@ def debug2 (self, msg, *args, **kwargs):
         self._log (logging.DEBUG2, msg, args, **kwargs)
 
 
-def debug3 (self, msg, *args, **kwargs):
+def debug3 (self, msg, *args, **kwargs):  # pragma: no cover
     if self.manager.disable>=logging.DEBUG3:
         return
 
@@ -52,7 +52,7 @@ def patch_logging ():
 patch_logging ()
 
 
-def any_comparator (a, b):
+def any_comparator (a, b):  # pragma: no cover
     try:
         if a==b:
             return 0
@@ -64,7 +64,7 @@ def any_comparator (a, b):
         return any_comparator (str (type (a)), str (type (b)))
 
 
-def dump_dict (d, level=1):
+def dump_dict (d, level=1):  # pragma: no cover
     if d is not None:
         strings= []
 

@@ -21,7 +21,7 @@ from importlib.abc import MetaPathFinder, Loader
 try:
     # py3.4
     from importlib.machinery import ModuleSpec
-except ImportError:
+except ImportError:  # pragma: no cover
     # py3.3
 
 import sys
