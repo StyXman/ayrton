@@ -36,7 +36,7 @@ log_format= "%(asctime)s %(name)16s:%(lineno)-4d (%(funcName)-21s) %(levelname)-
 date_format= "%H:%M:%S"
 
 
-def set_logging_handler (handler):
+def set_logging_handler (handler):  # pragma: no cover
     # replace the old handler only if there was one to begin with
     if len (logging.root.handlers)>0:
         # close them so we don't get ResourceWarnings
@@ -46,12 +46,12 @@ def set_logging_handler (handler):
         logging.root.addHandler (handler)
 
 
-def set_debug (level=logging.DEBUG):
+def set_debug (level=logging.DEBUG):  # pragma: no cover
     logging.basicConfig(handlers=[ counter_handler () ], level=level,
                         format=log_format)
 
 
-def setup_handler (handler):
+def setup_handler (handler):  # pragma: no cover
     logger= logging.root
 
     # most of the following logging internals were found out by reading
@@ -67,7 +67,7 @@ def setup_handler (handler):
     handler.setFormatter (formatter)
 
 
-def pid_based_handler ():
+def pid_based_handler ():  # pragma: no cover
     """When we fork(), a new PID based logger needs to be created
     so the child logs to another file."""
     handler= logging.FileHandler ('ayrton.%d.log' % os.getpid ())
@@ -76,14 +76,14 @@ def pid_based_handler ():
     return handler
 
 
-def instance_handler (instance):
+def instance_handler (instance):  # pragma: no cover
     handler= logging.FileHandler ('ayrton.%x.log' % id(instance))
     setup_handler (handler)
 
     return handler
 
 instance_count= 0
-def counter_handler ():
+def counter_handler ():  # pragma: no cover
     handler= logging.FileHandler ('ayrton.%04d.log' % ayrton.instance_count)
     ayrton.instance_count+= 1
     setup_handler (handler)
@@ -204,7 +204,7 @@ class Ayrton (object):
         # set_logging_handler (instance_handler (self))
 
         # replace the old handler only if there was one to begin with
-        if len (logging.root.handlers)>0:
+        if len (logging.root.handlers)>0:  # pragma: no cover
             # close them so we don't get ResourceWarnings
             for handler in logging.root.handlers:
                 logging.root.removeHandler (handler)
@@ -329,7 +329,7 @@ class Ayrton (object):
 
 
     def run_code (self, code, file_name, argv=None):
-        if logger.parent.level<=logging.DEBUG2:
+        if logger.parent.level<=logging.DEBUG2:  # pragma: no cover
             logger.debug2 ('------------------')
             logger.debug2 ('main (gobal) code:')
             handler= logger.parent.handlers[0]
@@ -388,21 +388,21 @@ class Ayrton (object):
         result= None
         try:
             logger.debug3 ('globals for script: %s', ayrton.utils.dump_dict (self.globals))
-            if self.params.trace:
+            if self.params.trace:  # pragma: no cover
                 sys.settrace (self.global_tracer)
 
             exec (code, self.globals, self.locals)
             result= self.locals.get ('ayrton_return_value', None)
         except Exit as e:
             result= e.exit_value
-        except Exception as e:
+        except Exception as e:  # pragma: no cover
             if self.params.pdb:
                 pdb.set_trace ()
 
             logger.debug ('script finished by Exception')
             logger.debug (traceback.format_exc ())
             error= e
-        finally:
+        finally:  # pragma: no cover
             sys.settrace (None)
 
         logger.debug3 ('globals at script exit: %s', ayrton.utils.dump_dict (self.globals))
