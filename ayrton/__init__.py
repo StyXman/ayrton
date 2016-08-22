@@ -473,7 +473,7 @@ class Ayrton (object):
 
 
 def run_tree (tree, g, l):
-    """main entry point for remote()"""
+    """Main entry point for remote()."""
     runner= Ayrton (g=g, l=l)
     return runner.run_tree (tree, 'unknown_tree')
 
