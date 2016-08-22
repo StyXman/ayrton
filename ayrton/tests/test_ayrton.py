@@ -106,6 +106,39 @@ class Bash(unittest.TestCase):
         self.assertEqual (bash ('~', single=True), os.environ['HOME'])
 
 
+class Argv (unittest.TestCase):
+
+    def testEmpty (self):
+        self.assertRaises (ValueError, ayrton.Argv, [])
+
+
+    def testIter (self):
+        data= ['foo', 'bar', 'baz']
+        argv= ayrton.Argv (data)
+
+        args= list (iter (argv))
+
+        self.assertEqual (args, data[1:])
+
+
+    def testLen (self):
+        data= ['foo', 'bar', 'baz']
+        argv= ayrton.Argv (data)
+
+        l= len (argv)
+
+        self.assertEqual (l, len (data)-1)
+
+
+    def testPopFirst (self):
+        data= ['foo', 'bar', 'baz']
+        argv= ayrton.Argv (data)
+
+        i= argv.pop ()
+
+        self.assertEqual (i, data[1])
+
+
 class ScriptExecution (unittest.TestCase):
 
     def setUp (self):
