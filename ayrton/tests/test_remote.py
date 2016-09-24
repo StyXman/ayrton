@@ -59,6 +59,7 @@ class DebugRemoteTests (RemoteTests):
 
     def tearDown (self):
         os.kill (self.child, signal.SIGKILL)
+        os.waitpid (self.child, 0)
 
     def testRemoteEnv (self):
         self.runner.run_script ('''with remote ('127.0.0.1', _debug=True):
