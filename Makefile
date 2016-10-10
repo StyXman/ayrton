@@ -47,7 +47,7 @@ check:
 	flake8 --ignore E201,E211,E225,E221,E226,E202 --show-source --statistics --max-line-length 130 ayrton/*.py
 
 testclean:
-	rm -f ayrton.*log debug/runner* debug/remote*
+	rm -f ayrton.*log debug/runner* debug/remote* *.ayrtmp
 
 debug:
 	mkdir -pv debug
