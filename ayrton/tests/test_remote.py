@@ -16,6 +16,7 @@
 # along with ayrton.  If not, see <http://www.gnu.org/licenses/>.
 
 import unittest
+import unittest.case
 import sys
 import io
 import os
@@ -106,7 +107,10 @@ class DebugRemoteTests (RemoteTests):
                         # NOTE: does not return
                     finally:
                         # but when there's a bug, it does
-                        sys.exit (127)
+                        # sys.exit (127)
+                        # sys.exit() raises SystemExit, which is catched by unittest
+                        # so raise its own Exception to make it stop
+                        raise unittest.case._ShouldStop
                 else:
                     logger.debug ('copy_loop')
                     server= socket (AF_INET, SOCK_STREAM)
@@ -120,7 +124,8 @@ class DebugRemoteTests (RemoteTests):
 
             finally:
                 logger.debug ('*BOOM*')
-                sys.exit (0)
+                # sys.exit (0)
+                raise unittest.case._ShouldStop
 
     def tearDown (self):
         os.kill (self.child, signal.SIGKILL)
