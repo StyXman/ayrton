@@ -23,14 +23,40 @@ import tempfile
 import os.path
 import time
 import signal
+from tempfile import mkstemp
 
 from ayrton.expansion import bash
 import ayrton
 from ayrton.execute import CommandNotFound
+from ayrton.utils import copy_loop
 
 import logging
 
 logger= logging.getLogger ('ayton.tests.remote')
+
+
+class OtherFunctions (unittest.TestCase):
+
+    def test_copy_loop (self):
+        data= 'yabadabadoo'
+
+        p= os.pipe ()
+
+        with open (p[1], 'w') as w:
+            w.write (data)
+
+        r= p[0]
+        w, dst= mkstemp (suffix='.ayrtmp', dir='.')
+
+        copy_loop ({ r: w }, buf_len=4)
+
+        os.close (r)
+        os.close (w)
+
+        with open (dst) as r:
+            self.assertEqual (r.read (), data)
+
+        os.unlink (dst)
 
 
 class RemoteTests (unittest.TestCase):

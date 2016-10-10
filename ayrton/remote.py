@@ -29,12 +29,13 @@ import errno
 import ctypes
 import os
 import traceback
-from select import select
 import io
 from termios import tcgetattr, tcsetattr, TCSADRAIN
 from termios import IGNPAR, ISTRIP, INLCR, IGNCR, ICRNL, IXON, IXANY, IXOFF
 from termios import ISIG, ICANON, ECHO, ECHOE, ECHOK, ECHONL, IEXTEN, OPOST, VMIN, VTIME
 import shutil
+
+from ayrton.utils import copy_loop
 
 import logging
 logger= logging.getLogger ('ayrton.remote')
@@ -123,52 +124,9 @@ class InteractiveThread (Thread):
         else:
             raise TypeError (f)
 
+
     def run (self):
-        # NOTE:
-        # os.sendfile (self.dst, self.src, None, 0)
-        # OSError: [Errno 22] Invalid argument
-        # and splice() is not available
-        # so, copy by hand
-        while True:
-            wait_for= list (self.copy_to.keys ())
-            wait_for.append (self.finished[0])
-            logger.debug (wait_for)
-            for wait in wait_for:
-                if ( not isinstance (wait, int) and
-                     (getattr (wait, 'fileno', None) is None  or
-                      not isinstance (wait.fileno(), int)) ):
-                    logger.debug ('type mismatch: %s', wait)
-
-            logger.debug (wait_for)
-            r, w, e= select (wait_for, [], [])
-
-            if self.finished[0] in r:
-                self.close_file (self.finished[0])
-                break
-
-            for error in e:
-                logger.debug ('%s error')
-                # TODO: what?
-
-            for i in r:
-                o= self.copy_to[i]
-                try:
-                    data= self.read (i)
-                    logger.debug ('%s -> %s: %s', i, o, data)
-
-                # ValueError: read of closed file
-                except (OSError, ValueError) as e:
-                    logger.debug ('stopping copying for %s', i)
-                    del self.copy_to[i]
-                    logger.debug (traceback.format_exc ())
-                    break
-                else:
-                    if len (data)==0:
-                        logger.debug ('stopping copying for %s, no more data', i)
-                        del self.copy_to[i]
-                    else:
-                        self.write (o, data)
-
+        copy_loop(self.copy_to, self.finished)
         self.close ()
         logger.debug ('%s shutdown', self)
 

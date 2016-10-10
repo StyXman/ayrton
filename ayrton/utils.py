@@ -19,6 +19,11 @@
 
 import logging
 import functools
+from selectors import DefaultSelector, EVENT_READ
+import os
+
+import logging
+logger= logging.getLogger ('ayrton.utils')
 
 # TODO: there's probably a better way to do this
 def debug2 (self, msg, *args, **kwargs):  # pragma: no cover
@@ -84,3 +89,65 @@ def dump_dict (d, level=1):  # pragma: no cover
         return ''.join (strings)
     else:
         return 'None'
+
+
+def copy_loop (copy_to, finished=None, buf_len=10240):
+    """copy_to is a dict(in: out). When any in is ready to read, data is read
+    from it and writen in its out. When any in is closed, it's removed from
+    copy_to. finished is a pipe; when data comes from the read end, or when
+    no more ins are present, the loop finishes."""
+    if finished is not None:
+        wait_for.append (finished[0])
+
+    # NOTE:
+    # os.sendfile (self.dst, self.src, None, 0)
+    # OSError: [Errno 22] Invalid argument
+    # and splice() is not available
+    # so, copy by hand
+    selector = DefaultSelector ()
+    for src in copy_to.keys ():
+        if (     not isinstance (src, int)
+                and (   getattr (src, 'fileno', None) is None
+                    or not isinstance (src.fileno(), int)) ):
+            logger.debug ('type mismatch: %s', src)
+        else:
+            selector.register (src, EVENT_READ)
+
+    while len (copy_to)>0:
+        logger.debug (copy_to)
+
+        events= selector.select ()
+        for key, _ in events:
+            logger.debug (key)
+            i= key.fd
+
+            if finished is not None and i==finished[0]:
+                os.close (finished[0])
+                break
+
+            # for error in e:
+            #     logger.debug ('%s error')
+                # TODO: what?
+
+            o= copy_to[i]
+
+            try:
+                data= os.read (i, buf_len)
+                logger.debug ('%s -> %s: %s', i, o, data)
+
+            # ValueError: read of closed file
+            except (OSError, ValueError) as e:
+                logger.debug ('stopping copying for %s', i)
+                del copy_to[i]
+                logger.debug (traceback.format_exc ())
+                break
+            else:
+                if len (data)==0:
+                    logger.debug ('stopping copying for %s, no more data', i)
+                    # TODO: close
+                    del copy_to[i]
+                    selector.unregister (i)
+                else:
+                    os.write (o, data)
+
+    selector.close ()
