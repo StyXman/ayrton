@@ -42,14 +42,14 @@ class OtherFunctions (unittest.TestCase):
     def test_copy_loop (self):
         data= 'yabadabadoo'
 
-        p= os.pipe ()
+        pipe= os.pipe ()
         self.addCleanup (os.close, pipe[0])
         self.addCleanup (os.close, pipe[1])
 
-        with open (p[1], 'w') as w:
+        with open (pipe[1], 'w') as w:
             w.write (data)
 
-        r= p[0]
+        r= pipe[0]
         w, dst= mkstemp (suffix='.ayrtmp', dir='.')
         self.addCleanup (os.unlink, dst)
 
