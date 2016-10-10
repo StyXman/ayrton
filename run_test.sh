@@ -1,3 +1,3 @@
 #! /bin/sh
 
-exec python3 -m unittest ayrton.$1.$2
+exec python3 -m unittest ayrton.tests.$1
