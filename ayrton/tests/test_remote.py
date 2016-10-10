@@ -43,22 +43,20 @@ class OtherFunctions (unittest.TestCase):
         data= 'yabadabadoo'
 
         p= os.pipe ()
+        self.addCleanup (os.close, pipe[0])
+        self.addCleanup (os.close, pipe[1])
 
         with open (p[1], 'w') as w:
             w.write (data)
 
         r= p[0]
         w, dst= mkstemp (suffix='.ayrtmp', dir='.')
+        self.addCleanup (os.unlink, dst)
 
         copy_loop ({ r: w }, buf_len=4)
 
-        os.close (r)
-        os.close (w)
-
         with open (dst) as r:
             self.assertEqual (r.read (), data)
-
-        os.unlink (dst)
 
 
 class RemoteTests (unittest.TestCase):
