@@ -23,6 +23,7 @@ import tempfile
 import os.path
 import time
 import signal
+from socket import socket, AF_INET, SOCK_STREAM, SO_REUSEADDR, SOL_SOCKET
 from tempfile import mkstemp
 
 from ayrton.expansion import bash
@@ -74,14 +75,52 @@ class DebugRemoteTests (RemoteTests):
         # fork and execute nc
         pid= os.fork ()
         if pid!=0:
+            logger.debug ('main parent')
             # parent
             self.child= pid
             # give nc time to come up
             time.sleep (0.2)
         else:
-            # child          vvvv-- don't forget argv[0]
-            os.execlp ('nc', 'nc', '-l', '-s', '127.0.0.1', '-p', '2233', '-e', '/bin/bash')
-            # NOTE: does not return
+            # child
+            try:
+                logger.debug ('nc')
+                # as seen from the child
+                stdin=  os.pipe()  # (r, w)
+                stdout= os.pipe()
+
+                child_pid= os.fork()
+                if child_pid==0:
+                    logger.debug ('bash')
+                    os.dup2 (stdin[0], 0)
+                    os.close (stdin[0])
+                    os.close (stdin[1])
+
+                    os.close (stdout[0])
+                    os.dup2 (stdout[1], 1)
+                    os.close (stdout[1])
+
+                    # recurse curse!
+                    try:
+                        # child             vvvv-- don't forget argv[0]
+                        os.execlp ('bash', 'bash')
+                        # NOTE: does not return
+                    finally:
+                        # but when there's a bug, it does
+                        sys.exit (127)
+                else:
+                    logger.debug ('copy_loop')
+                    server= socket (AF_INET, SOCK_STREAM)
+                    server.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
+                    server.bind (('127.0.0.1', 2233))
+                    server.listen ()
+                    client, _= server.accept ()
+
+                    copy_loop ({ client:    stdin[1],
+                                 stdout[0]: client    })
+
+            finally:
+                logger.debug ('*BOOM*')
+                sys.exit (0)
 
     def tearDown (self):
         os.kill (self.child, signal.SIGKILL)
