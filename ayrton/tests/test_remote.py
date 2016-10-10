@@ -115,6 +115,9 @@ class DebugRemoteTests (RemoteTests):
                         raise unittest.case._ShouldStop
                 else:
                     logger.debug ('copy_loop')
+                    os.close (stdin[0])
+                    os.close (stdout[1])
+
                     server= socket (AF_INET, SOCK_STREAM)
                     server.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
                     server.bind (('127.0.0.1', 2233))
