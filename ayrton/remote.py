@@ -22,7 +22,7 @@ import paramiko
 # from ayrton.expansion import bash
 import pickle
 import types
-from socket import socket
+from socket import socket, SO_REUSEADDR, SOL_SOCKET
 from threading import Thread
 import sys
 import errno
@@ -354,7 +354,7 @@ client.close ()                                                           # 46"
             e= open (self.client.fileno (), 'rb', 0)
 
             self.result_listen= socket ()
-            # self.result_listen.setsockopt (SO_REUSEADDR, )
+            self.result_listen.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
             self.result_listen.bind (('', backchannel_port))
             self.result_listen.listen (1)
 
