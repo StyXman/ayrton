@@ -39,7 +39,7 @@ logger= logging.getLogger ('ayton.tests.remote')
 
 class OtherFunctions (unittest.TestCase):
 
-    def test_copy_loop (self):
+    def test_copy_loop_pipe (self):
         data= 'yabadabadoo'
 
         pipe= os.pipe ()
