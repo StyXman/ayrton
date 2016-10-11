@@ -45,7 +45,7 @@ class AyrtonLoader (Loader):
         # «the loader should execute the module’s code
         # in the module’s global name space (module.__dict__).»
         load_path= module.__spec__.origin
-        logger.debug ('loading %s [%s]', module, load_path)
+        logger.debug2 ('loading %s [%s]', module, load_path)
         # I *need* to polute the globals, so modules can use any of ayrton's builtins
         loader= Ayrton (g=module.__dict__)
         loader.run_file (load_path)
@@ -71,7 +71,7 @@ class AyrtonFinder (MetaPathFinder):
         # if None, then we're loading a root module
         # let's start with a single file
         # TODO: read PEP 420 :)
-        logger.debug ('searching for %s under %s for %s', full_name, paths, target)
+        logger.debug2 ('searching for %s under %s for %s', full_name, paths, target)
         last_mile= full_name.split ('.')[-1]
 
         if paths is not None:
@@ -79,7 +79,7 @@ class AyrtonFinder (MetaPathFinder):
         else:
             python_path= sys.path
 
-        logger.debug (python_path)
+        logger.debug2 (python_path)
         for path in python_path:
             full_path= os.path.join (path, last_mile)
             init_full_path= os.path.join (full_path, '__init__.ay')
@@ -87,16 +87,16 @@ class AyrtonFinder (MetaPathFinder):
 
             logger.debug2 ('trying %s', init_full_path)
             if _d (full_path) and _a (init_full_path):
-                logger.debug ('found package %s', full_path)
+                logger.debug2 ('found package %s', full_path)
                 return ModuleSpec (full_name, loader, origin=init_full_path)
 
             else:
                 logger.debug2 ('trying %s', module_full_path)
                 if _a (module_full_path):
-                    logger.debug ('found module %s', module_full_path)
+                    logger.debug2 ('found module %s', module_full_path)
                     return ModuleSpec (full_name, loader, origin=module_full_path)
 
-        logger.debug ('404 Not Found')
+        logger.debug2 ('404 Not Found')
         return None
 
 finder= AyrtonFinder ()
