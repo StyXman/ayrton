@@ -22,6 +22,7 @@ import functools
 from selectors import DefaultSelector, EVENT_READ
 import os
 from socket import socket
+import errno
 
 import logging
 logger= logging.getLogger ('ayrton.utils')
@@ -115,10 +116,16 @@ def write (dst, data):
 
 
 def close (f):
-    if isinstance (f, int):
-        os.close (f)
-    else:
-        f.close ()
+    logger.debug ('closing %s', f)
+    try:
+        if isinstance (f, int):
+            os.close (f)
+        else:
+            f.close ()
+    except OSError as e:
+        logger.debug ('closing gave %s', e)
+        if e.errno!=errno.EBADF:
+            raise
 
 
 def copy_loop (copy_to, finished=None, buf_len=10240):
