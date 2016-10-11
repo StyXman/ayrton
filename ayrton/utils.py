@@ -152,6 +152,7 @@ def copy_loop (copy_to, finished=None, buf_len=10240):
             i= key.fileobj
 
             if finished is not None and i==finished[0]:
+                del copy_to[i]
                 os.close (finished[0])
                 break
 
