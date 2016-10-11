@@ -26,6 +26,7 @@ import time
 import signal
 from socket import socket, AF_INET, SOCK_STREAM, SO_REUSEADDR, SOL_SOCKET
 from tempfile import mkstemp
+import traceback
 
 from ayrton.expansion import bash
 import ayrton
@@ -104,6 +105,11 @@ class DebugRemoteTests (RemoteTests):
                 os.execlp ('bash', 'bash')
                 # NOTE: does not return
                 # but if there's a bug, it might
+            except Exception as e:
+                logger.debug ('*BOOM*')
+                traceback.print_exc ()
+                logger.debug (traceback.format_exc ())
+            finally:
                 self.commit_suicide ()
 
     def commit_suicide (self):
