@@ -153,7 +153,7 @@ def copy_loop (copy_to, finished=None, buf_len=10240):
 
             if finished is not None and i==finished[0]:
                 del copy_to[i]
-                os.close (finished[0])
+                close (finished[0])
                 break
 
             # for error in e:
