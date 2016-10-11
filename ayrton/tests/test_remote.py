@@ -82,6 +82,8 @@ class DebugRemoteTests (RemoteTests):
             # give nc time to come up
             time.sleep (0.2)
         else:
+            self.addCleanup (self.commit_suicide)
+
             # child
             try:
                 logger.debug ('nc')
@@ -110,7 +112,8 @@ class DebugRemoteTests (RemoteTests):
                         # sys.exit (127)
                         # sys.exit() raises SystemExit, which is catched by unittest
                         # so raise its own Exception to make it stop
-                        raise unittest.case._ShouldStop
+                        # raise unittest.case._ShouldStop
+                        self.commit_suicide ()
                 else:
                     logger.debug ('copy_loop')
                     os.close (stdin[0])
@@ -128,7 +131,14 @@ class DebugRemoteTests (RemoteTests):
             finally:
                 logger.debug ('*BOOM*')
                 # sys.exit (0)
-                raise unittest.case._ShouldStop
+                # raise unittest.case._ShouldStop
+                self.commit_suicide ()
+
+
+    def commit_suicide (self):
+        # suicide blonde
+        logger.debug ('Goodbye, cruel wrold!')
+        os.kill (os.getpid (), signal.SIGKILL)
 
 
     def testRemoteEnv (self):
