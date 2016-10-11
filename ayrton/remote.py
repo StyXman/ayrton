@@ -113,8 +113,11 @@ class InteractiveThread (Thread):
 
 
     def close (self):
-        # reset term settings
-        tcsetattr (self.pairs[0][0], TCSADRAIN, self.orig_terminfo)
+        # in debug mode (nc mode) this is not a tty, so we don't actually care
+        stdin= self.pairs[0][0]
+        if os.isatty (stdin):
+            # reset term settings
+            tcsetattr (stdin, TCSADRAIN, self.orig_terminfo)
 
         for f in itertools.chain (*self.pairs):
             close (f)
