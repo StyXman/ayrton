@@ -85,54 +85,45 @@ class DebugRemoteTests (RemoteTests):
             self.addCleanup (self.commit_suicide)
 
             # child
-            try:
-                logger.debug ('nc')
-                # as seen from the child
-                stdin=  os.pipe()  # (r, w)
-                stdout= os.pipe()
+            logger.debug ('nc')
+            # as seen from the child
+            stdin=  os.pipe()  # (r, w)
+            stdout= os.pipe()
 
-                child_pid= os.fork()
-                if child_pid==0:
-                    logger.debug ('bash')
-                    os.dup2 (stdin[0], 0)
-                    os.close (stdin[0])
-                    os.close (stdin[1])
+            child_pid= os.fork()
+            if child_pid==0:
+                logger.debug ('bash')
+                os.dup2 (stdin[0], 0)
+                os.close (stdin[0])
+                os.close (stdin[1])
 
-                    os.close (stdout[0])
-                    os.dup2 (stdout[1], 1)
-                    os.close (stdout[1])
+                os.close (stdout[0])
+                os.dup2 (stdout[1], 1)
+                os.close (stdout[1])
 
-                    # recurse curse!
-                    try:
-                        # child             vvvv-- don't forget argv[0]
-                        os.execlp ('bash', 'bash')
-                        # NOTE: does not return
-                    finally:
-                        # but when there's a bug, it does
-                        # sys.exit (127)
-                        # sys.exit() raises SystemExit, which is catched by unittest
-                        # so raise its own Exception to make it stop
-                        # raise unittest.case._ShouldStop
-                        self.commit_suicide ()
-                else:
-                    logger.debug ('copy_loop')
-                    os.close (stdin[0])
-                    os.close (stdout[1])
+                # child             vvvv-- don't forget argv[0]
+                os.execlp ('bash', 'bash')
+                # NOTE: does not return
+                # but when there's a bug, it does
+            else:
+                self.addCleanup (os.waitpid, child_pid, 0)
 
-                    server= socket (AF_INET, SOCK_STREAM)
-                    server.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
-                    server.bind (('127.0.0.1', 2233))
-                    server.listen ()
-                    client, _= server.accept ()
+                logger.debug ('copy_loop')
+                os.close (stdin[0])
+                os.close (stdout[1])
 
-                    copy_loop ({ client:    stdin[1],
-                                 stdout[0]: client    })
+                server= socket (AF_INET, SOCK_STREAM)
+                self.addCleanup (server.close)
+                server.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
+                server.bind (('127.0.0.1', 2233))
+                server.listen ()
 
-            finally:
-                logger.debug ('*BOOM*')
-                # sys.exit (0)
-                # raise unittest.case._ShouldStop
-                self.commit_suicide ()
+                client, _= server.accept ()
+                self.addCleanup (client.close)
+
+                copy_loop ({ client: stdin[1], stdout[0]: client },
+                           finished=stdout[0])
+                logger.debug ('copy_loop: end')
 
 
     def commit_suicide (self):
