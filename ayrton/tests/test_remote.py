@@ -110,6 +110,13 @@ class DebugRemoteTests (RemoteTests):
                 traceback.print_exc ()
                 logger.debug (traceback.format_exc ())
             finally:
+                # connect with the unittest which can be waiting forever
+                with socket (AF_INET, SOCK_STREAM) as client:
+                    try:
+                        client.connect (('127.0.0.1', 4227))
+                    except ConnectionRefusedError:
+                        pass
+
                 self.commit_suicide ()
 
     def commit_suicide (self):
