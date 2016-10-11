@@ -77,7 +77,6 @@ class DebugRemoteTests (RemoteTests):
         if pid!=0:
             logger.debug ('main parent')
             # parent
-            self.addCleanup (os.kill, pid, signal.SIGKILL)
             self.addCleanup (os.waitpid, pid, 0)
 
             # give nc time to come up
