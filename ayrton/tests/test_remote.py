@@ -30,7 +30,7 @@ from tempfile import mkstemp
 from ayrton.expansion import bash
 import ayrton
 from ayrton.execute import CommandNotFound
-from ayrton.utils import copy_loop
+from ayrton.utils import copy_loop, close
 
 import logging
 
@@ -82,35 +82,9 @@ class DebugRemoteTests (RemoteTests):
             # give nc time to come up
             time.sleep (0.2)
         else:
-            self.addCleanup (self.commit_suicide)
-
-            # child
-            logger.debug ('nc')
-            # as seen from the child
-            stdin=  os.pipe()  # (r, w)
-            stdout= os.pipe()
-
-            child_pid= os.fork()
-            if child_pid==0:
-                logger.debug ('bash')
-                os.dup2 (stdin[0], 0)
-                os.close (stdin[0])
-                os.close (stdin[1])
-
-                os.close (stdout[0])
-                os.dup2 (stdout[1], 1)
-                os.close (stdout[1])
-
-                # child             vvvv-- don't forget argv[0]
-                os.execlp ('bash', 'bash')
-                # NOTE: does not return
-                # but when there's a bug, it does
-            else:
-                self.addCleanup (os.waitpid, child_pid, 0)
-
-                logger.debug ('copy_loop')
-                os.close (stdin[0])
-                os.close (stdout[1])
+            try:
+                # child
+                logger.debug ('nc')
 
                 server= socket (AF_INET, SOCK_STREAM)
                 self.addCleanup (server.close)
@@ -119,12 +93,18 @@ class DebugRemoteTests (RemoteTests):
                 server.listen ()
 
                 client, _= server.accept ()
-                self.addCleanup (client.close)
+                close (server)
 
-                copy_loop ({ client: stdin[1], stdout[0]: client },
-                           finished=stdout[0])
-                logger.debug ('copy_loop: end')
+                logger.debug ('bash')
+                os.dup2 (client.fileno (), 0)
+                os.dup2 (client.fileno (), 1)
+                close (client)
 
+                # child             vvvv-- don't forget argv[0]
+                os.execlp ('bash', 'bash')
+                # NOTE: does not return
+                # but if there's a bug, it might
+                self.commit_suicide ()
 
     def commit_suicide (self):
         # suicide blonde
