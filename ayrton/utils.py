@@ -21,9 +21,11 @@ import logging
 import functools
 from selectors import DefaultSelector, EVENT_READ
 import os
+from socket import socket
 
 import logging
 logger= logging.getLogger ('ayrton.utils')
+
 
 # TODO: there's probably a better way to do this
 def debug2 (self, msg, *args, **kwargs):  # pragma: no cover
@@ -91,6 +93,27 @@ def dump_dict (d, level=1):  # pragma: no cover
         return 'None'
 
 
+def read (src, buf_len):
+    if isinstance (src, int):
+        return os.read (src, buf_len)
+    elif isinstance (src, socket):
+        return src.recv (buf_len)
+    else:
+        return src.read (buf_len)
+
+
+def write (dst, data):
+    if isinstance (dst, int):
+        return os.write (dst, data)
+    elif isinstance (dst, socket):
+        return dst.send (data)
+    else:
+        ans= dst.write (data)
+        dst.flush ()
+
+        return ans
+
+
 def close (f):
     if isinstance (dst, int):
         os.close (f)
@@ -139,8 +162,8 @@ def copy_loop (copy_to, finished=None, buf_len=10240):
             o= copy_to[i]
 
             try:
-                data= os.read (i, buf_len)
-                logger.debug ('%s -> %s: %s', i, o, data)
+                data= read (i, buf_len)
+                logger.debug2 ('%s -> %s: %s', i, o, data)
 
             # ValueError: read of closed file
             except (OSError, ValueError) as e:
@@ -155,6 +178,6 @@ def copy_loop (copy_to, finished=None, buf_len=10240):
                     del copy_to[i]
                     selector.unregister (i)
                 else:
-                    os.write (o, data)
+                    write (o, data)
 
     selector.close ()

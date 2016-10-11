@@ -96,26 +96,6 @@ class InteractiveThread (Thread):
         tcsetattr(self.pairs[0][0], TCSADRAIN, [ iflag, oflag, cflag, lflag,
                                                  ispeed, ospeed, cc ])
 
-    def read (self, src):
-        if isinstance (src, io.IOBase):
-            data= src.read (10240)
-        elif isinstance (src, int):
-            data= os.read (src, 10240)
-        else:
-            data= src.recv (10240)
-
-        return data
-
-
-    def write (self, dst, data):
-        if isinstance (dst, io.IOBase):
-            dst.write (data.decode ())
-            dst.flush ()
-        elif isinstance (dst, int):
-            os.write (dst, data)
-        else:
-            dst.send (data)
-
     def fileno (self, f):
         if isinstance (f, int):
             return f
