@@ -22,6 +22,7 @@ import functools
 from selectors import DefaultSelector, EVENT_READ
 import os
 from socket import socket
+import itertools
 import errno
 
 import logging
@@ -158,9 +159,12 @@ def copy_loop (copy_to, finished=None, buf_len=10240):
             logger.debug ("%s is ready to read", key)
             i= key.fileobj
 
-            if finished is not None and i==finished[0]:
-                del copy_to[i]
-                close (finished[0])
+            if finished is not None and i==finished:
+                logger.debug ('finishing')
+                for f in itertools.chain (*copy_to.items ()):
+                    if f is not None:
+                        file (f)
+
                 break
 
             # for error in e:

@@ -34,6 +34,7 @@ from termios import tcgetattr, tcsetattr, TCSADRAIN
 from termios import IGNPAR, ISTRIP, INLCR, IGNCR, ICRNL, IXON, IXANY, IXOFF
 from termios import ISIG, ICANON, ECHO, ECHOE, ECHOK, ECHONL, IEXTEN, OPOST, VMIN, VTIME
 import shutil
+import itertools
 
 from ayrton.utils import copy_loop, close
 
@@ -115,23 +116,10 @@ class InteractiveThread (Thread):
         # reset term settings
         tcsetattr (self.pairs[0][0], TCSADRAIN, self.orig_terminfo)
 
-        for k, v in self.pairs:
-            for f in (k, v):
-                if ( isinstance (f, paramiko.Channel) or
-                     isinstance (f, io.TextIOWrapper) ):
-                     self.close_file (f)
-
-        self.close_file (self.finished[1])
-
-
-    def close_file (self, f):
-        logger.debug ('closing %s', f)
-        try:
+        for f in itertools.chain (*self.pairs):
             close (f)
-        except OSError as e:
-            logger.debug ('closing gave %s', e)
-            if e.errno!=errno.EBADF:
-                raise
+
+        close (self.finished[1])
 
 
 class RemoteStub:
