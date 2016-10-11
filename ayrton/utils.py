@@ -91,6 +91,13 @@ def dump_dict (d, level=1):  # pragma: no cover
         return 'None'
 
 
+def close (f):
+    if isinstance (dst, int):
+        os.close (f)
+    else:
+        f.close ()
+
+
 def copy_loop (copy_to, finished=None, buf_len=10240):
     """copy_to is a dict(in: out). When any in is ready to read, data is read
     from it and writen in its out. When any in is closed, it's removed from

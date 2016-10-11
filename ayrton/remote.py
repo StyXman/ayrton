@@ -35,7 +35,7 @@ from termios import IGNPAR, ISTRIP, INLCR, IGNCR, ICRNL, IXON, IXANY, IXOFF
 from termios import ISIG, ICANON, ECHO, ECHOE, ECHOK, ECHONL, IEXTEN, OPOST, VMIN, VTIME
 import shutil
 
-from ayrton.utils import copy_loop
+from ayrton.utils import copy_loop, close
 
 import logging
 logger= logging.getLogger ('ayrton.remote')
@@ -147,11 +147,7 @@ class InteractiveThread (Thread):
     def close_file (self, f):
         logger.debug ('closing %s', f)
         try:
-            try:
-                f.close ()
-            except AttributeError:
-                # AttributeError: 'int' object has no attribute 'close'
-                os.close (f)
+            close (f)
         except OSError as e:
             logger.debug ('closing gave %s', e)
             if e.errno!=errno.EBADF:
