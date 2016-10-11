@@ -151,6 +151,17 @@ def copy_loop (copy_to, finished=None, buf_len=10240):
         else:
             selector.register (src, EVENT_READ)
 
+    def close_file (f):
+        if f in copy_to:
+            del copy_to[f]
+
+        try:
+            selector.unregister (i)
+        except KeyError:
+            pass
+
+        close (f)
+
     while len (copy_to)>0:
         logger.debug (copy_to)
 
@@ -163,7 +174,7 @@ def copy_loop (copy_to, finished=None, buf_len=10240):
                 logger.debug ('finishing')
                 for f in itertools.chain (*copy_to.items ()):
                     if f is not None:
-                        file (f)
+                        close_file (f)
 
                 break
 
@@ -180,16 +191,15 @@ def copy_loop (copy_to, finished=None, buf_len=10240):
             # ValueError: read of closed file
             except (OSError, ValueError) as e:
                 logger.debug ('stopping copying for %s', i)
-                del copy_to[i]
                 logger.debug (traceback.format_exc ())
+                close_file (i)
                 break
             else:
                 if len (data)==0:
                     logger.debug ('stopping copying for %s, no more data', i)
-                    # TODO: close
-                    del copy_to[i]
-                    selector.unregister (i)
+                    close_file (i)
                 else:
                     write (o, data)
 
     selector.close ()
+    logger.debug ('over and out')
