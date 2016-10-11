@@ -115,7 +115,7 @@ def write (dst, data):
 
 
 def close (f):
-    if isinstance (dst, int):
+    if isinstance (f, int):
         os.close (f)
     else:
         f.close ()
