@@ -201,9 +201,8 @@ def copy_loop (copy_to, finished=None, buf_len=10240):
 
                     if finished is not None and i==finished:
                         logger.debug ('finishing')
-                        for f in itertools.chain (*copy_to.items ()):
-                            if f is not None:
-                                close_file (f)
+                        # quite a hack :)
+                        copy_to= {}
 
                         break
                 else:
