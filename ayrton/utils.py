@@ -24,6 +24,7 @@ import os
 from socket import socket
 import itertools
 import errno
+import paramiko.channel
 
 import logging
 logger= logging.getLogger ('ayrton.utils')
@@ -100,6 +101,8 @@ def read (src, buf_len):
         return os.read (src, buf_len)
     elif isinstance (src, socket):
         return src.recv (buf_len)
+    elif isinstance (src, paramiko.channel.Channel):
+        return os.read (src.fileno (), buf_len)
     else:
         return src.read (buf_len)
 
