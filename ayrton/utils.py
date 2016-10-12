@@ -152,7 +152,12 @@ def copy_loop (copy_to, finished=None, buf_len=10240):
                     or not isinstance (src.fileno(), int)) ):
             logger.debug ('type mismatch: %s', src)
         else:
-            selector.register (src, EVENT_READ)
+            logger.debug ("registering %s for read", src)
+            # if finished is also one of the srcs, then register() complains
+            try:
+                selector.register (src, EVENT_READ)
+            except KeyError:
+                pass
 
     def close_file (f):
         if f in copy_to:
