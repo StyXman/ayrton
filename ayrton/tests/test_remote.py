@@ -27,6 +27,7 @@ import signal
 from socket import socket, AF_INET, SOCK_STREAM, SO_REUSEADDR, SOL_SOCKET
 from tempfile import mkstemp
 import traceback
+import paramiko.ssh_exception
 
 from ayrton.expansion import bash
 import ayrton
@@ -203,21 +204,29 @@ with remote ('127.0.0.1', _debug=True):
     ls('foobarbaz')''', 'testRemoteCommand.py')
 
 
+def skip_if_AuthException (test):
+    def wrapper (self):
+        try:
+            test (self)
+        except paramiko.ssh_exception.AuthenticationException:
+            self.skipTest ("""This test only succeeds if you you have password/passphrase-less access to localhost""")
+
+    return wrapper
+
 class RealRemoteTests (RemoteTests):
 
+    @skip_if_AuthException
     def testLocalVarToRemoteToLocal (self):
-        """This test only succeeds if you you have password/passphrase-less access to localhost"""
         self.runner.run_file ('ayrton/tests/scripts/testLocalVarToRealRemoteToLocal.ay')
 
         self.assertTrue (self.runner.locals['testLocalVarToRealRemoteToLocal'])
 
 
+    @skip_if_AuthException
     def testRemoteCommandStdout (self):
-        """This test only succeeds if you you have password/passphrase-less access to localhost"""
         self.runner.run_file ('ayrton/tests/scripts/testRemoteCommandStdout.ay')
 
 
-
+    @skip_if_AuthException
     def testRemoteCommandStderr (self):
-        """This test only succeeds if you you have password/passphrase-less access to localhost"""
         self.runner.run_file ('ayrton/tests/scripts/testRemoteCommandStderr.ay')
