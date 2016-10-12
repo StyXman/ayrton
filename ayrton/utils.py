@@ -138,7 +138,7 @@ def copy_loop (copy_to, finished=None, buf_len=10240):
     copy_to. finished is a pipe; when data comes from the read end, or when
     no more ins are present, the loop finishes."""
     if finished is not None:
-        copy_to[finished[0]]= None
+        copy_to[finished]= None
 
     # NOTE:
     # os.sendfile (self.dst, self.src, None, 0)
