@@ -44,8 +44,8 @@ class OtherFunctions (unittest.TestCase):
         data= 'yabadabadoo'
 
         pipe= os.pipe ()
-        self.addCleanup (os.close, pipe[0])
-        self.addCleanup (os.close, pipe[1])
+        self.addCleanup (close, pipe[0])
+        self.addCleanup (close, pipe[1])
 
         with open (pipe[1], 'w') as w:
             w.write (data)
