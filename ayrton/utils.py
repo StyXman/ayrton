@@ -178,14 +178,6 @@ def copy_loop (copy_to, finished=None, buf_len=10240):
             logger.debug ("%s is ready to read", key)
             i= key.fileobj
 
-            if finished is not None and i==finished:
-                logger.debug ('finishing')
-                for f in itertools.chain (*copy_to.items ()):
-                    if f is not None:
-                        close_file (f)
-
-                break
-
             # for error in e:
             #     logger.debug ('%s error')
                 # TODO: what?
@@ -206,6 +198,14 @@ def copy_loop (copy_to, finished=None, buf_len=10240):
                 if len (data)==0:
                     logger.debug ('stopping copying for %s, no more data', i)
                     close_file (i)
+
+                    if finished is not None and i==finished:
+                        logger.debug ('finishing')
+                        for f in itertools.chain (*copy_to.items ()):
+                            if f is not None:
+                                close_file (f)
+
+                        break
                 else:
                     write (o, data)
 
