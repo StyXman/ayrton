@@ -205,16 +205,21 @@ class remote:
 
         backchannel_port= 4227
 
-        # NOTE: becareful with the quoting here,
+        # NOTE: be careful with the quoting here,
         # there are several levels at which they're interpreted:
-        # 1) ayrton's local Python interpreter
-        # 2) the remote shell
-        # 3) the remote Python interpreter
+        # 1) ayrton's local Python interpreter (the outer """)
+        # 2) the remote shell (the following ")
+        # 3) the remote Python interpreter (the inner 's)
+
         # in particular, getcwd()'s output MUST be between single quotes (')
         # so 2) does not think we're ending the double quotes (") around
         # the invocation of 3)
+
         # for the same reason, line #15 MUST have triple single quotes (''') too
+        # so quotes in the precommand do not break the string definition
+
         # and that's why the whole string MUST be in triple double quotes (""")
+
         if not self._debug and not self._test:
             precommand= ''
         else:
