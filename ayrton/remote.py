@@ -177,35 +177,8 @@ class remote:
         setattr (self, param, value)
 
 
-    def __enter__ (self):
-        # get the globals from the runtime
-
-        # for solving the import problem:
-        # _pickle.PicklingError: Can't pickle <class 'module'>: attribute lookup builtins.module failed
-        # there are two solutions. either we setup a complex system that intercepts
-        # the imports and hold them in another ayrton.Environment attribute
-        # or we just weed them out here. so far this is the simpler option
-        # but forces the user to reimport what's going to be used in the remote
-        g= clean_environment (ayrton.runner.globals)
-
-        # get the locals from the runtime
-        # this is not so easy: for some reason, ayrton.runner.locals is not up to
-        # date in the middle of the execution (remember *this* code is executed
-        # via exec() in Ayrton.run_code())
-        # another option is to go through the frames
-        inception_locals= sys._getframe().f_back.f_locals
-        l= clean_environment (inception_locals)
-
-        # special treatment for argv
-        g['argv']= ayrton.runner.globals['argv']
-
-        logger.debug3 ('globals passed to remote: %s', ayrton.utils.dump_dict (g))
-        global_env= pickle.dumps (g)
-        logger.debug3 ('locals passed to remote: %s', ayrton.utils.dump_dict (l))
-        local_env= pickle.dumps (l)
-
-        backchannel_port= 4227
-
+    def remote_command (self, precommand, backchannel_port, ast, global_env,
+                        local_env):
         # NOTE: be careful with the quoting here,
         # there are several levels at which they're interpreted:
         # 1) ayrton's local Python interpreter (the outer """)
@@ -216,18 +189,12 @@ class remote:
         # so 2) does not think we're ending the double quotes (") around
         # the invocation of 3)
 
-        # for the same reason, line #15 MUST have triple single quotes (''') too
+        # for the same reason, line #14 MUST have triple single quotes (''') too
         # so quotes in the precommand do not break the string definition
 
         # and that's why the whole string MUST be in triple double quotes (""")
 
-        if not self._debug and not self._test:
-            precommand= ''
-        else:
-            precommand= '''import os; os.chdir ('%s')''' % os.getcwd ()
-        logger.debug ("precommand: %s", precommand)
-
-        command= """exec python3 -c "#!                                   #  1
+        return """exec python3 -c "#!                                     #  1
 import pickle                                                             #  2
 # names needed for unpickling                                             #  3
 from ast import Module, Assign, Name, Store, Call, Load, Expr             #  4
@@ -276,8 +243,8 @@ client.close ()                                                           # 46"
 """ % (precommand, precommand, backchannel_port,
        len (self.ast), len (global_env), len (local_env))
 
-        logger.debug ('code to execute remote: %s', command)
 
+    def prepare_connections (self, backchannel_port, command):
         if not self._debug:
             self.client= paramiko.SSHClient ()
             # TODO: TypeError: invalid file: ['/home/mdione/.ssh/known_hosts']
@@ -320,12 +287,14 @@ client.close ()                                                           # 46"
             self.result_channel= self.result_listen.accept ()
         else:
             self.client= socket ()
+            logger.debug ('connecting...')
             self.client.connect ((self.hostname, 2233)) # nc listening here, see DebugRemoteTests
             # unbuffered
             i= open (self.client.fileno (), 'wb', 0)
             o= open (self.client.fileno (), 'rb', 0)
             e= open (self.client.fileno (), 'rb', 0)
 
+            logger.debug ('setting backchannel_port...')
             self.result_listen= socket ()
             self.result_listen.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
             self.result_listen.bind (('', backchannel_port))
@@ -335,7 +304,52 @@ client.close ()                                                           # 46"
             command+= 'exit\n'
             i.write (command.encode ())
 
+            logger.debug ('waiting for backchannel...')
             (self.result_channel, addr)= self.result_listen.accept ()
+
+        return i, o, e
+
+
+    def __enter__ (self):
+        # get the globals from the runtime
+
+        # for solving the import problem:
+        # _pickle.PicklingError: Can't pickle <class 'module'>: attribute lookup builtins.module failed
+        # there are two solutions. either we setup a complex system that intercepts
+        # the imports and hold them in another ayrton.Environment attribute
+        # or we just weed them out here. so far this is the simpler option
+        # but forces the user to reimport what's going to be used in the remote
+        g= clean_environment (ayrton.runner.globals)
+
+        # get the locals from the runtime
+        # this is not so easy: for some reason, ayrton.runner.locals is not up to
+        # date in the middle of the execution (remember *this* code is executed
+        # via exec() in Ayrton.run_code())
+        # another option is to go through the frames
+        inception_locals= sys._getframe().f_back.f_locals
+        l= clean_environment (inception_locals)
+
+        # special treatment for argv
+        g['argv']= ayrton.runner.globals['argv']
+
+        logger.debug3 ('globals passed to remote: %s', ayrton.utils.dump_dict (g))
+        global_env= pickle.dumps (g)
+        logger.debug3 ('locals passed to remote: %s', ayrton.utils.dump_dict (l))
+        local_env= pickle.dumps (l)
+
+        backchannel_port= 4227
+
+        if not self._debug and not self._test:
+            precommand= ''
+        else:
+            precommand= '''import os; os.chdir ('%s')''' % os.getcwd ()
+        logger.debug ("precommand: %s", precommand)
+
+        command= self.remote_command (precommand, backchannel_port, self.ast,
+                                      global_env, local_env)
+        logger.debug ('code to execute remote: %s', command)
+
+        i, o, e= self.prepare_connections (backchannel_port, command)
 
         logger.debug ('sending ast, globals, locals')
         # TODO: compress?
