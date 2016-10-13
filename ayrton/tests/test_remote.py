@@ -90,6 +90,7 @@ class DebugRemoteTests (RemoteTests):
                 server= socket (AF_INET, SOCK_STREAM)
                 self.addCleanup (server.close)
                 server.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
+                server.settimeout (3)
                 server.bind (('127.0.0.1', 2233))
                 server.listen ()
 
