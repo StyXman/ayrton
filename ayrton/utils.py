@@ -25,6 +25,7 @@ from socket import socket
 import itertools
 import errno
 import paramiko.channel
+import traceback
 
 import logging
 logger= logging.getLogger ('ayrton.utils')
