@@ -88,13 +88,15 @@ class DebugRemoteTests (RemoteTests):
                 logger.debug ('nc')
 
                 server= socket (AF_INET, SOCK_STREAM)
-                self.addCleanup (server.close)
                 server.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
                 server.settimeout (3)
                 server.bind (('127.0.0.1', 2233))
                 server.listen ()
 
                 client, _= server.accept ()
+                # bash resets the O_ONONBLOCK flag
+                # see below
+                # client.settimeout (3)
                 close (server)
 
                 logger.debug ('bash')
@@ -102,10 +104,22 @@ class DebugRemoteTests (RemoteTests):
                 os.dup2 (client.fileno (), 1)
                 close (client)
 
-                # child             vvvv-- don't forget argv[0]
-                os.execlp ('bash', 'bash')
-                # NOTE: does not return
-                # but if there's a bug, it might
+                pid= os.fork ()
+                if pid==0:
+                    # child             vvvv-- don't forget argv[0]
+                    os.execlp ('bash', 'bash')
+                    # NOTE: does not return
+                    # but if there's a bug, it might
+                else:
+                    # implement timeout like this
+                    time.sleep (2)
+                    try:
+                        os.kill (pid, signal.SIGKILL)
+                    except ChildProcessError:
+                        pass
+                    os.waitpid (pid, 0)
+
+                # pass through finally
             except Exception as e:
                 logger.debug ('*BOOM*')
                 traceback.print_exc ()
