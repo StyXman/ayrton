@@ -107,9 +107,10 @@ class InteractiveThread (Thread):
 
 
     def run (self):
+        logger.debug ('%s thread run' % self)
         copy_loop(self.copy_to, self.finished[0])
         self.close ()
-        logger.debug ('%s shutdown', self)
+        logger.debug ('%s thread shutdown', self)
 
 
     def close (self):
