@@ -44,6 +44,9 @@ class TildeExpansion (unittest.TestCase):
     def test_tilde_user (self):
         self.assertEqual (bash ('~root'), [ '/root' ])
 
+    def test_tilde_user_more (self):
+            self.assertEqual (bash ('~root/.'), [ '/root/.' ])
+
 
 class Bash(unittest.TestCase):
     def test_simple_string (self):
