@@ -33,27 +33,11 @@ logger= logging.getLogger ('ayton.tests.ayrton')
 # create one of these
 ayrton.runner= ayrton.Ayrton ()
 
-class Bash(unittest.TestCase):
-    def test_simple_string (self):
-        self.assertEqual (bash ('s'), [ 's' ])
 
-    def test_simple_string_single (self):
-        self.assertEqual (bash ('s', single=True), 's')
 
-    def test_glob1 (self):
-        self.assertEqual (bash ('*.py'), [ 'setup.py' ])
 
-    def test_glob1_single (self):
-        self.assertEqual (bash ('*.py', single=True), 'setup.py')
 
-    def test_glob2 (self):
-        self.assertEqual (sorted (bash ([ '*.py', '*.txt' ])), [ 'LICENSE.txt', 'requirements.txt', 'setup.py', ])
-
-    def test_glob_brace1 (self):
-        self.assertEqual (sorted (bash ('s{a,*.py}')), [ 'sa', 'setup.py' ])
-
-    def test_glob_brace2 (self):
-        self.assertEqual (sorted (bash ('ayrton/tests/data/{a,*.py}')), [ 'ayrton/tests/data/a', 'ayrton/tests/data/test.me.py' ])
+class BraceExpansion(unittest.TestCase):
 
     def test_simple1_brace (self):
         self.assertEqual (bash ('{acde,b}'), [ 'acde', 'b' ])
@@ -95,9 +79,62 @@ class Bash(unittest.TestCase):
     def test_escaped_brace_single (self):
         self.assertEqual (bash ('\{a,b}', single=True), '{a,b}')
 
+    def test_escaped_brace_inside (self):
+        self.assertEqual (bash ('{\{a,b}'), [ '{a', 'b' ])
+
+    def test_escaped_comma (self):
+        self.assertEqual (bash ('{a\,b}'), [ '{a,b}' ])
+
+    def test_bam (self):
+        self.assertEqual (bash (','), [ ',' ])
+
     def test_real_example1 (self):
         # tiles/{legend*,Elevation.dgml,preview.png,Makefile}
         pass
+
+
+class SequenceExpressionExpansion(unittest.TestCase):
+
+    def test_bam (self):
+        self.assertEqual (bash ('{.2}'), [ '{.2}' ])
+
+    def test_not_really (self):
+        self.assertEqual (bash ('{1.2}'), [ '{1.2}' ])
+
+    def test_simple (self):
+        self.assertEqual (bash ('{1..2}'), [ '1', '2' ])
+
+    def test_more (self):
+        self.assertEqual (bash ('{1..3}'), [ '1', '2', '3' ])
+
+    def test_escaped_dot_dot (self):
+        self.assertEqual (bash ('{1\..2}'), [ '{1..2}' ])
+
+    def test_dot_escaped_dot (self):
+        self.assertEqual (bash ('{1.\.2}'), [ '{1..2}' ])
+
+
+class Bash(unittest.TestCase):
+    def test_simple_string (self):
+        self.assertEqual (bash ('s'), [ 's' ])
+
+    def test_simple_string_single (self):
+        self.assertEqual (bash ('s', single=True), 's')
+
+    def test_glob1 (self):
+        self.assertEqual (bash ('*.py'), [ 'setup.py' ])
+
+    def test_glob1_single (self):
+        self.assertEqual (bash ('*.py', single=True), 'setup.py')
+
+    def test_glob2 (self):
+        self.assertEqual (sorted (bash ([ '*.py', '*.txt' ])), [ 'LICENSE.txt', 'requirements.txt', 'setup.py', ])
+
+    def test_glob_brace1 (self):
+        self.assertEqual (sorted (bash ('s{a,*.py}')), [ 'sa', 'setup.py' ])
+
+    def test_glob_brace2 (self):
+        self.assertEqual (sorted (bash ('ayrton/tests/data/{a,*.py}')), [ 'ayrton/tests/data/a', 'ayrton/tests/data/test.me.py' ])
 
     def test_tilde (self):
         self.assertEqual (bash ('~'), [ os.environ['HOME'] ])
