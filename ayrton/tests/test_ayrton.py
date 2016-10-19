@@ -33,6 +33,15 @@ logger= logging.getLogger ('ayton.tests.ayrton')
 # create one of these
 ayrton.runner= ayrton.Ayrton ()
 
+class TildeExpansion (unittest.TestCase):
+
+    def test_tilde (self):
+        self.assertEqual (bash ('~'), [ os.environ['HOME'] ])
+
+    def test_tilde_single (self):
+        self.assertEqual (bash ('~', single=True), os.environ['HOME'])
+
+
 class Bash(unittest.TestCase):
     def test_simple_string (self):
         self.assertEqual (bash ('s'), [ 's' ])
@@ -98,12 +107,6 @@ class Bash(unittest.TestCase):
     def test_real_example1 (self):
         # tiles/{legend*,Elevation.dgml,preview.png,Makefile}
         pass
-
-    def test_tilde (self):
-        self.assertEqual (bash ('~'), [ os.environ['HOME'] ])
-
-    def test_tilde_single (self):
-        self.assertEqual (bash ('~', single=True), os.environ['HOME'])
 
 
 class Argv (unittest.TestCase):
