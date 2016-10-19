@@ -211,7 +211,7 @@ def backslash_descape (s):
     return ans
 
 def tilde_expand (s):
-    if type (s)==str:
+    if isinstance (s, str):
         ans= os.path.expanduser (s)
     else:
         # otherwise we assume it's some kind of iterable
