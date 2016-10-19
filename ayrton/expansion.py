@@ -174,7 +174,7 @@ class ToExpand (object):
 
 def brace_expand (s):
     # NOTE: this function is O(N) in several ways
-    if type (s)==str:
+    if isinstance(s, str):
         l= [ s ]
     else:
         # otherwise we assume it's some kind of iterable
