@@ -110,7 +110,7 @@ class ToExpand (object):
 
         left_cb, right_cb= data
         prefix= self.text[:left_cb]
-        # includes the {}'s
+        # the body includes the {}'s
         body= self.text[left_cb:right_cb+1]
         postfix= self.text[right_cb+1:]
         # print ("pre:%r b:%r post:%r" % (prefix, body, postfix))
