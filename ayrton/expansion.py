@@ -22,6 +22,8 @@ from functools import reduce
 from itertools import chain
 import os.path
 
+import ayrton
+
 def glob_expand (s):
     # shamelessly insprired from sh.py
     # but we return a list with the string when there is no match
@@ -218,6 +220,15 @@ def tilde_expand (s):
         ans= [ os.path.expanduser (s1) for s1 in s ]
 
     return ans
+
+
+def default (s, v):
+    ans= ayrton.runner.globals.get (s, v)
+    if ans is None or ans=='':
+        ans= v
+
+    return ans
+
 
 def bash (s, single=False):
     data= backslash_descape (glob_expand (tilde_expand (brace_expand (s))))

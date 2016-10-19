@@ -22,7 +22,7 @@ import os
 import tempfile
 import os.path
 
-from ayrton.expansion import bash
+from ayrton.expansion import bash, default
 import ayrton
 from ayrton.execute import CommandNotFound
 
@@ -46,6 +46,29 @@ class TildeExpansion (unittest.TestCase):
 
     def test_tilde_user_more (self):
             self.assertEqual (bash ('~root/.'), [ '/root/.' ])
+
+
+class ParameterExpansion (unittest.TestCase):
+
+    def test_default_undefined (self):
+        self.assertEqual (default ('foo', 'bar'), 'bar')
+
+    def test_default_empty (self):
+        ayrton.runner.globals['foo']= ''
+
+        self.assertEqual (default ('foo', 'bar'), 'bar')
+
+        del ayrton.runner.globals['foo']
+
+    def test_default_non_empty (self):
+        ayrton.runner.globals['foo']= 'baz'
+
+        self.assertEqual (default ('foo', 'bar'), 'baz')
+
+        del ayrton.runner.globals['foo']
+
+    # def test_default_expanded (self):
+    #     self.assertEqual (default ('foo', '~root'), '/root')
 
 
 class Bash(unittest.TestCase):
