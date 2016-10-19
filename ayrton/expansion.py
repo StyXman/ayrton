@@ -26,7 +26,7 @@ def glob_expand (s):
     # shamelessly insprired from sh.py
     # but we return a list with the string when there is no match
     # and we also handle lists of strings; we expand them independently
-    if type (s)==str:
+    if isinstance (s, str):
         l= [ s ]
     else:
         # otherwise we assume it's some kind of iterable
@@ -174,7 +174,7 @@ class ToExpand (object):
 
 def brace_expand (s):
     # NOTE: this function is O(N) in several ways
-    if type (s)==str:
+    if isinstance (s, str):
         l= [ s ]
     else:
         # otherwise we assume it's some kind of iterable
@@ -202,7 +202,7 @@ def brace_expand (s):
     return ans
 
 def backslash_descape (s):
-    if type (s)==str:
+    if isinstance (s, str):
         ans= s.replace ('\\', '')
     else:
         # otherwise we assume it's some kind of iterable
