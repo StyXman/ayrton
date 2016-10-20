@@ -224,3 +224,21 @@ class FileTests (unittest.TestCase):
         name1= self.touch_file ()
         name2= self.touch_file ()
         self.assertTrue (-nt (name1, name2))
+
+
+    def test_ot_no_file1 (self):
+        name1= tempfile.mktemp (suffix='.ayrtmp')
+        name2= self.touch_file ()
+        self.assertTrue (-ot (name1, name2))
+
+    def test_ot_true (self):
+        # name1 must be older than name2
+        name1= self.touch_file ()
+        name2= self.touch_file ()
+        self.assertTrue (-ot (name1, name2))
+
+    def test_ot_false (self):
+        name2= self.touch_file ()
+        # name1 must be newer than name2
+        name1= self.touch_file ()
+        self.assertTrue (-ot (name1, name2))
