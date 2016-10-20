@@ -171,87 +171,87 @@ The following functions are based on ``bash``'s `tests for file attributes
 For string and arithmetic operations and comparison use Python's ``int`` and
 ``str`` methods.
 
-Note: *_t*, *_G*, *_O* and *_ef* are not implemented yet.
+Note: *-t*, *-G*, *-O* and *-ef* are not implemented yet.
 
-.. py:function:: _a (file)
+.. py:function:: -a (file)
 
     True if *file* exists.
 
-.. py:function:: _b (file)
+.. py:function:: -b (file)
 
     True if *file* is a block device.
 
-.. py:function:: _c (file)
+.. py:function:: -c (file)
 
     True if *file* is a char device.
 
-.. py:function:: _d (file)
+.. py:function:: -d (file)
 
     True if *file* is a directory.
 
-.. py:function:: _e (file)
+.. py:function:: -e (file)
 
-    See :py:func:`_a`.
+    See :py:func:`-a`.
 
-.. py:function:: _f (file)
+.. py:function:: -f (file)
 
     True if *file* is a regular file.
 
-.. py:function:: _g (file)
+.. py:function:: -g (file)
 
     True if *file*'s *setgid* bit is on.
 
-.. py:function:: _h (file)
+.. py:function:: -h (file)
 
     True if *file*' is a symlink.
 
-.. py:function:: _k (file)
+.. py:function:: -k (file)
 
     True if *file*'s *sticky* bit is on.
 
-.. py:function:: _p (file)
+.. py:function:: -p (file)
 
     True if *file* is a FIFO/named pipe.
 
-.. py:function:: _r (file)
+.. py:function:: -r (file)
 
     True if *file* is readable.
 
-.. py:function:: _s (file)
+.. py:function:: -s (file)
 
     True if *file*'s size is >0.
 
-.. py:function:: _u (file)
+.. py:function:: -u (file)
 
     True if *file*'s *setuid* attribute is on.
 
-.. py:function:: _w (file)
+.. py:function:: -w (file)
 
     True if *file* is writable.
 
-.. py:function:: _x (file)
+.. py:function:: -x (file)
 
     True if *file* is executable.
 
-.. py:function:: _x (file)
+.. py:function:: -L (file)
 
-    See :py:func:`_h`.
+    See :py:func:`-h`.
 
-.. py:function:: _N (file)
+.. py:function:: -N (file)
 
     True if *file*'s modification time (*mtime*) is newer than its access time
     (*atime*).
 
-.. py:function:: _S (file)
+.. py:function:: -S (file)
 
     True if *file* is a socket.
 
-.. py:function:: _nt (file1, file2)
+.. py:function:: -nt (file1, file2)
 
     True if *file1* exists and *file2* does not, or if *file1*'s *mtime* is newer
     than *file2*'s.
 
-.. py:function:: _ot (file1, file2)
+.. py:function:: -ot (file1, file2)
 
     True if *file2* exists and *file1* does not, or if *file1*'s *mtime* is older
     than *file2*'s.
@@ -285,7 +285,7 @@ these function most probably hide an executable of the same name.
     For more details, see http://docs.python.org/3/library/os.html#os.uname .
 
 More functions might be already exported as builtins, but are not yet documented.
-Please check ``ayton/__init__.py``'s ``polute()`` function for more details.
+Please check ``ayrton/__init__.py``'s ``polute()`` function for more details.
 
 There are some Python functions that would seem to also make sense to include here.
 Most of them are C-based functions that have the same name as a more powerful
