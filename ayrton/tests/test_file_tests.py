@@ -122,3 +122,105 @@ class FileTests (unittest.TestCase):
     def test_f_file (self):
         name= self.touch_file ()
         self.assertTrue (-f (name))
+
+    def test_f_symfile (self):
+        name= self.touch_symlink ()
+        self.assertTrue (-f (name))
+
+    def test_f_dir (self):
+        name= self.touch_dir ()
+        self.assertFalse (-f (name))
+
+    def test_f_symdir (self):
+        name= self.touch_symlink (dir=True)
+        self.assertFalse (-f (name))
+
+
+    # TODO: -g
+
+
+    def test_h_file (self):
+        name= self.touch_file ()
+        self.assertFalse (-h (name))
+
+    def test_h_symfile (self):
+        name= self.touch_symlink ()
+        self.assertTrue (-h (name))
+
+    def test_h_dir (self):
+        name= self.touch_dir ()
+        self.assertFalse (-h (name))
+
+    def test_h_symdir (self):
+        name= self.touch_symlink (dir=True)
+        self.assertTrue (-h (name))
+
+
+    # TODO: -k
+
+    # TODO: -p
+
+
+    def test_r_readable (self):
+        name= self.touch_file ()
+        self.assertTrue (-r (name))
+
+    def test_r_unreadable (self):
+        name= self.touch_file ()
+        os.chmod (name, 0)
+        self.assertFalse (-r (name))
+
+
+    def test_s_empty (self):
+        name= self.touch_file ()
+        self.assertFalse (-s (name))
+
+    def test_s_something (self):
+        name= self.touch_file (text=b'foo')
+        self.assertTrue (-s (name))
+
+
+    # TODO: -u
+
+
+    def test_w_writable (self):
+        name= self.touch_file ()
+        self.assertTrue (-w (name))
+
+    def test_w_nonwritable (self):
+        name= self.touch_file ()
+        os.chmod (name, 0)
+        self.assertFalse (-w (name))
+
+    def test_x_file (self):
+        name= self.touch_file ()
+        # file are not executable by default
+        self.assertFalse (-x (name))
+
+    def test_x_dir (self):
+        name= self.touch_dir ()
+        # but dirs are
+        self.assertTrue (-x (name))
+
+
+    # TODO: -N
+
+    # TODO: -S
+
+
+    def test_nt_no_file2 (self):
+        name1= self.touch_file ()
+        name2= tempfile.mktemp (suffix='.ayrtmp')
+        self.assertTrue (-nt (name1, name2))
+
+    def test_nt_true (self):
+        name2= self.touch_file ()
+        # name1 must be newer than name2
+        name1= self.touch_file ()
+        self.assertTrue (-nt (name1, name2))
+
+    def test_nt_false (self):
+        # name1 must be older than name2
+        name1= self.touch_file ()
+        name2= self.touch_file ()
+        self.assertTrue (-nt (name1, name2))
