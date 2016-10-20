@@ -28,6 +28,10 @@ def simple_stat (fname):
 
 
 class FalseBool:
+    """This class is needed so file test X() can be called -X() and not break
+    the semantics. The problem is that -True==-1 and -False==0. Also:
+    TypeError: type 'bool' is not an acceptable base type."""
+
     def __init__ (self, value):
         if not isinstance (value, bool):
             raise ValueError
