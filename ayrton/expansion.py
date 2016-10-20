@@ -228,9 +228,15 @@ def tilde_expand (s):
 # these ones is actually *used* by the functions
 def get_var (parameter):
     try:
-        return ayrton.runner.globals[parameter]
+        value= ayrton.runner.globals[parameter]
     except KeyError:
         raise NameError
+    else:
+        if not isinstance (value, str):
+            # all these operations apply only to strings
+            raise ValueError
+
+        return value
 
 
 def is_null (value):
