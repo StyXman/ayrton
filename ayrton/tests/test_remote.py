@@ -30,7 +30,7 @@ from ayrton.execute import CommandNotFound
 
 import logging
 
-logger= logging.getLogger ('ayton.tests.remote')
+logger= logging.getLogger ('ayrton.tests.remote')
 
 
 class RemoteTests (unittest.TestCase):

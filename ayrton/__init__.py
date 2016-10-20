@@ -98,7 +98,7 @@ def counter_handler ():
 
 logger= logging.getLogger ('ayrton')
 
-# things that have to be defined before importing ayton.execute :(
+# things that have to be defined before importing ayrton.execute :(
 # singleton needed so the functions can access the runner
 runner= None
 
