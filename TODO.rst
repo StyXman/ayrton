@@ -23,10 +23,6 @@ Really do:
 
    * https://github.com/amoffat/sh/issues/66
 
-* enable tracing
-
-   * see pdb's source
-
 * becareful with buitins, might eclipse valid usages: bash() (exp) blocks /bin/bash
    * rename bash() to expand()
    * add option _exec=True for actually executing the binary.
