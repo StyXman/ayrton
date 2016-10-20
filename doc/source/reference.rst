@@ -233,7 +233,7 @@ Note: *-t*, *-G*, *-O* and *-ef* are not implemented yet.
 
     True if *file* is executable.
 
-.. py:function:: -x (file)
+.. py:function:: -L (file)
 
     See :py:func:`-h`.
 
