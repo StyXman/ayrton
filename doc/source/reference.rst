@@ -233,7 +233,7 @@ Note: *_t*, *_G*, *_O* and *_ef* are not implemented yet.
 
     True if *file* is executable.
 
-.. py:function:: _x (file)
+.. py:function:: _L (file)
 
     See :py:func:`_h`.
 
