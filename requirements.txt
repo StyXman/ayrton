@@ -1,1 +1,2 @@
-paramiko>=1.15 # first one with py3 support
+paramiko>=1.15  # first one with py3 support
+Sphinx>=1.4.6
