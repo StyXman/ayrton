@@ -248,6 +248,18 @@ def default (parameter, word):
     # but tests have shown that it is not so
     return ans
 
+# {parameter:?word} is automatically handled by Python's runtime
+# NameError
+
+# {parameter:+word}
+def replace_if_set (parameter, word):
+    value= get_var (parameter)
+
+    if is_null (value):
+        return ''
+    else:
+        return word
+
 
 def bash (s, single=False):
     data= backslash_descape (glob_expand (tilde_expand (brace_expand (s))))
