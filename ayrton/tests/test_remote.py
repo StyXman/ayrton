@@ -36,7 +36,7 @@ from ayrton.utils import copy_loop, close
 
 import logging
 
-logger= logging.getLogger ('ayton.tests.remote')
+logger= logging.getLogger ('ayrton.tests.remote')
 
 
 class OtherFunctions (unittest.TestCase):
