@@ -65,6 +65,39 @@ class ParameterExpansion (unittest.TestCase):
     # def test_default_expanded (self):
     #     self.assertEqual (default ('foo', '~root'), '/root')
 
+    def test_replace_if_set_undef (self):
+        self.assertRaises (NameError, replace_if_set, 'foo', 'bar')
+
+    def test_replace_if_set_empty (self):
+        ayrton.runner.globals['foo']= ''
+
+        self.assertEqual (replace_if_set ('foo', 'bar'), '')
+
+        del ayrton.runner.globals['foo']
+
+
+    def do_substr_test (self, offset, length, value):
+        ayrton.runner.globals['foo']= self.value
+
+        self.assertEqual (substr ('foo', offset, length), value)
+
+        del ayrton.runner.globals['foo']
+
+    def test_substr_offset (self):
+        self.do_substr_test (4, None, self.value[4:])
+
+    def test_substr_offset_length (self):
+        self.do_substr_test (4, 2, self.value[4:6])
+
+    def test_substr_offset_too_big (self):
+        self.do_substr_test (10, None, '')
+
+    def test_substr_offset_length_too_big (self):
+        self.do_substr_test (4, 10, self.value[4:])
+
+    def test_substr_offset_too_big_length (self):
+        self.do_substr_test (10, 2, '')
+
 
 class BraceExpansion(unittest.TestCase):
 

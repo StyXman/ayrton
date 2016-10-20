@@ -267,6 +267,33 @@ def replace_if_set (parameter, word):
         return word
 
 
+# {parameter:offset}
+# {parameter:offset:length}
+# use s[offset:], s[offset:offset+length]
+# or rather give a usable function just in case we don't go the f"" translation way
+# (and probably would use it internally anyways)
+def substr (parameter, offset, length=None):
+    value= get_var (parameter)
+
+    try:
+        ans= value[offset:]
+    except IndexError:
+        if offset>0:
+            ans= ''
+        else:
+            raise
+
+    if length is not None:
+        try:
+            ans= ans[:length]
+        except IndexError:
+            if length<0:
+                raise
+            # else keep the value we have
+
+    return ans
+
+
 def bash (s, single=False):
     data= backslash_descape (glob_expand (tilde_expand (brace_expand (s))))
     if single and len(data)==1:
