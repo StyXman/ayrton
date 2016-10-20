@@ -32,7 +32,7 @@ import os.path
 import logging
 logger= logging.getLogger ('ayrton.importer')
 
-from ayrton.file_test import _a, _d
+from ayrton.file_test import a, d
 from ayrton import Ayrton
 import ayrton.utils
 
@@ -86,13 +86,13 @@ class AyrtonFinder (MetaPathFinder):
             module_full_path= full_path+'.ay'
 
             logger.debug2 ('trying %s', init_full_path)
-            if _d (full_path) and _a (init_full_path):
+            if -d (full_path) and -a (init_full_path):
                 logger.debug2 ('found package %s', full_path)
                 return ModuleSpec (full_name, loader, origin=init_full_path)
 
             else:
                 logger.debug2 ('trying %s', module_full_path)
-                if _a (module_full_path):
+                if -a (module_full_path):
                     logger.debug2 ('found module %s', module_full_path)
                     return ModuleSpec (full_name, loader, origin=module_full_path)
 

@@ -175,9 +175,9 @@ class Environment (dict):
             'time': [ 'sleep', ],
             'sys': [  ],  # argv is handled just before execution
 
-            'ayrton.file_test': [ '_a', '_b', '_c', '_d', '_e', '_f', '_g', '_h',
-                                  '_k', '_p', '_r', '_s', '_u', '_w', '_x', '_L',
-                                  '_N', '_S', '_nt', '_ot' ],
+            'ayrton.file_test': [ 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h',
+                                  'k', 'p', 'r', 's', 'u', 'w', 'x', 'L',
+                                  'N', 'S', 'nt', 'ot' ],
             'ayrton.expansion': [ 'bash', ],
             'ayrton.functions': [ 'cd', ('cd', 'chdir'), 'exit', 'export',
                                   'option', 'run', 'shift', 'unset', ],
