@@ -221,12 +221,31 @@ def tilde_expand (s):
 
     return ans
 
+###########################################
+# functions needed for parameter expansion
+###########################################
 
-def default (s, v):
-    ans= ayrton.runner.globals.get (s, v)
-    if ans is None or ans=='':
-        ans= v
+# these ones is actually *used* by the functions
+def get_var (parameter):
+    try:
+        return ayrton.runner.globals[parameter]
+    except KeyError:
+        raise NameError
 
+
+def is_null (value):
+    return value is None or value==''
+
+# {parameter:-word}
+# {parameter:=word}  # no special case for $n, $?
+def default (parameter, word):
+    ans= get_var (parameter)
+
+    if is_null (ans):
+        ans= word
+
+    # according to bash's manpage, default's second parameter should be expanded
+    # but tests have shown that it is not so
     return ans
 
 
