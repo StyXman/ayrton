@@ -18,6 +18,7 @@
 import unittest
 import os
 import tempfile
+import time
 
 from ayrton.file_test import *
 import ayrton
@@ -48,7 +49,7 @@ class FileTests (unittest.TestCase):
 
     def touch_file (self, text=None):
         fd, name= tempfile.mkstemp (suffix='.ayrtmp')
-        # self.addCleanup (os.unlink, name)
+        self.addCleanup (os.unlink, name)
 
         if text is not None:
             os.write (fd, text)
@@ -214,16 +215,19 @@ class FileTests (unittest.TestCase):
         self.assertTrue (-nt (name1, name2))
 
     def test_nt_true (self):
-        name2= self.touch_file ()
+        name2= self.touch_file (b'foo')
+        # I need a noticeable diff in times
+        time.sleep (0.1)
         # name1 must be newer than name2
-        name1= self.touch_file ()
+        name1= self.touch_file (b'bar')
         self.assertTrue (-nt (name1, name2))
 
     def test_nt_false (self):
         # name1 must be older than name2
-        name1= self.touch_file ()
-        name2= self.touch_file ()
-        self.assertTrue (-nt (name1, name2))
+        name1= self.touch_file (b'foo')
+        time.sleep (0.1)
+        name2= self.touch_file (b'bar')
+        self.assertFalse (-nt (name1, name2))
 
 
     def test_ot_no_file1 (self):
@@ -233,12 +237,14 @@ class FileTests (unittest.TestCase):
 
     def test_ot_true (self):
         # name1 must be older than name2
-        name1= self.touch_file ()
-        name2= self.touch_file ()
+        name1= self.touch_file (b'foo')
+        time.sleep (0.1)
+        name2= self.touch_file (b'bar')
         self.assertTrue (-ot (name1, name2))
 
     def test_ot_false (self):
-        name2= self.touch_file ()
+        name2= self.touch_file (b'foo')
+        time.sleep (0.1)
         # name1 must be newer than name2
-        name1= self.touch_file ()
-        self.assertTrue (-ot (name1, name2))
+        name1= self.touch_file (b'bar')
+        self.assertFalse (-ot (name1, name2))
