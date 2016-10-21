@@ -17,6 +17,7 @@
 
 import os
 import stat
+import os.path
 
 # these functions imitate the -* tests from [ (as per bash's man page)
 
@@ -72,8 +73,7 @@ def g (fname):
     return FalseBool (s is not None and (stat.S_IMODE (s.st_mode) & stat.S_ISGID)!=0)
 
 def h (fname):
-    s= simple_stat (fname)
-    return FalseBool (s is not None and stat.S_ISLNK (s.st_mode))
+    return FalseBool (os.path.islink (fname))
 
 def k (fname):
     s= simple_stat (fname)
