@@ -17,6 +17,7 @@
 
 import os
 import stat
+import os.path
 
 # these functions imitate the -* tests from [ (as per bash's man page)
 
@@ -53,8 +54,7 @@ def _g (fname):
     return s is not None and (stat.S_IMODE (s.st_mode) & stat.S_ISGID)!=0
 
 def _h (fname):
-    s= simple_stat (fname)
-    return s is not None and stat.S_ISLNK (s.st_mode)
+    return os.path.islink (fname)
 
 def _k (fname):
     s= simple_stat (fname)
