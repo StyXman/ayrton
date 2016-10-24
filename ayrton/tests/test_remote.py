@@ -141,14 +141,14 @@ class DebugRemoteTests (RemoteTests):
 
 
     def testRemoteEnv (self):
-        self.runner.run_script ('''with remote ('127.0.0.1', _debug=True):
+        self.runner.run_script ('''with remote ('127.0.0.1', _test=True, _ncserver=True):
     user= USER''', 'testRemoteEnv.py')
 
         self.assertEqual (self.runner.locals['user'], os.environ['USER'])
 
 
     def testRemoteVar (self):
-        self.runner.run_script ('''with remote ('127.0.0.1', _debug=True):
+        self.runner.run_script ('''with remote ('127.0.0.1', _test=True, _ncserver=True):
     testRemoteVar= 56''', 'testRemoteVar.py')
 
         self.assertEqual (self.runner.locals['testRemoteVar'], 56)
@@ -158,7 +158,7 @@ class DebugRemoteTests (RemoteTests):
         self.runner.run_script ('''raised= False
 
 try:
-    with remote ('127.0.0.1', _debug=True):
+    with remote ('127.0.0.1', _test=True, _ncserver=True):
         raise SystemError()
 except SystemError:
     raised= True''', 'testRaisesInternal.py')
@@ -168,33 +168,33 @@ except SystemError:
 
     def testRaisesExternal (self):
         self.assertRaises (SystemError, self.runner.run_script,
-                           '''with remote ('127.0.0.1', _debug=True):
+                           '''with remote ('127.0.0.1', _test=True, _ncserver=True):
     raise SystemError()''', 'testRaisesExternal.py')
 
 
     def testLocalVarToRemote (self):
         self.runner.run_script ('''testLocalVarToRemote= True
 
-with remote ('127.0.0.1', _debug=True):
+with remote ('127.0.0.1', _test=True, _ncserver=True):
     assert (testLocalVarToRemote)''', 'testLocalVarToRemote.py')
 
 
     def __testLocalFunToRemote (self):
         self.runner.run_script ('''def testLocalFunToRemote(): pass
 
-with remote ('127.0.0.1', _debug=True):
+with remote ('127.0.0.1', _test=True, _ncserver=True):
     testLocalFunToRemote''', 'testLocalFunToRemote.py')
 
 
     def __testLocalClassToRemote (self):
         self.runner.run_script ('''class TestLocalClassToRemote: pass
 
-with remote ('127.0.0.1', _debug=True):
+with remote ('127.0.0.1', _test=True, _ncserver=True):
     TestLocalClassToRemote''', 'testLocalClassToRemote.py')
 
 
     def testRemoteVarToLocal (self):
-        self.runner.run_script ('''with remote ('127.0.0.1', _debug=True):
+        self.runner.run_script ('''with remote ('127.0.0.1', _test=True, _ncserver=True):
     testRemoteVarToLocal= True''', 'testRemoteVarToLocal.py')
 
         self.assertTrue (self.runner.locals['testRemoteVarToLocal'])
@@ -203,19 +203,19 @@ with remote ('127.0.0.1', _debug=True):
     def testLocalVarToRemoteToLocal (self):
         self.runner.run_script ('''testLocalVarToRemoteToLocal= False
 
-with remote ('127.0.0.1', _debug=True):
+with remote ('127.0.0.1', _test=True, _ncserver=True):
     testLocalVarToRemoteToLocal= True''', 'testLocalVarToRemoteToLocal.py')
 
         self.assertTrue (self.runner.locals['testLocalVarToRemoteToLocal'])
 
 
     def testRemoteCommandStdout (self):
-        self.runner.run_script ('''with remote ('127.0.0.1', _debug=True):
+        self.runner.run_script ('''with remote ('127.0.0.1', _test=True, _ncserver=True):
     ls(-l=True)''', 'testRemoteCommand.py')
 
 
     def testRemoteCommandStderr (self):
-        self.runner.run_script ('''with remote ('127.0.0.1', _debug=True):
+        self.runner.run_script ('''with remote ('127.0.0.1', _test=True, _ncserver=True):
     ls('foobarbaz')''', 'testRemoteCommand.py')
 
 

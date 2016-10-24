@@ -152,8 +152,10 @@ class remote:
         self.hostname= hostname
         self.args= args
 
-        self.param ('_debug', kwargs)  # we're debugging, so we'll have lots of output
-        self.param ('_test', kwargs)   # we're testing, so we'll use nc instead of ssh
+        self.param ('_debug', kwargs)  # make the object more debuggable
+        self.param ('_debugserver', kwargs)  # see make debugserver
+        self.param ('_test', kwargs)  # we're testing, so add pwd to the PYTHONPATH
+        self.param ('_ncserver', kwargs)  # use nc instead of ssh
         self.kwargs= kwargs
         # NOTE: uncomment to connect to the debugserver
         # self.kwargs['port']= 2244
@@ -177,8 +179,13 @@ class remote:
         setattr (self, param, value)
 
 
-    def remote_command (self, precommand, backchannel_port, ast, global_env,
-                        local_env):
+    def remote_command (self, backchannel_port, global_env, local_env):
+        if not self._test:
+            precommand= ''
+        else:
+            precommand= '''import os; os.chdir ('%s')''' % os.getcwd ()
+        logger.debug ("precommand: %s", precommand)
+
         # NOTE: be careful with the quoting here,
         # there are several levels at which they're interpreted:
         # 1) ayrton's local Python interpreter (the outer """)
@@ -245,12 +252,19 @@ client.close ()                                                           # 46"
 
 
     def prepare_connections (self, backchannel_port, command):
-        if not self._debug:
+        # this will be executed in remote.__enter__()
+        # any errors here are not handled by __exit__()
+        # so if anything happens, we must cleanup here
+        if not self._ncserver:
             self.client= paramiko.SSHClient ()
             # TODO: TypeError: invalid file: ['/home/mdione/.ssh/known_hosts']
             # self.client.load_host_keys (bash ('~/.ssh/known_hosts'))
             # self.client.set_missing_host_key_policy (ShutUpPolicy ())
             self.client.set_missing_host_key_policy (paramiko.WarningPolicy ())
+
+            if self._debugserver:  # run make debugserver
+                self.kwargs['port']= 2244
+
             logger.debug ('connecting...')
             self.client.connect (self.hostname, *self.args, **self.kwargs)
 
@@ -339,14 +353,7 @@ client.close ()                                                           # 46"
 
         backchannel_port= 4227
 
-        if not self._debug and not self._test:
-            precommand= ''
-        else:
-            precommand= '''import os; os.chdir ('%s')''' % os.getcwd ()
-        logger.debug ("precommand: %s", precommand)
-
-        command= self.remote_command (precommand, backchannel_port, self.ast,
-                                      global_env, local_env)
+        command= self.remote_command (backchannel_port, global_env, local_env)
         logger.debug ('code to execute remote: %s', command)
 
         i, o, e= self.prepare_connections (backchannel_port, command)
