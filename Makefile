@@ -27,7 +27,7 @@ quicktest:
 docs:
 	PYTHONPATH=${PWD} make -C doc html
 
-install: tests
+install:
 	$(PYTHON) setup.py install --prefix=$(INSTALL_DIR)
 
 unsafe-install:
