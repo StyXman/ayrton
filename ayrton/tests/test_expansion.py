@@ -46,7 +46,7 @@ class TildeExpansion (unittest.TestCase):
 class ParameterExpansion (unittest.TestCase):
 
     def test_default_undefined (self):
-        self.assertEqual (default ('foo', 'bar'), 'bar')
+        self.assertRaises (NameError, default, 'foo', 'bar')
 
     def test_default_empty (self):
         ayrton.runner.globals['foo']= ''
