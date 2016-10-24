@@ -100,10 +100,8 @@ def dump_dict (d, level=1):  # pragma: no cover
 def read (src, buf_len):
     if isinstance (src, int):
         return os.read (src, buf_len)
-    elif isinstance (src, socket):
+    elif isinstance (src, (socket, paramiko.channel.Channel)):
         return src.recv (buf_len)
-    elif isinstance (src, paramiko.channel.Channel):
-        return os.read (src.fileno (), buf_len)
     else:
         return src.read (buf_len)
 
@@ -111,7 +109,7 @@ def read (src, buf_len):
 def write (dst, data):
     if isinstance (dst, int):
         return os.write (dst, data)
-    elif isinstance (dst, socket):
+    elif isinstance (dst, (socket, paramiko.channel.Channel)):
         return dst.send (data)
     else:
         ans= dst.write (data)
