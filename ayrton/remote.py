@@ -35,6 +35,7 @@ from termios import IGNPAR, ISTRIP, INLCR, IGNCR, ICRNL, IXON, IXANY, IXOFF
 from termios import ISIG, ICANON, ECHO, ECHOE, ECHOK, ECHONL, IEXTEN, OPOST, VMIN, VTIME
 import shutil
 import itertools
+import paramiko.ssh_exception
 
 from ayrton.utils import copy_loop, close
 
@@ -316,6 +317,7 @@ client.close ()                                                           # 46"
 
             # so bash does not hang waiting from more input
             command+= 'exit\n'
+            logger.debug ('exec!')
             i.write (command.encode ())
 
             logger.debug ('waiting for backchannel...')
@@ -356,16 +358,27 @@ client.close ()                                                           # 46"
         command= self.remote_command (backchannel_port, global_env, local_env)
         logger.debug ('code to execute remote: %s', command)
 
-        i, o, e= self.prepare_connections (backchannel_port, command)
+        try:
+            i, o, e= self.prepare_connections (backchannel_port, command)
 
-        logger.debug ('sending ast, globals, locals')
-        # TODO: compress?
-        self.result_channel.sendall (self.ast)
-        self.result_channel.sendall (global_env)
-        self.result_channel.sendall (local_env)
+            logger.debug ('sending ast, globals, locals')
+            # TODO: compress?
+            self.result_channel.sendall (self.ast)
+            self.result_channel.sendall (global_env)
+            self.result_channel.sendall (local_env)
 
-        # TODO: handle _in, _out, _err
-        self.remote= RemoteStub (( (os.dup (0), i), (o, os.dup (1)), (e, os.dup (2)) ))
+            # TODO: handle _in, _out, _err
+            self.remote= RemoteStub (( (os.dup (0), i), (o, os.dup (1)), (e, os.dup (2)) ))
+        except (paramiko.ssh_exception.SSHException, ConnectionError, OSError) as e:
+            # NOTE: this is the only time we do this
+            # please make sure the list of fileobjs is correct
+            for fileobj in (self.result_channel, self.result_listen, self.client):
+                try:
+                    close (fileobj)
+                except Exception as inner:
+                    logger.debug (traceback.format_exc (inner))
+
+            raise e
 
 
     def __exit__ (self, *args):
