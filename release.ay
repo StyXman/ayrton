@@ -18,7 +18,7 @@ if make ('install'):  # this includes tests
         print (str (uncommited))
         exit (1)
 
-    git ('checkout', -b="release-%s" % ayrton.__version__)
+    # git ('checkout', -b="release-%s" % ayrton.__version__)
 
     dch (--changelog='ChangeLog.rst', --newversion=ayrton.__version__)
     dch (--changelog='ChangeLog.rst', --release=True)
