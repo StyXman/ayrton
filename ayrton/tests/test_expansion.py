@@ -155,7 +155,8 @@ class BraceExpansion(unittest.TestCase):
         pass
 
 
-class SequenceExpressionExpansion(unittest.TestCase):
+# class SequenceExpressionExpansion(unittest.TestCase):
+class SequenceExpressionExpansion():
 
     def test_bam (self):
         self.assertEqual (bash ('{.2}'), [ '{.2}' ])
