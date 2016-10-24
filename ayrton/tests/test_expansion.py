@@ -31,16 +31,13 @@ ayrton.runner= ayrton.Ayrton ()
 class TildeExpansion (unittest.TestCase):
 
     def test_tilde (self):
-        self.assertEqual (bash ('~'), [ os.environ['HOME'] ])
-
-    def test_tilde_single (self):
-        self.assertEqual (bash ('~', single=True), os.environ['HOME'])
+        self.assertEqual (tilde_expand ('~'), os.environ['HOME'])
 
     def test_tilde_user (self):
-        self.assertEqual (bash ('~root'), [ '/root' ])
+        self.assertEqual (tilde_expand ('~root'), '/root')
 
     def test_tilde_user_more (self):
-            self.assertEqual (bash ('~root/.'), [ '/root/.' ])
+        self.assertEqual (tilde_expand ('~root/.'), '/root/.')
 
 
 class ParameterExpansion (unittest.TestCase):
