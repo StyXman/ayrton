@@ -41,6 +41,8 @@ class TildeExpansion (unittest.TestCase):
 
 
 class ParameterExpansion (unittest.TestCase):
+    # used by some tests
+    value= '0123456789'
 
     def test_default_undefined (self):
         self.assertRaises (NameError, default, 'foo', 'bar')
@@ -94,6 +96,9 @@ class ParameterExpansion (unittest.TestCase):
 
     def test_substr_offset_too_big_length (self):
         self.do_substr_test (10, 2, '')
+
+    def test_substr_negative_offset (self):
+        self.do_substr_test (4, None, self.value[4:])
 
 
 class BraceExpansion(unittest.TestCase):
