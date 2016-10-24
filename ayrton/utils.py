@@ -126,7 +126,8 @@ def close (f):
         if isinstance (f, int):
             os.close (f)
         else:
-            f.close ()
+            if f is not None:
+                f.close ()
     except OSError as e:
         logger.debug ('closing gave %s', e)
         if e.errno!=errno.EBADF:
