@@ -45,6 +45,7 @@ def glob_expand (s):
 
     return ans
 
+
 class Group (object):
     def __init__ (self, left, right=None):
         self.left= left
@@ -59,6 +60,7 @@ class Group (object):
     def __iter__ (self):
         yield self.left
         yield self.right
+
 
 class ToExpand (object):
     def __init__ (self, s, indexes=None):
@@ -174,6 +176,7 @@ class ToExpand (object):
     def __repr__ (self):
         return "ToExpand (%s, %s)" % (self.text, self.indexes)
 
+
 def brace_expand (s):
     # NOTE: this function is O(N) in several ways
     if isinstance (s, str):
@@ -203,6 +206,7 @@ def brace_expand (s):
 
     return ans
 
+
 def backslash_descape (s):
     if isinstance (s, str):
         ans= s.replace ('\\', '')
@@ -211,6 +215,7 @@ def backslash_descape (s):
         ans= [ s1.replace ('\\', '') for s1 in s ]
 
     return ans
+
 
 def tilde_expand (s):
     if isinstance (s, str):
@@ -242,6 +247,11 @@ def get_var (parameter):
 def is_null (value):
     return value is None or value==''
 
+
+#############################
+# now for the real functions
+#############################
+
 # {parameter:-word}
 # {parameter:=word}  # no special case for $n, $?
 def default (parameter, word):
@@ -254,8 +264,10 @@ def default (parameter, word):
     # but tests have shown that it is not so
     return ans
 
+
 # {parameter:?word} is automatically handled by Python's runtime
 # NameError
+
 
 # {parameter:+word}
 def replace_if_set (parameter, word):
