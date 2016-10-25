@@ -59,6 +59,7 @@ rsa_server_key:
 
 debugserver: rsa_server_key
 	# TODO: discover sshd's path?
+	# sshd re-exec requires execution with an absolute path
 	/usr/sbin/sshd -dd -e -h $(shell pwd)/rsa_server_key -p 2244
 
 covreport:
