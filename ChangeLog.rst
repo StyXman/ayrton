@@ -1,3 +1,16 @@
+ayrton (0.9-alpha1) UNRELEASED; urgency=medium
+
+  * There's a heissenbug with the remote code, that's why this is an alpha release.
+  * Test functions are no longer called `_X` but `-X`, which is more scripting friendly.
+  * Some if those tests had to be fixed.
+  * Dropped support for `py3.3` because the importer does not work there.
+  * `tox` support, but not yet part of the stable test suite.
+  * Lots and lots of more tests.
+  * Lots of improvements in the remote() tests; in particular, make sure they don't hang waiting for someone who's not gonna come.
+  * Ignore ssh remote() tests if there's not password/phrase-less connection.
+
+ -- Marcos Dione <mdione@diablo.grulicueva.local>  Mon, 24 Oct 2016 20:19:40 +0200
+
 ayrton (0.8) unstable; urgency=medium
 
   * You can import ayrton modules and packages!
