@@ -18,7 +18,7 @@
 import unittest
 import os
 
-from ayrton.expansion import bash, default
+from ayrton.expansion import bash, default, tilde_expand, substr, replace_if_set
 import ayrton
 
 import logging
