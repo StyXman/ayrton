@@ -566,3 +566,13 @@ class CrazyASTTransformer (ast.NodeTransformer):
         return node
 
     visit_AsyncWith= visit_With
+
+    # ast.dump (ast.parse ('f"abc{foo.upper()}def"'))
+    # "Expr(value=JoinedStr(values=[
+    #     Str(s='abc'),
+    #     FormattedValue(value=Call(func=Attribute(value=Name(id='foo', ctx=Load()),
+    #                                              attr='upper', ctx=Load()),
+    #                               args=[], keywords=[]),
+    #                    conversion=-1, format_spec=None),
+    #     Str(s='def')
+    # ]))"

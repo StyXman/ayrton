@@ -7,7 +7,7 @@ import ast
 from ast import Starred
 
 import logging
-logger= logging.getLogger ('ayrton.parser.astcompilar.astbuilder')
+logger= logging.getLogger ('ayrton.parser.astcompiler.astbuilder')
 
 def ast_from_node(space, node, compile_info):
     """Turn a parse tree, node, to AST."""

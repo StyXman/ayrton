@@ -47,3 +47,5 @@ Think deeply about:
     * -f vs (-)f vs _f
 * commands in keywords should also be _out=Capture
 * which is the sanest default, bash (..., single=True) or otherwise
+
+* exec &> ./create.log
