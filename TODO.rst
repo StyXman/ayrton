@@ -35,6 +35,8 @@ Really do:
 * a setting for making references to unkown envvars as in bash.
 * trap?
 * executable path caching à la bash.
+* with parallel(2):
+      ....
 
 Think deeply about:
 -------------------
