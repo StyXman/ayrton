@@ -1,3 +1,16 @@
+ayrton (0.8.1) UNRELEASED; urgency=medium
+
+  * The 'First Time I Put The Release Name Here' release.
+  * Bugfix release.
+  * `Argv` should not be created with an empty list.
+  * Missing dependencies.
+  * Several typos.
+  * Fix for `_h()`.
+  * Handle `paramiko` exceptions.
+  * Calling `ayrton -c <script>` was failing because the file name properly was not properly (f|b)aked.
+
+ -- Marcos Dione <mdione@grulic.org.ar>  Mon, 21 Nov 2016 20:16:51 +0100
+
 ayrton (0.8) unstable; urgency=medium
 
   * You can import ayrton modules and packages!
