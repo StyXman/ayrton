@@ -86,7 +86,7 @@ try:
             sys.exit (0)
 
         if arg in ('-v', '--version'):
-            print (ayrton.version)
+            print (ayrton.__version__)
             sys.exit (0)
 
         if arg in ('-c', '--script'):
