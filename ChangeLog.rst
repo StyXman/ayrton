@@ -1,6 +1,6 @@
 ayrton (0.8.1) unstable; urgency=medium
 
-  * The 'First Time I Put The Release Name Here' release.
+  * The 'Release From The Bus' release.
   * Bugfix release.
   * `Argv` should not be created with an empty list.
   * Missing dependencies.
@@ -10,7 +10,7 @@ ayrton (0.8.1) unstable; urgency=medium
   * Calling `ayrton -c <script>` was failing because the file name properly was not properly (f|b)aked.
   * `ayrton --version` didn't work!
 
- -- Marcos Dione <mdione@diablo.grulicueva.local>  Mon, 21 Nov 2016 20:29:33 +0100
+ -- Marcos Dione <mdione@diablo.grulicueva.local>  Mon, 21 Nov 2016 20:34:44 +0100
 
 ayrton (0.8) unstable; urgency=medium
 
