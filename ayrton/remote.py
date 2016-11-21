@@ -35,6 +35,8 @@ from termios import tcgetattr, tcsetattr, TCSADRAIN
 from termios import IGNPAR, ISTRIP, INLCR, IGNCR, ICRNL, IXON, IXANY, IXOFF
 from termios import ISIG, ICANON, ECHO, ECHOE, ECHOK, ECHONL, IEXTEN, OPOST, VMIN, VTIME
 import shutil
+import itertools
+import paramiko.ssh_exception
 
 import logging
 logger= logging.getLogger ('ayrton.remote')
@@ -347,73 +349,87 @@ client.close ()                                                           # 46"
 
         logger.debug ('code to execute remote: %s', command)
 
-        if not self._debug:
-            self.client= paramiko.SSHClient ()
-            # TODO: TypeError: invalid file: ['/home/mdione/.ssh/known_hosts']
-            # self.client.load_host_keys (bash ('~/.ssh/known_hosts'))
-            # self.client.set_missing_host_key_policy (ShutUpPolicy ())
-            self.client.set_missing_host_key_policy (paramiko.WarningPolicy ())
-            logger.debug ('connecting...')
-            self.client.connect (self.hostname, *self.args, **self.kwargs)
+        try:
+            if not self._debug:
+                self.client= paramiko.SSHClient ()
+                # TODO: TypeError: invalid file: ['/home/mdione/.ssh/known_hosts']
+                # self.client.load_host_keys (bash ('~/.ssh/known_hosts'))
+                # self.client.set_missing_host_key_policy (ShutUpPolicy ())
+                self.client.set_missing_host_key_policy (paramiko.WarningPolicy ())
+                logger.debug ('connecting...')
+                self.client.connect (self.hostname, *self.args, **self.kwargs)
 
-            # create the backchannel
-            # this channel will be used for sending/receiving runtime data
-            # to/from the remote
-            # the remote code will connect to it (line #18)
-            # read the ast (#19), globals (#21) and locals (#23)
-            # and return the locals, result and exception (#43)
-            # the remote will see this channel as a localhost port
-            # and it's seen on the local side as self.con defined below
-            self.result_listen= self.client.get_transport ()
-            logger.debug ('setting backchannel_port...')
-            self.result_listen.request_port_forward ('localhost', backchannel_port)
+                # create the backchannel
+                # this channel will be used for sending/receiving runtime data
+                # to/from the remote
+                # the remote code will connect to it (line #18)
+                # read the ast (#19), globals (#21) and locals (#23)
+                # and return the locals, result and exception (#43)
+                # the remote will see this channel as a localhost port
+                # and it's seen on the local side as self.con defined below
+                self.result_listen= self.client.get_transport ()
+                logger.debug ('setting backchannel_port...')
+                self.result_listen.request_port_forward ('localhost', backchannel_port)
 
-            # taken from paramiko/client.py:SSHClient.exec_command()
-            channel= self.client.get_transport ().open_session ()
-            # TODO:
-            #19:44:54.953791 getsockopt(3, SOL_TCP, TCP_NODELAY, [0], [4]) = 0 <0.000016>
-            #19:44:54.953852 setsockopt(3, SOL_TCP, TCP_NODELAY, [1], 4) = 0 <0.000014>
+                # taken from paramiko/client.py:SSHClient.exec_command()
+                channel= self.client.get_transport ().open_session ()
+                # TODO:
+                #19:44:54.953791 getsockopt(3, SOL_TCP, TCP_NODELAY, [0], [4]) = 0 <0.000016>
+                #19:44:54.953852 setsockopt(3, SOL_TCP, TCP_NODELAY, [1], 4) = 0 <0.000014>
 
-            try:
-                # TODO signal handler for SIGWINCH
-                term= shutil.get_terminal_size ()
-                channel.get_pty (os.environ['TERM'], term.columns, term.lines)
-            except OSError:
-                channel.get_pty (os.environ['TERM'], )
+                try:
+                    # TODO signal handler for SIGWINCH
+                    term= shutil.get_terminal_size ()
+                    channel.get_pty (os.environ['TERM'], term.columns, term.lines)
+                except OSError:
+                    channel.get_pty (os.environ['TERM'], )
 
-            logger.debug ('exec!')
-            channel.exec_command (command)
-            i= o= e= channel
+                logger.debug ('exec!')
+                channel.exec_command (command)
+                i= o= e= channel
 
-            logger.debug ('waiting for backchannel...')
-            self.result_channel= self.result_listen.accept ()
-        else:
-            self.client= socket ()
-            self.client.connect ((self.hostname, 2233)) # nc listening here, see DebugRemoteTests
-            # unbuffered
-            i= open (self.client.fileno (), 'wb', 0)
-            o= open (self.client.fileno (), 'rb', 0)
-            e= open (self.client.fileno (), 'rb', 0)
+                logger.debug ('waiting for backchannel...')
+                self.result_channel= self.result_listen.accept ()
+            else:
+                self.client= socket ()
+                self.client.connect ((self.hostname, 2233)) # nc listening here, see DebugRemoteTests
+                # unbuffered
+                i= open (self.client.fileno (), 'wb', 0)
+                o= open (self.client.fileno (), 'rb', 0)
+                e= open (self.client.fileno (), 'rb', 0)
 
-            self.result_listen= socket ()
-            # self.result_listen.setsockopt (SO_REUSEADDR, )
-            self.result_listen.bind (('', backchannel_port))
-            self.result_listen.listen (1)
+                self.result_listen= socket ()
+                # self.result_listen.setsockopt (SO_REUSEADDR, )
+                self.result_listen.bind (('', backchannel_port))
+                self.result_listen.listen (1)
 
-            # so bash does not hang waiting from more input
-            command+= 'exit\n'
-            i.write (command.encode ())
+                # so bash does not hang waiting from more input
+                command+= 'exit\n'
+                logger.debug ('exec!')
+                i.write (command.encode ())
 
-            (self.result_channel, addr)= self.result_listen.accept ()
+                (self.result_channel, addr)= self.result_listen.accept ()
 
-        logger.debug ('sending ast, globals, locals')
-        # TODO: compress?
-        self.result_channel.sendall (self.ast)
-        self.result_channel.sendall (global_env)
-        self.result_channel.sendall (local_env)
+            logger.debug ('sending ast, globals, locals')
+            # TODO: compress?
+            self.result_channel.sendall (self.ast)
+            self.result_channel.sendall (global_env)
+            self.result_channel.sendall (local_env)
 
-        # TODO: handle _in, _out, _err
-        self.remote= RemoteStub (( (os.dup (0), i), (o, os.dup (1)), (e, os.dup (2)) ))
+            # TODO: handle _in, _out, _err
+            self.remote= RemoteStub (( (os.dup (0), i), (o, os.dup (1)), (e, os.dup (2)) ))
+        except (paramiko.ssh_exception.SSHException, ConnectionError, OSError) as e:
+            # NOTE: this is the only time we do this
+            # please make sure the list of fileobjs is correct
+            for fileobj in (self.result_channel, self.result_listen, self.client):
+                try:
+                    close (fileobj)
+                except Exception as inner:
+                    logger.debug (traceback.format_exc (inner))
+
+            raise e
+
+        return i, o, e
 
 
     def __exit__ (self, *args):

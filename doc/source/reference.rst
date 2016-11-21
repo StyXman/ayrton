@@ -233,7 +233,7 @@ Note: *_t*, *_G*, *_O* and *_ef* are not implemented yet.
 
     True if *file* is executable.
 
-.. py:function:: _x (file)
+.. py:function:: _L (file)
 
     See :py:func:`_h`.
 
@@ -285,7 +285,7 @@ these function most probably hide an executable of the same name.
     For more details, see http://docs.python.org/3/library/os.html#os.uname .
 
 More functions might be already exported as builtins, but are not yet documented.
-Please check ``ayton/__init__.py``'s ``polute()`` function for more details.
+Please check ``ayrton/__init__.py``'s ``polute()`` function for more details.
 
 There are some Python functions that would seem to also make sense to include here.
 Most of them are C-based functions that have the same name as a more powerful

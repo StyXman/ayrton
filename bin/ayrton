@@ -86,14 +86,15 @@ try:
             sys.exit (0)
 
         if arg in ('-v', '--version'):
-            print (ayrton.version)
+            print (ayrton.__version__)
             sys.exit (0)
 
         if arg in ('-c', '--script'):
             reason= 'Missing argument to option %s' % arg
             script= args[index+1]
+            file_name= '<script_from_command_line>'
             # fake argv[0]
-            script_args= [ '<script_from_command_line>' ]+args[index+2:]
+            script_args= [ file_name ]+args[index+2:]
             # stop parsing, anything else is passed to the script
             break
 

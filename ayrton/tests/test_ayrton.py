@@ -28,7 +28,7 @@ from ayrton.execute import CommandNotFound
 
 import logging
 
-logger= logging.getLogger ('ayton.tests.ayrton')
+logger= logging.getLogger ('ayrton.tests.ayrton')
 
 # create one of these
 ayrton.runner= ayrton.Ayrton ()

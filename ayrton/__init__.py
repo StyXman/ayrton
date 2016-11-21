@@ -98,7 +98,7 @@ def counter_handler ():
 
 logger= logging.getLogger ('ayrton')
 
-# things that have to be defined before importing ayton.execute :(
+# things that have to be defined before importing ayrton.execute :(
 # singleton needed so the functions can access the runner
 runner= None
 
@@ -108,7 +108,7 @@ from ayrton.parser.pyparser.pyparse import CompileInfo, PythonParser
 from ayrton.parser.astcompiler.astbuilder import ast_from_node
 from ayrton.ast_pprinter import pprint
 
-__version__= '0.8'
+__version__= '0.8.1.0'
 
 
 class ExecParams:
@@ -133,6 +133,12 @@ class Argv (list):
     """A class that mostly behaves like a list,
     that skips the first element when being iterated,
     but allows accessing it by indexing (argv[0])."""
+    def __init__ (self, iterable):
+        argv= list (iterable)
+        if len (argv)==0:
+            raise ValueError ('''argv must have at least one value, the program's name''')
+
+        super ().__init__ (argv)
 
     def __iter__ (self):
         # [1:] works even with empty lists! \o/
