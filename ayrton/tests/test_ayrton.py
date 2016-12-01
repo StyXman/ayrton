@@ -114,6 +114,7 @@ class MockedStdout (ScriptExecution):
         # create a file() from the reading fd
         # this DOES NOT create a new fd or file
         self.r= open (r, mode='rb')
+        self.addCleanup (self.r.close)
 
         # the test will have to close stdin after performing what's testing
         # that's because otherwise the test locks at reading from the read end
@@ -131,7 +132,6 @@ class MockedStdout (ScriptExecution):
         logger.debug ('closing %d', self.old_stdout)
         os.close (self.old_stdout)
         logger.debug ('closing %d', self.r.fileno ())
-        self.r.close ()
         self.runner.wait_for_pending_children ()
 
 
