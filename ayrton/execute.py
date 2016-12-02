@@ -267,6 +267,7 @@ class Command:
                     # a= cat (..., _out=capture)
                     # b= grep (..., _in= a)
                     # once a's lines have been read, t
+                    logger.debug ('closing %d', w)
                     os.close (w)
 
             if '_out' in self.options:
@@ -301,6 +302,7 @@ class Command:
                     os.dup2 (w, 1)
                     logger.debug ('closing %d', w)
                     os.close (w)
+                    logger.debug ('closing %d', r)
                     os.close (r)
 
             if '_err' in self.options:
@@ -435,6 +437,8 @@ class Command:
                 # but it's the same as in foo=$(long_output)
                 self.prepare_capture_file ()
                 self.captured_lines= self.capture_file.readlines ()
+                logger.debug ('closing %r', self.capture_file)
+                self.capture_file.close ()
 
             self.wait ()
             # NOTE: uhm?
@@ -541,11 +545,13 @@ class Command:
     def __str__ (self):
         self.wait ()
 
-        if self.captured_lines:
+        if self.captured_lines is not None:
             s= ''.join (self.captured_lines)
         else:
             self.prepare_capture_file ()
             s= self.capture_file.read ()
+            logger.debug ('closing %r', self.capture_file)
+            self.capture_file.close ()
 
         return s
 
@@ -553,7 +559,7 @@ class Command:
     def __iter__ (self):
         logger.debug ('iterating!')
 
-        if self.captured_lines:
+        if self.captured_lines is not None:
             for line in self.captured_lines:
                 # while iterating we always remove the trailing \n
                 line= line.rstrip (os.linesep)
@@ -570,6 +576,7 @@ class Command:
 
             # finish him!
             logger.debug ('finished!')
+            logger.debug ('closing %r', self.capture_file)
             self.capture_file.close ()
             # if we're iterating, then the Command is in _bg
             self.wait ()
@@ -578,11 +585,12 @@ class Command:
     def readlines (self):
         self.wait ()
 
-        if self.captured_lines:
+        if self.captured_lines is not None:
             lines= self.captured_lines
         else:
             self.prepare_capture_file ()
             lines= self.capture_file.readlines ()
+            logger.debug ('closing %r', self.capture_file)
             self.capture_file.close ()
 
         return lines
@@ -593,7 +601,7 @@ class Command:
     def readline (self):
         self.wait ()
 
-        if self.captured_lines:
+        if self.captured_lines is not None:
             line= self.captured_lines.pop (0)
         else:
             self.prepare_capture_file ()
@@ -607,6 +615,9 @@ class Command:
 
     def close (self):
         self.wait ()
+        # close first, then wait
+        # usefull for 'canceling' a background task we don't want anymore
+        logger.debug ('closing %r', self.capture_file)
         self.capture_file.close ()
 
 
