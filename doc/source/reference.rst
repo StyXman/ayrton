@@ -134,8 +134,9 @@ Functions
         * If its type is ``int``, it's considered a file descriptor from where
           the input is read.
         * If its type is ``str`` or ``bytes``, it's considered the name of the file
-          from where the input is read.
-        * if it's an iterable, then it's the `str()` of each elements.
+          from where the input is read. It could also be a ``tuple (str or bytes, int)``;
+          the ``int`` is passed as ``flags`` to ``os.open()``.
+        * If it's an iterable, then it's the `str()` of each of the elements.
         * Else, it's the `str()` of it.
 
 .. py:attribute:: _out

@@ -94,11 +94,23 @@ def resolve_program(program):
 
     return path
 
+
 def isiterable (o):
     """Returns True if o is iterable but not str/bytes type."""
     # TODO: what about Mappings?
     return (    isinstance (o, Iterable) and
             not isinstance (o, (bytes, str)) )
+
+
+def file_name_mode (i, mode):
+    if isinstance (i, tuple):
+        file_name= i[0]
+        mode |= i[1]
+    else:
+        file_name = i
+
+    return file_name, mode
+
 
 class Command:
     default_options= dict (
@@ -234,15 +246,18 @@ class Command:
                     # it's not /dev/zero, see man (4) zero
                     logger.debug ("_in==None redirects from /dev/null")
                     i= os.open (os.devnull, os.O_RDONLY)
+
                 elif isinstance (i, io.IOBase):
                     # this does not work with file like objects
                     ifile= i
                     logger.debug ("_in::IOBase redirects %s -> 0 (stdin)", ifile)
                     i= i.fileno ()
-                elif type (i) in (str, bytes):
-                    file_name= i
-                    i= os.open (i, os.O_RDONLY)
-                    logger.debug ("_in::(str|bytes) redirects %d (%s) -> 0 (stdin)", i, file_name)
+
+                elif isinstance (i, str) or isinstance (i, bytes) or isinstance (i, tuple):
+                    logger.debug ("[%s]: %r" % (type(i), i))
+                    file_name, mode= file_name_mode (i, os.O_RDONLY)
+                    i= os.open (file_name, mode)
+                    logger.debug ("_in::(str|bytes|tuple) redirects %d (%s) -> 0 (stdin)", i, file_name)
 
                 if isinstance (i, int):
                     logger.debug ("_in::int redirects %d -> 0 (stdin)", i)
@@ -276,14 +291,17 @@ class Command:
                     # connect to /dev/null
                     o= os.open (os.devnull, os.O_WRONLY) # no need to create it
                     logger.debug ("_out==None, redirects stdout 1 -> %d (%s)", o, os.devnull)
+
                 elif isinstance (o, io.IOBase):
                     # this does not work with file like objects
                     ofile= o
                     logger.debug ("_out::IOBase, redirects stdout 1 -> %s", ofile)
                     o= o.fileno ()
-                elif type (o) in (bytes, str):
-                    file_name= o
-                    o= os.open (o, os.O_WRONLY)
+
+                elif isinstance (o, str) or isinstance (o, bytes) or isinstance (o, tuple):
+                    logger.debug ("[%s]: %r" % (type(o), o))
+                    file_name, mode= file_name_mode (o, os.O_WRONLY)
+                    o= os.open (file_name, mode)
                     logger.debug ("_out::(str|bytes), redirects stdout 1 -> %d (%s)", o, file_name)
 
                 if isinstance (o, int):
@@ -312,14 +330,16 @@ class Command:
                     e= os.open (os.devnull, os.O_WRONLY) # no need to create it
                     logger.debug ("_err==None, redirects stderr 2 -> %d (%s)", e, os.devnull)
                     # this will be continued later in the next if
+
                 elif isinstance (e, io.IOBase):
                     # this does not work with file like objects
                     efile= e
                     logger.debug ("_err::IOBase, redirects stderr 2 -> %s", efile)
                     e= e.fileno ()
-                elif type (e) in (bytes, str):
-                    file_name= e
-                    e= os.open (e, os.O_WRONLY)
+
+                elif isinstance (e, str) or isinstance (e, bytes) or isinstance (e, tuple):
+                    file_name, mode= file_name_mode (e, os.O_WRONLY)
+                    e= os.open (file_name, mode)
                     logger.debug ("_err::(str|bytes), redirects stderr 2 -> %d (%s)", e, file_name)
 
                 if isinstance (e, int):
