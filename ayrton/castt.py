@@ -21,7 +21,7 @@ import ast
 from ast import Pass, Module, Bytes, copy_location, Call, Name, Load, Str, BitOr
 from ast import fix_missing_locations, Import, alias, Attribute, ImportFrom
 from ast import keyword, Gt, Lt, GtE, RShift, Tuple, FunctionDef, arguments
-from ast import Store, Assign, Subscript
+from ast import Store, Assign, Subscript, Tuple, Num
 try:
     from ast import NameConstant
 except ImportError:
@@ -35,6 +35,7 @@ except ImportError:
 
 import pickle
 from collections import defaultdict
+import os
 
 import logging
 logger= logging.getLogger ('ayrton.castt')
@@ -382,11 +383,8 @@ class CrazyASTTransformer (ast.NodeTransformer):
             #       op=RShift(),
             #       right=Str(s='foo.txt'))
             if is_executable (node.left):
-                update_keyword (node.left,
-                                keyword (arg='_out',
-                                         value=Call (func=Name (id='open', ctx=Load ()),
-                                                     args=[node.right, Str (s='ab')],
-                                                     keywords=[])))
+                t= Tuple ([ node.right, Num(n=os.O_APPEND) ], Load())
+                update_keyword (node.left, keyword (arg='_out', value=t))
                 ast.fix_missing_locations (node.left)
                 node= node.left
 
