@@ -1,7 +1,7 @@
 DEBUG_MULTI=strace -tt -T -ff -o debug/runner -s 128
 DEBUG_SIMPLE=strace -tt -T -o debug/runner -s 128
-RUNNER=python3.5
-# RUNNER=python3-coverage run
+# RUNNER=python3.5
+RUNNER=python3-coverage run
 # can't use --buffer because:
 #   File "/home/mdione/src/projects/ayrton/ayrton/__init__.py", line 191, in polute
 #     self[std]= getattr (sys, std).buffer

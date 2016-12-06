@@ -1,3 +1,18 @@
+ayrton (0.9) unstable; urgency=medium
+
+  * The 'No Government' release.
+  * Test functions are no longer called `_X` but `-X`, which is more scripting friendly.
+  * Some if those tests had to be fixed.
+  * Dropped support for `py3.3` because the importer does not work there.
+  * `tox` support, but not yet part of the stable test suite.
+  * Lots and lots of more tests.
+  * Lots of improvements in the `remote()` tests; in particular, make sure they don't hang waiting for someone who's not gonna come.
+  * Ignore ssh `remote()` tests if there's not password/phrase-less connection.
+  * Fixed several fd leaks.
+  * `_in`, `_out` and `_err` also accept a tuple `(path, flags)`, so you can specify things like `os.O_APPEND`. Mostly used internally.
+
+ -- Marcos Dione <mdione@grulic.org.ar>  Tue, 06 Dec 2016 19:37:33 +0100
+
 ayrton (0.8.1.0) unstable; urgency=medium
 
   * The 'Release From The Bus' release.
