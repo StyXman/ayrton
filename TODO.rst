@@ -51,3 +51,9 @@ Think deeply about:
 * which is the sanest default, bash (..., single=True) or otherwise
 
 * exec &> ./create.log
+
+* implement -m so we can run ayrton -x -m foo
+
+* check whether we can replace a lot of code with Popen/subprocess
+
+* convert tests to function calls
