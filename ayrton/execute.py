@@ -59,6 +59,7 @@ class CommandNotFound (NameError):
     def __str__ (self):
         return "CommandNotFound or NameError: command %(name)s not found or name %(name)s is not defined" % self.__dict__
 
+
 def which(program):
     def is_exe(fpath):
         return os.path.exists(fpath) and os.access(fpath, os.X_OK)
@@ -78,6 +79,7 @@ def which(program):
                 return exe_file
 
     return None
+
 
 def resolve_program(program):
     path = which(program)
@@ -146,6 +148,7 @@ class Command:
 
 
     def prepare_fds (self):
+        """Create needed file descriptors (pipes, mostly) before forking."""
         if '_in' in self.options:
             i= self.options['_in']
             logger.debug ('_in: %r', i)
