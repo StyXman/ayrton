@@ -159,7 +159,6 @@ class Redirected (unittest.TestCase):
 
         l= a.readline ()
         self.assertEqual (l, 'stdin_from_file!')
-        a.close ()
 
     def testOutToFile (self):
         file_path= 'ayrton/tests/data/string_stdout.txt'
@@ -229,7 +228,6 @@ class Redirected (unittest.TestCase):
 
         l= a.readline ()
         self.assertEqual (l, 'pipe!')
-        a.close ()
 
 class CommandExecution (unittest.TestCase):
     def testFalse (self):
