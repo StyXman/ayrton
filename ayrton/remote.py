@@ -400,6 +400,8 @@ client.close ()                                                           # 46"
         self.result_listen.close ()
         logger.debug ('closing %s', self.remote)
         self.remote.close ()
+        logger.debug ('closing %s', self.client)
+        self.client.close ()
 
         # update locals
         callers_frame= sys._getframe().f_back
