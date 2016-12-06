@@ -47,8 +47,9 @@ def set_logging_handler (handler):  # pragma: no cover
 
 
 def set_debug (level=logging.DEBUG):  # pragma: no cover
-    logging.basicConfig(handlers=[ counter_handler () ], level=level,
-                        format=log_format)
+    # logging.basicConfig(handlers=[ counter_handler () ],
+    logging.basicConfig(handlers=[ logging.FileHandler ('ayrton.log') ],
+                        level=level, format=log_format)
 
 
 def setup_handler (handler):  # pragma: no cover
@@ -94,7 +95,7 @@ def counter_handler ():  # pragma: no cover
 # uncomment next line and change level for way too much debugging
 # during tests execution
 # for running ayrton in the same mode, use the -d options
-# set_debug (level=logging.DEBUG)
+set_debug (level=logging.DEBUG)
 
 logger= logging.getLogger ('ayrton')
 
@@ -108,7 +109,7 @@ from ayrton.parser.pyparser.pyparse import CompileInfo, PythonParser
 from ayrton.parser.astcompiler.astbuilder import ast_from_node
 from ayrton.ast_pprinter import pprint
 
-__version__= '0.9-alpha1'
+__version__= '0.9'
 
 
 class ExecParams:
@@ -216,7 +217,8 @@ class Ayrton (object):
                 logging.root.removeHandler (handler)
                 handler.close ()
 
-            logging.root.addHandler (counter_handler ())
+            # logging.root.addHandler (counter_handler ())
+            logging.root.addHandler (instance_handler (self))
 
         # patch import system after ayrton is loaded but before anything else happens
         import ayrton.importer

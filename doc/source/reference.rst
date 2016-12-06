@@ -129,27 +129,32 @@ Functions
     Establishes what or where does the contents of *stdin* come from, depending
     on its value or type:
 
-        * If it's `None`, it's connected to `/dev/null`.
+        * If it's `None`, it's connected to ``/dev/null``.
         * If it's a file object [#file_objects]_, it uses its contents.
         * If its type is ``int``, it's considered a file descriptor from where
           the input is read.
-        * If its type is ``str`` or ``bytes``, it's considered the name of the file
-          from where the input is read.
-        * if it's an iterable, then it's the `str()` of each elements.
-        * Else, it's the `str()` of it.
+        * If its type is `str` or `bytes`, it's considered the name of the file
+          from where the input is read. It could also be a `tuple (str or bytes, int)`;
+          the `int` is passed as `flags` to ``os.open()``.
+        * If it's an iterable, then it's the `str()` of each of the elements.
+        * Else, it's the ``str()`` of it.
 
 .. py:attribute:: _out
 
     Defines where the *stdout* goes to, depending on its value or type:
 
-        * If it's `None`, it goes to `/dev/null`.
+        * If it's `None`, it goes to ``/dev/null``.
         * If it's `Capture`, the output is read by the object.
         * If it's a file object [#file_objects]_, the output is written on it.
-        * If its type is ``int``, it's considered a file descriptor to where
+        * If its type is `int`, it's considered a file descriptor to where
           the output is written.
-        * It its type is ``str`` or ``bytes``, it's the filename where the output
-          goes.
-        *
+        * It its type is `str` or `bytes`, it's the filename where the output
+          goes. It could also be a `tuple (str or bytes, int)`;
+          the `int` is passed as `flags` to ``os.open()``.
+
+.. py:attribute:: _err
+
+    Similar to `_out`, but for *stderr*.
 
 .. [#file_objects] For the moment it only includes ``io.IOBase`` instances and
     its ``fileno()`` is used; this does not include objects that duck-type a file.

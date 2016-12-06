@@ -11,6 +11,20 @@ ayrton (0.9-alpha1) UNRELEASED; urgency=medium
 
  -- Marcos Dione <mdione@diablo.grulicueva.local>  Mon, 24 Oct 2016 20:19:40 +0200
 
+ayrton (0.8.1.0) unstable; urgency=medium
+
+  * The 'Release From The Bus' release.
+  * Bugfix release.
+  * `Argv` should not be created with an empty list.
+  * Missing dependencies.
+  * Several typos.
+  * Fix for `_h()`.
+  * Handle `paramiko` exceptions.
+  * Calling `ayrton -c <script>` was failing because the file name properly was not properly (f|b)aked.
+  * `ayrton --version` didn't work!
+
+ -- Marcos Dione <mdione@grulic.org.ar>  Mon, 21 Nov 2016 20:36:31 +0100
+
 ayrton (0.8) unstable; urgency=medium
 
   * You can import ayrton modules and packages!

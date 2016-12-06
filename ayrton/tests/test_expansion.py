@@ -18,8 +18,9 @@
 import unittest
 import os
 
-from ayrton.expansion import bash, default
+from ayrton.expansion import *
 import ayrton
+from ayrton.execute import Command, Capture
 
 import logging
 
@@ -27,6 +28,17 @@ logger= logging.getLogger ('ayton.tests.expansion')
 
 # create one of these
 ayrton.runner= ayrton.Ayrton ()
+real_bash= Command ('bash')
+
+class ExpansionTest (unittest.TestCase):
+
+    def doTest (function, *args, single=False):
+        bash_answer= real_bash ({ '-c': "echo %s" % string_to_expand })
+        bash_answer= bash_answer.readline ().split ()
+        if single:
+            bash_answer= bash_answer[0]
+
+        self.assertEqual (function (*args), bash_answer)
 
 class TildeExpansion (unittest.TestCase):
 
@@ -61,6 +73,9 @@ class ParameterExpansion (unittest.TestCase):
 
         del ayrton.runner.globals['foo']
 
+
+    # according to bash's manpage, default's second parameter should be expanded
+    # but tests have shown that it is not so
     # def test_default_expanded (self):
     #     self.assertEqual (default ('foo', '~root'), '/root')
 

@@ -1,7 +1,7 @@
 DEBUG_MULTI=strace -tt -T -ff -o debug/runner -s 128
 DEBUG_SIMPLE=strace -tt -T -o debug/runner -s 128
-# PYTHON=python3.5
-PYTHON=python3-coverage run
+# RUNNER=python3.5
+RUNNER=python3-coverage run
 # can't use --buffer because:
 #   File "/home/mdione/src/projects/ayrton/ayrton/__init__.py", line 191, in polute
 #     self[std]= getattr (sys, std).buffer
@@ -13,30 +13,30 @@ all: docs
 INSTALL_DIR=$(HOME)/local
 
 tests:
-	LC_ALL=C $(PYTHON) -m unittest discover $(UNITTEST_OPTS) ayrton
+	LC_ALL=C $(RUNNER) -m unittest discover $(UNITTEST_OPTS) ayrton
 
 slowtest: debug
-	# LC_ALL=C $(DEBUG_SIMPLE) $(PYTHON) -m unittest discover --failfast \
+	# LC_ALL=C $(DEBUG_SIMPLE) $(RUNNER) -m unittest discover --failfast \
 	#       $(UNITTEST_OPTS) ayrton
-	LC_ALL=C $(DEBUG_MULTI) $(PYTHON) -m unittest discover --failfast \
+	LC_ALL=C $(DEBUG_MULTI) $(RUNNER) -m unittest discover --failfast \
 		$(UNITTEST_OPTS) ayrton
 
 quicktest:
-	LC_ALL=C $(PYTHON) -m unittest discover --failfast $(UNITTEST_OPTS) ayrton
+	LC_ALL=C $(RUNNER) -m unittest discover --failfast $(UNITTEST_OPTS) ayrton
 
 docs:
-	PYTHONPATH=${PWD} make -C doc html
+	RUNNERPATH=${PWD} make -C doc html
 
 install:
-	$(PYTHON) setup.py install --prefix=$(INSTALL_DIR)
+	$(RUNNER) setup.py install --prefix=$(INSTALL_DIR)
 
 unsafe-install:
 	@echo "unsafe install, are you sure?"
 	@read foo
-	$(PYTHON) setup.py install --prefix=$(INSTALL_DIR)
+	$(RUNNER) setup.py install --prefix=$(INSTALL_DIR)
 
 upload: tests upload-docs
-	$(PYTHON) setup.py sdist upload
+	$(RUNNER) setup.py sdist upload
 
 upload-docs: docs
 	rsync --archive --verbose --compress --rsh ssh doc/build/html/ www.grulic.org.ar:www/projects/ayrton/
@@ -59,6 +59,7 @@ rsa_server_key:
 
 debugserver: rsa_server_key
 	# TODO: discover sshd's path?
+	# sshd re-exec requires execution with an absolute path
 	/usr/sbin/sshd -dd -e -h $(shell pwd)/rsa_server_key -p 2244
 
 covreport:
