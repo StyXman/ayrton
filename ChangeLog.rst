@@ -11,7 +11,7 @@ ayrton (0.9) unstable; urgency=medium
   * Fixed several fd leaks.
   * `_in`, `_out` and `_err` also accept a tuple `(path, flags)`, so you can specify things like `os.O_APPEND`. Mostly used internally.
 
- -- Marcos Dione <mdione@grulic.org.ar>  Tue, 06 Dec 2016 19:03:09 +0100
+ -- Marcos Dione <mdione@grulic.org.ar>  Tue, 06 Dec 2016 19:37:33 +0100
 
 ayrton (0.8.1.0) unstable; urgency=medium
 
