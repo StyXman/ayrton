@@ -131,6 +131,7 @@ class Command:
     def __init__ (self, path):
         self.path= path
         self.exe= resolve_program (path)
+        logger.debug ('found exe %s', self.exe)
         self.command= None
 
         self.stdin_pipe= None
@@ -521,6 +522,7 @@ class Command:
         if type (self.options['_end'])!=bytes:
             self.options['_end']= str (self.options['_end']).encode (encoding)
 
+        logger.debug ('about to execute %s %s' % (self.exe, self.args))
         logger.debug ('fork')
         r= os.fork ()
         if r==0:
