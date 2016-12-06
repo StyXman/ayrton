@@ -132,8 +132,8 @@ method. Arithmetic expansion can be achieved with normal arithmetic operators.
 Process substitution is planned but not yet implemented.
 
 There is no need for a `test`/`[`/`[[` equivalent, but there are for the
-operators. As `-`cannot be part of the name of a function, we replaced it with `_`.
-So, `-f` became `_f()` and so on. Some of the operators are not implemented yet.
+operators. The operators are implemented as functions, so `-f foo` becomes
+`-f('foo')`. Some of the operators are not implemented yet.
 Of course, string and integer operators are better implemented in Python's `str`,
 `int` and, why not, `float` types.
 

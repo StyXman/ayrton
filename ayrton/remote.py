@@ -22,14 +22,13 @@ import paramiko
 # from ayrton.expansion import bash
 import pickle
 import types
-from socket import socket
+from socket import socket, SO_REUSEADDR, SOL_SOCKET
 from threading import Thread
 import sys
 import errno
 import ctypes
 import os
 import traceback
-from select import select
 import io
 from termios import tcgetattr, tcsetattr, TCSADRAIN
 from termios import IGNPAR, ISTRIP, INLCR, IGNCR, ICRNL, IXON, IXANY, IXOFF
@@ -37,6 +36,8 @@ from termios import ISIG, ICANON, ECHO, ECHOE, ECHOK, ECHONL, IEXTEN, OPOST, VMI
 import shutil
 import itertools
 import paramiko.ssh_exception
+
+from ayrton.utils import copy_loop, close
 
 import logging
 logger= logging.getLogger ('ayrton.remote')
@@ -97,26 +98,6 @@ class InteractiveThread (Thread):
         tcsetattr(self.pairs[0][0], TCSADRAIN, [ iflag, oflag, cflag, lflag,
                                                  ispeed, ospeed, cc ])
 
-    def read (self, src):
-        if isinstance (src, io.IOBase):
-            data= src.read (10240)
-        elif isinstance (src, int):
-            data= os.read (src, 10240)
-        else:
-            data= src.recv (10240)
-
-        return data
-
-
-    def write (self, dst, data):
-        if isinstance (dst, io.IOBase):
-            dst.write (data.decode ())
-            dst.flush ()
-        elif isinstance (dst, int):
-            os.write (dst, data)
-        else:
-            dst.send (data)
-
     def fileno (self, f):
         if isinstance (f, int):
             return f
@@ -125,81 +106,25 @@ class InteractiveThread (Thread):
         else:
             raise TypeError (f)
 
+
     def run (self):
-        # NOTE:
-        # os.sendfile (self.dst, self.src, None, 0)
-        # OSError: [Errno 22] Invalid argument
-        # and splice() is not available
-        # so, copy by hand
-        while True:
-            wait_for= list (self.copy_to.keys ())
-            wait_for.append (self.finished[0])
-            logger.debug (wait_for)
-            for wait in wait_for:
-                if ( not isinstance (wait, int) and
-                     (getattr (wait, 'fileno', None) is None  or
-                      not isinstance (wait.fileno(), int)) ):
-                    logger.debug ('type mismatch: %s', wait)
-
-            logger.debug (wait_for)
-            r, w, e= select (wait_for, [], [])
-
-            if self.finished[0] in r:
-                self.close_file (self.finished[0])
-                break
-
-            for error in e:
-                logger.debug ('%s error')
-                # TODO: what?
-
-            for i in r:
-                o= self.copy_to[i]
-                try:
-                    data= self.read (i)
-                    logger.debug ('%s -> %s: %s', i, o, data)
-
-                # ValueError: read of closed file
-                except (OSError, ValueError) as e:
-                    logger.debug ('stopping copying for %s', i)
-                    del self.copy_to[i]
-                    logger.debug (traceback.format_exc ())
-                    break
-                else:
-                    if len (data)==0:
-                        logger.debug ('stopping copying for %s, no more data', i)
-                        del self.copy_to[i]
-                    else:
-                        self.write (o, data)
-
+        logger.debug ('%s thread run' % self)
+        copy_loop(self.copy_to, self.finished[0])
         self.close ()
-        logger.debug ('%s shutdown', self)
+        logger.debug ('%s thread shutdown', self)
 
 
     def close (self):
-        # reset term settings
-        tcsetattr (self.pairs[0][0], TCSADRAIN, self.orig_terminfo)
+        # in debug mode (nc mode) this is not a tty, so we don't actually care
+        stdin= self.pairs[0][0]
+        if os.isatty (stdin):
+            # reset term settings
+            tcsetattr (stdin, TCSADRAIN, self.orig_terminfo)
 
-        for k, v in self.pairs:
-            for f in (k, v):
-                if ( isinstance (f, paramiko.Channel) or
-                     isinstance (f, io.TextIOWrapper) ):
-                     self.close_file (f)
+        for f in itertools.chain (*self.pairs):
+            close (f)
 
-        self.close_file (self.finished[1])
-
-
-    def close_file (self, f):
-        logger.debug ('closing %s', f)
-        try:
-            try:
-                f.close ()
-            except AttributeError:
-                # AttributeError: 'int' object has no attribute 'close'
-                os.close (f)
-        except OSError as e:
-            logger.debug ('closing gave %s', e)
-            if e.errno!=errno.EBADF:
-                raise
+        close (self.finished[1])
 
 
 class RemoteStub:
@@ -228,8 +153,10 @@ class remote:
         self.hostname= hostname
         self.args= args
 
-        self.param ('_debug', kwargs)  # we're debugging, so we'll have lots of output
-        self.param ('_test', kwargs)   # we're testing, so we'll use nc instead of ssh
+        self.param ('_debug', kwargs)  # make the object more debuggable
+        self.param ('_debugserver', kwargs)  # see make debugserver
+        self.param ('_test', kwargs)  # we're testing, so add pwd to the PYTHONPATH
+        self.param ('_ncserver', kwargs)  # use nc instead of ssh
         self.kwargs= kwargs
         # NOTE: uncomment to connect to the debugserver
         # self.kwargs['port']= 2244
@@ -253,52 +180,29 @@ class remote:
         setattr (self, param, value)
 
 
-    def __enter__ (self):
-        # get the globals from the runtime
-
-        # for solving the import problem:
-        # _pickle.PicklingError: Can't pickle <class 'module'>: attribute lookup builtins.module failed
-        # there are two solutions. either we setup a complex system that intercepts
-        # the imports and hold them in another ayrton.Environment attribute
-        # or we just weed them out here. so far this is the simpler option
-        # but forces the user to reimport what's going to be used in the remote
-        g= clean_environment (ayrton.runner.globals)
-
-        # get the locals from the runtime
-        # this is not so easy: for some reason, ayrton.runner.locals is not up to
-        # date in the middle of the execution (remember *this* code is executed
-        # via exec() in Ayrton.run_code())
-        # another option is to go through the frames
-        inception_locals= sys._getframe().f_back.f_locals
-        l= clean_environment (inception_locals)
-
-        # special treatment for argv
-        g['argv']= ayrton.runner.globals['argv']
-
-        logger.debug3 ('globals passed to remote: %s', ayrton.utils.dump_dict (g))
-        global_env= pickle.dumps (g)
-        logger.debug3 ('locals passed to remote: %s', ayrton.utils.dump_dict (l))
-        local_env= pickle.dumps (l)
-
-        backchannel_port= 4227
-
-        # NOTE: becareful with the quoting here,
-        # there are several levels at which they're interpreted:
-        # 1) ayrton's local Python interpreter
-        # 2) the remote shell
-        # 3) the remote Python interpreter
-        # in particular, getcwd()'s output MUST be between single quotes (')
-        # so 2) does not think we're ending the double quotes (") around
-        # the invocation of 3)
-        # for the same reason, line #15 MUST have triple single quotes (''') too
-        # and that's why the whole string MUST be in triple double quotes (""")
-        if not self._debug and not self._test:
+    def remote_command (self, backchannel_port, global_env, local_env):
+        if not self._test:
             precommand= ''
         else:
             precommand= '''import os; os.chdir ('%s')''' % os.getcwd ()
         logger.debug ("precommand: %s", precommand)
 
-        command= """python3.5 -c "#!                                      #  1
+        # NOTE: be careful with the quoting here,
+        # there are several levels at which they're interpreted:
+        # 1) ayrton's local Python interpreter (the outer """)
+        # 2) the remote shell (the following ")
+        # 3) the remote Python interpreter (the inner 's)
+
+        # in particular, getcwd()'s output MUST be between single quotes (')
+        # so 2) does not think we're ending the double quotes (") around
+        # the invocation of 3)
+
+        # for the same reason, line #14 MUST have triple single quotes (''') too
+        # so quotes in the precommand do not break the string definition
+
+        # and that's why the whole string MUST be in triple double quotes (""")
+
+        return """exec python3 -c "#!                                     #  1
 import pickle                                                             #  2
 # names needed for unpickling                                             #  3
 from ast import Module, Assign, Name, Store, Call, Load, Expr             #  4
@@ -347,68 +251,115 @@ client.close ()                                                           # 46"
 """ % (precommand, precommand, backchannel_port,
        len (self.ast), len (global_env), len (local_env))
 
+
+    def prepare_connections (self, backchannel_port, command):
+        # this will be executed in remote.__enter__()
+        # any errors here are not handled by __exit__()
+        # so if anything happens, we must cleanup here
+        if not self._ncserver:
+            self.client= paramiko.SSHClient ()
+            # TODO: TypeError: invalid file: ['/home/mdione/.ssh/known_hosts']
+            # self.client.load_host_keys (bash ('~/.ssh/known_hosts'))
+            # self.client.set_missing_host_key_policy (ShutUpPolicy ())
+            self.client.set_missing_host_key_policy (paramiko.WarningPolicy ())
+
+            if self._debugserver:  # run make debugserver
+                self.kwargs['port']= 2244
+
+            logger.debug ('connecting...')
+            self.client.connect (self.hostname, *self.args, **self.kwargs)
+
+            # create the backchannel
+            # this channel will be used for sending/receiving runtime data
+            # to/from the remote
+            # the remote code will connect to it (line #18)
+            # read the ast (#19), globals (#21) and locals (#23)
+            # and return the locals, result and exception (#43)
+            # the remote will see this channel as a localhost port
+            # and it's seen on the local side as self.con defined below
+            self.result_listen= self.client.get_transport ()
+            logger.debug ('setting backchannel_port...')
+            self.result_listen.request_port_forward ('localhost', backchannel_port)
+
+            # taken from paramiko/client.py:SSHClient.exec_command()
+            channel= self.client.get_transport ().open_session ()
+            # TODO:
+            #19:44:54.953791 getsockopt(3, SOL_TCP, TCP_NODELAY, [0], [4]) = 0 <0.000016>
+            #19:44:54.953852 setsockopt(3, SOL_TCP, TCP_NODELAY, [1], 4) = 0 <0.000014>
+
+            try:
+                # TODO signal handler for SIGWINCH
+                term= shutil.get_terminal_size ()
+                channel.get_pty (os.environ['TERM'], term.columns, term.lines)
+            except OSError:
+                channel.get_pty (os.environ['TERM'], )
+
+            logger.debug ('exec!')
+            channel.exec_command (command)
+            i= o= e= channel
+
+            logger.debug ('waiting for backchannel...')
+            self.result_channel= self.result_listen.accept ()
+        else:
+            self.client= socket ()
+            logger.debug ('connecting...')
+            self.client.connect ((self.hostname, 2233)) # nc listening here, see DebugRemoteTests
+            # unbuffered
+            i= open (self.client.fileno (), 'wb', 0)
+            o= open (self.client.fileno (), 'rb', 0)
+            e= open (self.client.fileno (), 'rb', 0)
+
+            logger.debug ('setting backchannel_port...')
+            self.result_listen= socket ()
+            self.result_listen.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
+            self.result_listen.bind (('', backchannel_port))
+            self.result_listen.listen (1)
+
+            # so bash does not hang waiting from more input
+            command+= 'exit\n'
+            logger.debug ('exec!')
+            i.write (command.encode ())
+
+            logger.debug ('waiting for backchannel...')
+            (self.result_channel, addr)= self.result_listen.accept ()
+
+        return i, o, e
+
+
+    def __enter__ (self):
+        # get the globals from the runtime
+
+        # for solving the import problem:
+        # _pickle.PicklingError: Can't pickle <class 'module'>: attribute lookup builtins.module failed
+        # there are two solutions. either we setup a complex system that intercepts
+        # the imports and hold them in another ayrton.Environment attribute
+        # or we just weed them out here. so far this is the simpler option
+        # but forces the user to reimport what's going to be used in the remote
+        g= clean_environment (ayrton.runner.globals)
+
+        # get the locals from the runtime
+        # this is not so easy: for some reason, ayrton.runner.locals is not up to
+        # date in the middle of the execution (remember *this* code is executed
+        # via exec() in Ayrton.run_code())
+        # another option is to go through the frames
+        inception_locals= sys._getframe().f_back.f_locals
+        l= clean_environment (inception_locals)
+
+        # special treatment for argv
+        g['argv']= ayrton.runner.globals['argv']
+
+        logger.debug3 ('globals passed to remote: %s', ayrton.utils.dump_dict (g))
+        global_env= pickle.dumps (g)
+        logger.debug3 ('locals passed to remote: %s', ayrton.utils.dump_dict (l))
+        local_env= pickle.dumps (l)
+
+        backchannel_port= 4227
+
+        command= self.remote_command (backchannel_port, global_env, local_env)
         logger.debug ('code to execute remote: %s', command)
 
         try:
-            if not self._debug:
-                self.client= paramiko.SSHClient ()
-                # TODO: TypeError: invalid file: ['/home/mdione/.ssh/known_hosts']
-                # self.client.load_host_keys (bash ('~/.ssh/known_hosts'))
-                # self.client.set_missing_host_key_policy (ShutUpPolicy ())
-                self.client.set_missing_host_key_policy (paramiko.WarningPolicy ())
-                logger.debug ('connecting...')
-                self.client.connect (self.hostname, *self.args, **self.kwargs)
-
-                # create the backchannel
-                # this channel will be used for sending/receiving runtime data
-                # to/from the remote
-                # the remote code will connect to it (line #18)
-                # read the ast (#19), globals (#21) and locals (#23)
-                # and return the locals, result and exception (#43)
-                # the remote will see this channel as a localhost port
-                # and it's seen on the local side as self.con defined below
-                self.result_listen= self.client.get_transport ()
-                logger.debug ('setting backchannel_port...')
-                self.result_listen.request_port_forward ('localhost', backchannel_port)
-
-                # taken from paramiko/client.py:SSHClient.exec_command()
-                channel= self.client.get_transport ().open_session ()
-                # TODO:
-                #19:44:54.953791 getsockopt(3, SOL_TCP, TCP_NODELAY, [0], [4]) = 0 <0.000016>
-                #19:44:54.953852 setsockopt(3, SOL_TCP, TCP_NODELAY, [1], 4) = 0 <0.000014>
-
-                try:
-                    # TODO signal handler for SIGWINCH
-                    term= shutil.get_terminal_size ()
-                    channel.get_pty (os.environ['TERM'], term.columns, term.lines)
-                except OSError:
-                    channel.get_pty (os.environ['TERM'], )
-
-                logger.debug ('exec!')
-                channel.exec_command (command)
-                i= o= e= channel
-
-                logger.debug ('waiting for backchannel...')
-                self.result_channel= self.result_listen.accept ()
-            else:
-                self.client= socket ()
-                self.client.connect ((self.hostname, 2233)) # nc listening here, see DebugRemoteTests
-                # unbuffered
-                i= open (self.client.fileno (), 'wb', 0)
-                o= open (self.client.fileno (), 'rb', 0)
-                e= open (self.client.fileno (), 'rb', 0)
-
-                self.result_listen= socket ()
-                # self.result_listen.setsockopt (SO_REUSEADDR, )
-                self.result_listen.bind (('', backchannel_port))
-                self.result_listen.listen (1)
-
-                # so bash does not hang waiting from more input
-                command+= 'exit\n'
-                logger.debug ('exec!')
-                i.write (command.encode ())
-
-                (self.result_channel, addr)= self.result_listen.accept ()
+            i, o, e= self.prepare_connections (backchannel_port, command)
 
             logger.debug ('sending ast, globals, locals')
             # TODO: compress?
@@ -428,8 +379,6 @@ client.close ()                                                           # 46"
                     logger.debug (traceback.format_exc (inner))
 
             raise e
-
-        return i, o, e
 
 
     def __exit__ (self, *args):
@@ -451,6 +400,8 @@ client.close ()                                                           # 46"
         self.result_listen.close ()
         logger.debug ('closing %s', self.remote)
         self.remote.close ()
+        logger.debug ('closing %s', self.client)
+        self.client.close ()
 
         # update locals
         callers_frame= sys._getframe().f_back

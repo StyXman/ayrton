@@ -4,6 +4,10 @@ from ayrton.parser.pyparser.pygram import syms, tokens
 from ayrton.parser.pyparser.error import SyntaxError
 from ayrton.execute import Command
 import ast
+from ast import Starred
+
+import logging
+logger= logging.getLogger ('ayrton.parser.astcompiler.astbuilder')
 
 def ast_from_node(space, node, compile_info):
     """Turn a parse tree, node, to AST."""
@@ -48,6 +52,76 @@ expression_name_map = {
 def parsestr(space, encoding, literal):
     # return space.wrap(eval (literal))
     return eval (literal)
+
+
+def find_starargs (args):
+    # find the Starred in args, take it out, pass its value as starargs
+    # the most intriguing thing here is that Starred is defined in py3.3
+    # but it doesn't seem to be used anywhere
+    starargs = None
+    for arg in args:
+        if isinstance(arg, Starred):
+            # this works!
+            args.remove(arg)
+            starargs = arg.value
+
+    return starargs
+
+
+def find_kwargs (keywords):
+    # find the keyword with arg==None, take it out, pass its value as kwargs
+    kwargs = None
+    for kwarg in keywords:
+        if kwarg.arg is None:
+            # this works!
+            keywords.remove(kwarg)
+            kwargs = kwarg.value
+
+    return kwargs
+
+
+# py3.3 and py3.5 support
+def CompatCall(name, args, keywords):
+    logger.debug2(ast.dump (name))
+    for arg in args:
+        logger.debug2 (ast.dump(arg))
+    for keyword in keywords:
+        logger.debug2 (ast.dump(keyword))
+
+    try:
+        # py3.5
+        node = ast.Call(name, args, keywords)
+    except TypeError:
+        # py3.3
+        starargs = find_starargs (args)
+        kwargs = find_kwargs (keywords)
+
+        for arg in args:
+            logger.debug2 (ast.dump(arg))
+        for keyword in keywords:
+            logger.debug2 (ast.dump(keyword))
+        if starargs is not None:
+            logger.debug(ast.dump(starargs))
+        if kwargs is not None:
+            logger.debug(ast.dump(kwargs))
+        node = ast.Call(name, args, keywords, starargs, kwargs)
+
+    return node
+
+
+def CompatClassDef(name, args, keywords, body, decorators):
+    try:
+        # py3.5
+        node = ast.ClassDef(name, args, keywords, body, decorators)
+    except TypeError:
+        # py3.3
+        starargs = find_starargs (args)
+        kwargs = find_kwargs (keywords)
+        node = ast.ClassDef(name, args, keywords, starargs, kwargs, body,
+                            decorators)
+
+    return node
+
 
 class ASTBuilder(object):
 
@@ -528,14 +602,14 @@ class ASTBuilder(object):
         if len(classdef_node.children) == 4:
             # class NAME ':' suite
             body = self.handle_suite(classdef_node.children[3])
-            new_node = ast.ClassDef (name, [], [], body, decorators)
+            new_node = CompatClassDef (name, [], [], body, decorators)
             new_node.lineno = classdef_node.lineno
             new_node.col_offset = classdef_node.col_offset
             return new_node
         if classdef_node.children[3].type == tokens.RPAR:
             # class NAME '(' ')' ':' suite
             body = self.handle_suite(classdef_node.children[5])
-            new_node = ast.ClassDef (name, [], [], body, decorators)
+            new_node = CompatClassDef (name, [], [], body, decorators)
             new_node.lineno = classdef_node.lineno
             new_node.col_offset = classdef_node.col_offset
             return new_node
@@ -550,7 +624,7 @@ class ASTBuilder(object):
         call_name.col_offset = classdef_node.col_offset
         call = self.handle_call(classdef_node.children[3], call_name)
         body = self.handle_suite(classdef_node.children[6])
-        new_node = ast.ClassDef (name, call.args, call.keywords, body, decorators)
+        new_node = CompatClassDef (name, call.args, call.keywords, body, decorators)
         new_node.lineno = classdef_node.lineno
         new_node.col_offset = classdef_node.col_offset
         return new_node
@@ -599,7 +673,7 @@ class ASTBuilder(object):
         if len(decorator_node.children) == 3:
             dec = dec_name
         elif len(decorator_node.children) == 5:
-            dec = ast.Call (dec_name, None, None)
+            dec = CompatCall (dec_name, None, None)
             dec.lineno = decorator_node.lineno
             dec.col_offset = decorator_node.col_offset
         else:
@@ -1116,7 +1190,7 @@ class ASTBuilder(object):
         first_child = trailer_node.children[0]
         if first_child.type == tokens.LPAR:
             if len(trailer_node.children) == 2:
-                new_node = ast.Call (left_expr, [], [])
+                new_node = CompatCall (left_expr, [], [])
                 new_node.lineno = trailer_node.lineno
                 new_node.col_offset = trailer_node.col_offset
                 return new_node
@@ -1222,7 +1296,7 @@ class ASTBuilder(object):
                         name = ast.Name ('o', ast.Load())
                         name.lineno = keyword_node.lineno
                         name.col_offset = keyword_node.col_offset
-                        arg = ast.Call(name, [], [ kw ])
+                        arg = CompatCall(name, [], [ kw ])
                         arg.lineno = keyword_node.lineno
                         arg.col_offset = keyword.col_offset
                         args.append(arg)
@@ -1245,7 +1319,7 @@ class ASTBuilder(object):
             args = []
         if not keywords:
             keywords = []
-        new_node = ast.Call(callable_expr, args, keywords)
+        new_node = CompatCall(callable_expr, args, keywords)
         new_node.lineno = callable_expr.lineno
         new_node.col_offset = callable_expr.col_offset
         return new_node

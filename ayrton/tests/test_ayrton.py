@@ -22,7 +22,7 @@ import os
 import tempfile
 import os.path
 
-from ayrton.expansion import bash
+from ayrton.expansion import bash, default
 import ayrton
 from ayrton.execute import CommandNotFound
 
@@ -33,77 +33,37 @@ logger= logging.getLogger ('ayrton.tests.ayrton')
 # create one of these
 ayrton.runner= ayrton.Ayrton ()
 
-class Bash(unittest.TestCase):
-    def test_simple_string (self):
-        self.assertEqual (bash ('s'), [ 's' ])
+class Argv (unittest.TestCase):
 
-    def test_simple_string_single (self):
-        self.assertEqual (bash ('s', single=True), 's')
+    def testEmpty (self):
+        self.assertRaises (ValueError, ayrton.Argv, [])
 
-    def test_glob1 (self):
-        self.assertEqual (bash ('*.py'), [ 'setup.py' ])
 
-    def test_glob1_single (self):
-        self.assertEqual (bash ('*.py', single=True), 'setup.py')
+    def testIter (self):
+        data= ['foo', 'bar', 'baz']
+        argv= ayrton.Argv (data)
 
-    def test_glob2 (self):
-        self.assertEqual (sorted (bash ([ '*.py', '*.txt' ])), [ 'LICENSE.txt', 'requirements.txt', 'setup.py', ])
+        args= list (iter (argv))
 
-    def test_glob_brace1 (self):
-        self.assertEqual (sorted (bash ('s{a,*.py}')), [ 'sa', 'setup.py' ])
+        self.assertEqual (args, data[1:])
 
-    def test_glob_brace2 (self):
-        self.assertEqual (sorted (bash ('ayrton/tests/data/{a,*.py}')), [ 'ayrton/tests/data/a', 'ayrton/tests/data/test.me.py' ])
 
-    def test_simple1_brace (self):
-        self.assertEqual (bash ('{acde,b}'), [ 'acde', 'b' ])
+    def testLen (self):
+        data= ['foo', 'bar', 'baz']
+        argv= ayrton.Argv (data)
 
-    def test_simple2_brace (self):
-        self.assertEqual (bash ('a{b,ce}d'), [ 'abd', 'aced' ])
+        l= len (argv)
 
-    def test_simple3_brace (self):
-        self.assertEqual (bash ('{a}'), [ '{a}' ])
+        self.assertEqual (l, len (data)-1)
 
-    def test_simple3_brace_single (self):
-        self.assertEqual (bash ('{a}', single=True), '{a}')
 
-    def test_simple4_brace (self):
-        self.assertEqual (bash ('a}'), [ 'a}' ])
+    def testPopFirst (self):
+        data= ['foo', 'bar', 'baz']
+        argv= ayrton.Argv (data)
 
-    def test_simple4_brace_single (self):
-        self.assertEqual (bash ('a}', single=True), 'a}')
+        i= argv.pop ()
 
-    def test_simple5_brace (self):
-        self.assertEqual (bash ('a{bfgh,{ci,djkl}e'), [ 'a{bfgh,cie', 'a{bfgh,djkle' ])
-
-    def test_simple6_brace (self):
-        self.assertEqual (bash ('{a,{b,c}d}'), [ 'a', 'bd', 'cd' ])
-
-    def test_simple7_brace (self):
-        self.assertEqual (bash ('foo{,bar}'), [ 'foo', 'foobar' ])
-
-    def test_nested1_brace (self):
-        # note how this is equivalent to a{b,c,d}e!
-        self.assertEqual (bash ('a{b,{c,d}}e'), [ 'abe', 'ace', 'ade' ])
-
-    def test_nested2_brace (self):
-        self.assertEqual (bash ('{c{a,b}d,e{f,g}h}'), [ 'cad', 'cbd', 'efh', 'egh' ])
-
-    def test_escaped_brace (self):
-        self.assertEqual (bash ('\{a,b}'), [ '{a,b}' ])
-
-    def test_escaped_brace_single (self):
-        self.assertEqual (bash ('\{a,b}', single=True), '{a,b}')
-
-    def test_real_example1 (self):
-        # tiles/{legend*,Elevation.dgml,preview.png,Makefile}
-        pass
-
-    def test_tilde (self):
-        self.assertEqual (bash ('~'), [ os.environ['HOME'] ])
-
-    def test_tilde_single (self):
-        self.assertEqual (bash ('~', single=True), os.environ['HOME'])
+        self.assertEqual (i, data[1])
 
 
 class ScriptExecution (unittest.TestCase):
@@ -154,6 +114,7 @@ class MockedStdout (ScriptExecution):
         # create a file() from the reading fd
         # this DOES NOT create a new fd or file
         self.r= open (r, mode='rb')
+        self.addCleanup (self.r.close)
 
         # the test will have to close stdin after performing what's testing
         # that's because otherwise the test locks at reading from the read end
@@ -171,7 +132,6 @@ class MockedStdout (ScriptExecution):
         logger.debug ('closing %d', self.old_stdout)
         os.close (self.old_stdout)
         logger.debug ('closing %d', self.r.fileno ())
-        self.r.close ()
         self.runner.wait_for_pending_children ()
 
 
@@ -404,6 +364,13 @@ class MiscTests (ScriptExecution):
     def testLongOutput (self):
         '''This test takes some time...'''
         self.doTest ('testLongOutput.ay', 'yes!')
+
+    def testExit0 (self):
+        self.doTest ('testExit0.ay', 0)
+
+    def testExit1 (self):
+        self.doTest ('testExit1.ay', 1)
+
 
 class CommandDetection (ScriptExecution):
 

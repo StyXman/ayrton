@@ -1,2 +1,3 @@
 paramiko>=1.15  # first one with py3 support
+coverage>=4.2
 Sphinx>=1.4.6

@@ -22,11 +22,13 @@ from functools import reduce
 from itertools import chain
 import os.path
 
+import ayrton
+
 def glob_expand (s):
     # shamelessly insprired from sh.py
     # but we return a list with the string when there is no match
     # and we also handle lists of strings; we expand them independently
-    if type (s)==str:
+    if isinstance (s, str):
         l= [ s ]
     else:
         # otherwise we assume it's some kind of iterable
@@ -43,6 +45,7 @@ def glob_expand (s):
 
     return ans
 
+
 class Group (object):
     def __init__ (self, left, right=None):
         self.left= left
@@ -57,6 +60,7 @@ class Group (object):
     def __iter__ (self):
         yield self.left
         yield self.right
+
 
 class ToExpand (object):
     def __init__ (self, s, indexes=None):
@@ -108,7 +112,7 @@ class ToExpand (object):
 
         left_cb, right_cb= data
         prefix= self.text[:left_cb]
-        # includes the {}'s
+        # the body includes the {}'s
         body= self.text[left_cb:right_cb+1]
         postfix= self.text[right_cb+1:]
         # print ("pre:%r b:%r post:%r" % (prefix, body, postfix))
@@ -172,9 +176,10 @@ class ToExpand (object):
     def __repr__ (self):
         return "ToExpand (%s, %s)" % (self.text, self.indexes)
 
+
 def brace_expand (s):
     # NOTE: this function is O(N) in several ways
-    if type (s)==str:
+    if isinstance (s, str):
         l= [ s ]
     else:
         # otherwise we assume it's some kind of iterable
@@ -201,8 +206,9 @@ def brace_expand (s):
 
     return ans
 
+
 def backslash_descape (s):
-    if type (s)==str:
+    if isinstance (s, str):
         ans= s.replace ('\\', '')
     else:
         # otherwise we assume it's some kind of iterable
@@ -210,14 +216,95 @@ def backslash_descape (s):
 
     return ans
 
+
 def tilde_expand (s):
-    if type (s)==str:
+    if isinstance (s, str):
         ans= os.path.expanduser (s)
     else:
         # otherwise we assume it's some kind of iterable
         ans= [ os.path.expanduser (s1) for s1 in s ]
 
     return ans
+
+###########################################
+# functions needed for parameter expansion
+###########################################
+
+# these ones is actually *used* by the functions
+def get_var (parameter):
+    try:
+        value= ayrton.runner.globals[parameter]
+    except KeyError:
+        raise NameError
+    else:
+        if not isinstance (value, str):
+            # all these operations apply only to strings
+            raise ValueError
+
+        return value
+
+
+def is_null (value):
+    return value is None or value==''
+
+
+#############################
+# now for the real functions
+#############################
+
+# {parameter:-word}
+# {parameter:=word}  # no special case for $n, $?
+def default (parameter, word):
+    ans= get_var (parameter)
+
+    if is_null (ans):
+        ans= word
+
+    # according to bash's manpage, default's second parameter should be expanded
+    # but tests have shown that it is not so
+    return ans
+
+
+# {parameter:?word} is automatically handled by Python's runtime
+# NameError
+
+
+# {parameter:+word}
+def replace_if_set (parameter, word):
+    value= get_var (parameter)
+
+    if is_null (value):
+        return ''
+    else:
+        return word
+
+
+# {parameter:offset}
+# {parameter:offset:length}
+# use s[offset:], s[offset:offset+length]
+# or rather give a usable function just in case we don't go the f"" translation way
+# (and probably would use it internally anyways)
+def substr (parameter, offset, length=None):
+    value= get_var (parameter)
+
+    try:
+        ans= value[offset:]
+    except IndexError:
+        if offset>0:
+            ans= ''
+        else:
+            raise
+
+    if length is not None:
+        try:
+            ans= ans[:length]
+        except IndexError:
+            if length<0:
+                raise
+            # else keep the value we have
+
+    return ans
+
 
 def bash (s, single=False):
     data= backslash_descape (glob_expand (tilde_expand (brace_expand (s))))

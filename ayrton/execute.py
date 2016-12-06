@@ -59,6 +59,7 @@ class CommandNotFound (NameError):
     def __str__ (self):
         return "CommandNotFound or NameError: command %(name)s not found or name %(name)s is not defined" % self.__dict__
 
+
 def which(program):
     def is_exe(fpath):
         return os.path.exists(fpath) and os.access(fpath, os.X_OK)
@@ -79,6 +80,7 @@ def which(program):
 
     return None
 
+
 def resolve_program(program):
     path = which(program)
     if not path:
@@ -94,11 +96,23 @@ def resolve_program(program):
 
     return path
 
+
 def isiterable (o):
     """Returns True if o is iterable but not str/bytes type."""
     # TODO: what about Mappings?
     return (    isinstance (o, Iterable) and
             not isinstance (o, (bytes, str)) )
+
+
+def file_name_mode (i, mode):
+    if isinstance (i, tuple):
+        file_name= i[0]
+        mode |= i[1]
+    else:
+        file_name = i
+
+    return file_name, mode
+
 
 class Command:
     default_options= dict (
@@ -119,6 +133,7 @@ class Command:
     def __init__ (self, path):
         self.path= path
         self.exe= resolve_program (path)
+        logger.debug ('found exe %s', self.exe)
         self.command= None
 
         self.stdin_pipe= None
@@ -133,6 +148,7 @@ class Command:
 
 
     def prepare_fds (self):
+        """Create needed file descriptors (pipes, mostly) before forking."""
         if '_in' in self.options:
             i= self.options['_in']
             logger.debug ('_in: %r', i)
@@ -234,15 +250,18 @@ class Command:
                     # it's not /dev/zero, see man (4) zero
                     logger.debug ("_in==None redirects from /dev/null")
                     i= os.open (os.devnull, os.O_RDONLY)
+
                 elif isinstance (i, io.IOBase):
                     # this does not work with file like objects
                     ifile= i
                     logger.debug ("_in::IOBase redirects %s -> 0 (stdin)", ifile)
                     i= i.fileno ()
-                elif type (i) in (str, bytes):
-                    file_name= i
-                    i= os.open (i, os.O_RDONLY)
-                    logger.debug ("_in::(str|bytes) redirects %d (%s) -> 0 (stdin)", i, file_name)
+
+                elif isinstance (i, str) or isinstance (i, bytes) or isinstance (i, tuple):
+                    logger.debug ("[%s]: %r" % (type(i), i))
+                    file_name, mode= file_name_mode (i, os.O_RDONLY)
+                    i= os.open (file_name, mode)
+                    logger.debug ("_in::(str|bytes|tuple) redirects %d (%s) -> 0 (stdin)", i, file_name)
 
                 if isinstance (i, int):
                     logger.debug ("_in::int redirects %d -> 0 (stdin)", i)
@@ -267,6 +286,7 @@ class Command:
                     # a= cat (..., _out=capture)
                     # b= grep (..., _in= a)
                     # once a's lines have been read, t
+                    logger.debug ('closing %d', w)
                     os.close (w)
 
             if '_out' in self.options:
@@ -275,14 +295,17 @@ class Command:
                     # connect to /dev/null
                     o= os.open (os.devnull, os.O_WRONLY) # no need to create it
                     logger.debug ("_out==None, redirects stdout 1 -> %d (%s)", o, os.devnull)
+
                 elif isinstance (o, io.IOBase):
                     # this does not work with file like objects
                     ofile= o
                     logger.debug ("_out::IOBase, redirects stdout 1 -> %s", ofile)
                     o= o.fileno ()
-                elif type (o) in (bytes, str):
-                    file_name= o
-                    o= os.open (o, os.O_WRONLY)
+
+                elif isinstance (o, str) or isinstance (o, bytes) or isinstance (o, tuple):
+                    logger.debug ("[%s]: %r" % (type(o), o))
+                    file_name, mode= file_name_mode (o, os.O_WRONLY)
+                    o= os.open (file_name, mode)
                     logger.debug ("_out::(str|bytes), redirects stdout 1 -> %d (%s)", o, file_name)
 
                 if isinstance (o, int):
@@ -301,6 +324,7 @@ class Command:
                     os.dup2 (w, 1)
                     logger.debug ('closing %d', w)
                     os.close (w)
+                    logger.debug ('closing %d', r)
                     os.close (r)
 
             if '_err' in self.options:
@@ -310,14 +334,16 @@ class Command:
                     e= os.open (os.devnull, os.O_WRONLY) # no need to create it
                     logger.debug ("_err==None, redirects stderr 2 -> %d (%s)", e, os.devnull)
                     # this will be continued later in the next if
+
                 elif isinstance (e, io.IOBase):
                     # this does not work with file like objects
                     efile= e
                     logger.debug ("_err::IOBase, redirects stderr 2 -> %s", efile)
                     e= e.fileno ()
-                elif type (e) in (bytes, str):
-                    file_name= e
-                    e= os.open (e, os.O_WRONLY)
+
+                elif isinstance (e, str) or isinstance (e, bytes) or isinstance (e, tuple):
+                    file_name, mode= file_name_mode (e, os.O_WRONLY)
+                    e= os.open (file_name, mode)
                     logger.debug ("_err::(str|bytes), redirects stderr 2 -> %d (%s)", e, file_name)
 
                 if isinstance (e, int):
@@ -435,6 +461,8 @@ class Command:
                 # but it's the same as in foo=$(long_output)
                 self.prepare_capture_file ()
                 self.captured_lines= self.capture_file.readlines ()
+                logger.debug ('closing %r', self.capture_file)
+                self.capture_file.close ()
 
             self.wait ()
             # NOTE: uhm?
@@ -497,6 +525,7 @@ class Command:
         if type (self.options['_end'])!=bytes:
             self.options['_end']= str (self.options['_end']).encode (encoding)
 
+        logger.debug ('about to execute %s %s' % (self.exe, self.args))
         logger.debug ('fork')
         r= os.fork ()
         if r==0:
@@ -541,11 +570,13 @@ class Command:
     def __str__ (self):
         self.wait ()
 
-        if self.captured_lines:
+        if self.captured_lines is not None:
             s= ''.join (self.captured_lines)
         else:
             self.prepare_capture_file ()
             s= self.capture_file.read ()
+            logger.debug ('closing %r', self.capture_file)
+            self.capture_file.close ()
 
         return s
 
@@ -553,7 +584,7 @@ class Command:
     def __iter__ (self):
         logger.debug ('iterating!')
 
-        if self.captured_lines:
+        if self.captured_lines is not None:
             for line in self.captured_lines:
                 # while iterating we always remove the trailing \n
                 line= line.rstrip (os.linesep)
@@ -570,6 +601,7 @@ class Command:
 
             # finish him!
             logger.debug ('finished!')
+            logger.debug ('closing %r', self.capture_file)
             self.capture_file.close ()
             # if we're iterating, then the Command is in _bg
             self.wait ()
@@ -578,11 +610,12 @@ class Command:
     def readlines (self):
         self.wait ()
 
-        if self.captured_lines:
+        if self.captured_lines is not None:
             lines= self.captured_lines
         else:
             self.prepare_capture_file ()
             lines= self.capture_file.readlines ()
+            logger.debug ('closing %r', self.capture_file)
             self.capture_file.close ()
 
         return lines
@@ -593,7 +626,7 @@ class Command:
     def readline (self):
         self.wait ()
 
-        if self.captured_lines:
+        if self.captured_lines is not None:
             line= self.captured_lines.pop (0)
         else:
             self.prepare_capture_file ()
@@ -607,6 +640,9 @@ class Command:
 
     def close (self):
         self.wait ()
+        # close first, then wait
+        # usefull for 'canceling' a background task we don't want anymore
+        logger.debug ('closing %r', self.capture_file)
         self.capture_file.close ()
 
 

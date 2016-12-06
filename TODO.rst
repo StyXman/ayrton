@@ -23,10 +23,6 @@ Really do:
 
    * https://github.com/amoffat/sh/issues/66
 
-* enable tracing
-
-   * see pdb's source
-
 * becareful with buitins, might eclipse valid usages: bash() (exp) blocks /bin/bash
    * rename bash() to expand()
    * add option _exec=True for actually executing the binary.
@@ -39,6 +35,8 @@ Really do:
 * a setting for making references to unkown envvars as in bash.
 * trap?
 * executable path caching à la bash.
+* with parallel(2):
+      ....
 
 Think deeply about:
 -------------------
@@ -51,3 +49,11 @@ Think deeply about:
     * -f vs (-)f vs _f
 * commands in keywords should also be _out=Capture
 * which is the sanest default, bash (..., single=True) or otherwise
+
+* exec &> ./create.log
+
+* implement -m so we can run ayrton -x -m foo
+
+* check whether we can replace a lot of code with Popen/subprocess
+
+* convert tests to function calls

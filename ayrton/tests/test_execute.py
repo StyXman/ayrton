@@ -159,7 +159,6 @@ class Redirected (unittest.TestCase):
 
         l= a.readline ()
         self.assertEqual (l, 'stdin_from_file!')
-        a.close ()
 
     def testOutToFile (self):
         file_path= 'ayrton/tests/data/string_stdout.txt'
@@ -229,7 +228,6 @@ class Redirected (unittest.TestCase):
 
         l= a.readline ()
         self.assertEqual (l, 'pipe!')
-        a.close ()
 
 class CommandExecution (unittest.TestCase):
     def testFalse (self):
@@ -255,6 +253,7 @@ class CommandExecution (unittest.TestCase):
         self.assertEqual (b.readline (), 'grep found')
         for i in b:
             raise ValueError ("too many lines")
+        b.close ()
 
     def testCatGrep2 (self):
         a= cat (_in=['grap not found', 'grep found', 'grip not found, fell'],
@@ -263,6 +262,7 @@ class CommandExecution (unittest.TestCase):
         self.assertEqual (b.readline (), 'grep found')
         for i in b:
             raise ValueError ("too many lines")
+        b.close ()
 
     def foo (self):
         # ssh always opens the tty for reading the passphrase, so I'm not sure

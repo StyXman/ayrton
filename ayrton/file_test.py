@@ -27,89 +27,113 @@ def simple_stat (fname):
     except (IOError, OSError):
         return None
 
-def _a (fname):
-    return simple_stat (fname) is not None
 
-def _b (fname):
-    s= simple_stat (fname)
-    return s is not None and stat.S_ISBLK (s.st_mode)
+class FalseBool:
+    """This class is needed so file test X() can be called -X() and not break
+    the semantics. The problem is that -True==-1 and -False==0. Also:
+    TypeError: type 'bool' is not an acceptable base type."""
 
-def _c (fname):
-    s= simple_stat (fname)
-    return s is not None and stat.S_ISCHR (s.st_mode)
+    def __init__ (self, value):
+        if not isinstance (value, bool):
+            raise ValueError
 
-def _d (fname):
+        self.value= value
+
+    def __bool__ (self):
+        return self.value
+
+    def __neg__ (self):
+        return self.value
+
+
+def a (fname):
+    return FalseBool (simple_stat (fname) is not None)
+
+def b (fname):
     s= simple_stat (fname)
-    return s is not None and stat.S_ISDIR (s.st_mode)
+    return FalseBool (s is not None and stat.S_ISBLK (s.st_mode))
+
+def c (fname):
+    s= simple_stat (fname)
+    return FalseBool (s is not None and stat.S_ISCHR (s.st_mode))
+
+def d (fname):
+    s= simple_stat (fname)
+    return FalseBool (s is not None and stat.S_ISDIR (s.st_mode))
 
 # both return the same thing!
-_e= _a
+e= a
 
-def _f (fname):
+def f (fname):
     s= simple_stat (fname)
-    return s is not None and stat.S_ISREG (s.st_mode)
+    return FalseBool (s is not None and stat.S_ISREG (s.st_mode))
 
-def _g (fname):
+def g (fname):
     s= simple_stat (fname)
-    return s is not None and (stat.S_IMODE (s.st_mode) & stat.S_ISGID)!=0
+    return FalseBool (s is not None and (stat.S_IMODE (s.st_mode) & stat.S_ISGID)!=0)
 
-def _h (fname):
-    return os.path.islink (fname)
+def h (fname):
+    return FalseBool (os.path.islink (fname))
 
-def _k (fname):
+def k (fname):
     s= simple_stat (fname)
     # VTX?!?
-    return s is not None and (stat.S_IMODE (s.st_mode) & stat.S_ISVTX)!=0
+    return FalseBool (s is not None and (stat.S_IMODE (s.st_mode) & stat.S_ISVTX)!=0)
 
-def _p (fname):
+def p (fname):
     s= simple_stat (fname)
-    return s is not None and stat.S_ISFIFO (s.st_mode)
+    return FalseBool (s is not None and stat.S_ISFIFO (s.st_mode))
 
-def _r (fname):
+def r (fname):
     s= simple_stat (fname)
-    return s is not None and (stat.S_IMODE (s.st_mode) & (stat.S_IRUSR|stat.S_IRGRP|stat.S_IROTH))!=0
+    return FalseBool (s is not None and (stat.S_IMODE (s.st_mode) &
+                                         (stat.S_IRUSR|stat.S_IRGRP|stat.S_IROTH))!=0)
 
-def _s (fname):
+def s (fname):
     s= simple_stat (fname)
-    return s is not None and s.st_size>0
+    return FalseBool (s is not None and s.st_size>0)
 
-# TODO: _t
+# TODO: t
 # os.isatty(fd)
 
-def _u (fname):
+def u (fname):
     s= simple_stat (fname)
-    return s is not None and (stat.S_IMODE (s.st_mode) & stat.S_ISUID)!=0
+    return FalseBool (s is not None and (stat.S_IMODE (s.st_mode) & stat.S_ISUID)!=0)
 
-def _w (fname):
+def w (fname):
     s= simple_stat (fname)
-    return s is not None and (stat.S_IMODE (s.st_mode) & (stat.S_IWUSR|stat.S_IWGRP|stat.S_IWOTH))!=0
+    return FalseBool (s is not None and (stat.S_IMODE (s.st_mode) &
+                                         (stat.S_IWUSR|stat.S_IWGRP|stat.S_IWOTH))!=0)
 
-def _x (fname):
+def x (fname):
     s= simple_stat (fname)
-    return s is not None and (stat.S_IMODE (s.st_mode) & (stat.S_IXUSR|stat.S_IXGRP|stat.S_IXOTH))!=0
+    return FalseBool (s is not None and (stat.S_IMODE (s.st_mode) &
+                                         (stat.S_IXUSR|stat.S_IXGRP|stat.S_IXOTH))!=0)
 
-# TODO: _G, _O
+# TODO: G, O
 
-_L= _h
+L= h
 
-def _N (fname):
+def N (fname):
     s= simple_stat (fname)
-    return s is not None and s.st_mtime_ns > s.st_atime_ns
+    return FalseBool (s is not None and s.st_mtime_ns > s.st_atime_ns)
 
-def _S (fname):
+def S (fname):
     s= simple_stat (fname)
-    return s is not None and stat.S_ISSOCK (s.st_mode)
+    return FalseBool (s is not None and stat.S_ISSOCK (s.st_mode))
 
-# TODO: _ef,
+# TODO: ef,
 
-def _nt (a, b):
+def nt (a, b):
     # file1 is newer (according to modification date) than file2, or if file1 exists and file2 does not.
     s1= simple_stat (a)
     s2= simple_stat (b)
-    return (s1 is not None and s2 is None) or (s1.st_mtime_ns > s2.st_mtime_ns)
+    return FalseBool (   (s1 is not None and s2 is None)
+                      or (s1.st_mtime_ns > s2.st_mtime_ns))
 
-def _ot (a, b):
+def ot (a, b):
     # file1 is older than file2, or if file2 exists and file1 does not.
     s1= simple_stat (a)
     s2= simple_stat (b)
-    return (s2 is not None and s1 is None) or (s2.st_mtime_ns > s1.st_mtime_ns)
+    return FalseBool (   (s2 is not None and s1 is None)
+                      or (s2.st_mtime_ns > s1.st_mtime_ns))
