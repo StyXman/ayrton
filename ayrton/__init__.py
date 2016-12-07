@@ -95,7 +95,7 @@ def counter_handler ():  # pragma: no cover
 # uncomment next line and change level for way too much debugging
 # during tests execution
 # for running ayrton in the same mode, use the -d options
-set_debug (level=logging.DEBUG)
+# set_debug (level=logging.DEBUG)
 
 logger= logging.getLogger ('ayrton')
 
@@ -109,7 +109,7 @@ from ayrton.parser.pyparser.pyparse import CompileInfo, PythonParser
 from ayrton.parser.astcompiler.astbuilder import ast_from_node
 from ayrton.ast_pprinter import pprint
 
-__version__= '0.9'
+__version__= '0.9.1'
 
 
 class ExecParams:

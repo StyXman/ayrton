@@ -1,3 +1,12 @@
+ayrton (0.9.1) unstable; urgency=medium
+
+  * The 'Brown Paper Bag' release, probably Pt2.
+  * `ayrton-0.9` has debug on. It will leave lots of files laying around your file system.
+  * Modify the release script to do not allow this never ever more.
+  * `make install` was not running the tests.
+
+ -- Marcos Dione <mdione@grulic.org.ar>  Wed, 07 Dec 2016 13:56:44 +0100
+
 ayrton (0.9) unstable; urgency=medium
 
   * The 'No Government' release.

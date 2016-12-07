@@ -27,7 +27,7 @@ quicktest:
 docs:
 	RUNNERPATH=${PWD} make -C doc html
 
-install:
+install: tests
 	$(RUNNER) setup.py install --prefix=$(INSTALL_DIR)
 
 unsafe-install:
