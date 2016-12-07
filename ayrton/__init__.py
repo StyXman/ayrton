@@ -95,7 +95,7 @@ def counter_handler ():  # pragma: no cover
 # uncomment next line and change level for way too much debugging
 # during tests execution
 # for running ayrton in the same mode, use the -d options
-set_debug (level=logging.DEBUG)
+# set_debug (level=logging.DEBUG)
 
 logger= logging.getLogger ('ayrton')
 
