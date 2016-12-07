@@ -1,5 +1,7 @@
 #! /usr/bin/env ayrton
 
+import logging
+
 import ayrton
 
 option ('-e')
@@ -19,6 +21,10 @@ if make ('install'):  # this includes tests
         exit (1)
 
     # git ('checkout', -b="release-%s" % ayrton.__version__)
+
+    if 0 < logging.root.level < 30:
+        print ("logging is at %d, I can't release like this!" % logging.root.level)
+        exit (1)
 
     dch (--changelog='ChangeLog.rst', --newversion=ayrton.__version__)
     dch (--changelog='ChangeLog.rst', --release=True)
