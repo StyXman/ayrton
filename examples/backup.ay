@@ -1,0 +1,358 @@
+#!/bin/bash
+# backup.sh
+# 
+# Backup up Unix-like computers
+# 
+# itk@samfundet.no
+#
+# This script was first checked into RCS in 2000, and has since backed up a few
+# servers almost every day, whenever not broken.
+# 
+# It's a bit peculiar, but quite effective. The following is worth keeping in
+# mind when hacking:
+#
+# Because of the way we run this script from cron, informational logging goes
+# to stderr and warnings and errors to stdout. This way, we get mail whenever
+# stuff fails, and other output is redirected to the log file.
+# 
+# The script is halfway Norwegian and halfway English. Newer modifications are
+# in English, we should probably stick to that.
+
+computer=$1                                      # The computer to backup.
+SCRIPTPATH="$( cd "$(dirname "$0")" ; pwd -P )"  # Absolute directory the script lives in
+confdir=$SCRIPTPATH/conf                         # Directory for configuration files
+conffile=$confdir/backup.config
+LOCKFILE=$SCRIPTPATH/backuprun.lockfile.$computer
+DAY_OF_MONTH=`date "+%d" | sed s/^0//`           # from 1 to 31
+DATE=`date "+%Y%m%d%H%M"`                        # format: touch
+DATEs=`date "+%Y-%m-%d %H:%M"`                   # format: tar
+TOP_PID=$$
+
+if [ -z "$computer" ]; then
+	echo "Usage: $0 COMPUTER"
+	exit 1
+fi
+
+[ ! -f $exclude ] && printf "tmp\ncore\n" > $exclude
+
+# Die more or less gracefully (at least notify user)
+die() {
+	warnmsg "Aborting."
+	rm $LOCKFILE
+	exit 1
+}
+diemsg() {
+	warnmsg "$@"
+	die
+}
+warnmsg() {
+	echo `date`": $computer: $@"
+	echo `date`": $computer: $@" >&2
+}
+infomsg() {
+	echo `date`": $computer: $@" >&2
+}
+findconf() {  # getconf is already taken
+	key=$1
+	computer=$2
+	filesystem=$( echo $3 | tr / . )
+
+	if [ "$computer" ] && [ "$filesystem" ] && git config -f $conffile $computer$filesystem.$key > /dev/null; then
+		git config -f $conffile $computer$filesystem.$key
+	elif [ "$computer" ] && git config -f $conffile $computer.$key > /dev/null; then
+		git config -f $conffile $computer.$key
+	elif git config -f $conffile defaults.$key > /dev/null; then
+		git config -f $conffile defaults.$key
+	else
+		warnmsg "No configuration found for $key in $conffile, aborting."
+		kill -TERM $TOP_PID
+	fi
+}
+
+# Trap C-c and kill
+trap die SIGINT SIGTERM
+
+# Don't start if we're already running. Don't use diemsg, as that removes the lock file!
+if [ -e $LOCKFILE ]; then
+	warnmsg "$LOCKFILE exists for pid `cat $LOCKFILE`."
+	exit 1
+fi;
+touch $LOCKFILE
+echo $$ > $LOCKFILE
+
+infomsg "Backup run starting"
+
+umask 027
+
+backup()
+{
+	infomsg "$computer:$filesystem $backuplevel backup"
+
+	localsnar="${storagedir}/${computer}/${sfilesystem}/.incremental.snar"
+	remotesnar="$remotehome/.backup/${sfilesystem}.snar"
+	if [ "$backuplevel" = "daily" ]; then
+		# If incremental backup, we need to copy the incremental status to $computer.
+		# If it does not exist, whine a bit and then run date-based instead.
+		if [ -s "$localsnar" ]; then
+			if ! scp $localsnar $username@$computer:$remotesnar >&2; then
+				diemsg "Could not copy .incremental.snar to $computer"
+			fi
+			lastcmd="--listed-incremental=$remotesnar --no-check-device"
+		else
+			infomsg "Missing incremental.snar for $filesystem, doing date-based backup instead until next full backup"
+			remotesnar=""
+			lastd=`cat ../.date`
+			lastcmd="--newer='$lastd'"
+		fi
+	else
+		# Note: Since we rm-ed .backup previously, and we don't scp over
+		# anything in this branch, this file will not exist, and we
+		# will be doing a full backup (but we want the output of it).
+		lastcmd="--listed-incremental=$remotesnar"
+	fi
+
+	# The file is usually stored to disk with a simple cat > $TARFILE,
+	# but in some cases, like backing up to a remote and untrusted
+	# file system, it could be useful to replace it with e.g.
+	# a GPG command line.
+	storageprogram=$( findconf storageprogram $computer $sfilesystem )
+
+	# We try to run tar on the remote computer
+	#    c create archive
+	#    C change to directory first
+	#    . where to start taring (see C)
+	#    $lastcmd only files newer than this
+	#    --one-file-system don't traverse file systems
+	#    --use-compress-program compress it using gzip or pigz
+	#    --exclude-from file to get exclusion pattern from
+	#    Pipe the stuff over ssh to ourselves, run pee to cat the contents to a
+	#    file and build a file list, respectivly.  
+	TARFILE=$DATE.tmp
+	TARCMD="ssh -n $username@$computer \"$nice tar --one-file-system --use-compress-program $compressor -cf - -C $filesystem . $lastcmd \
+		--exclude-from=$remotehome/.backup/exclude\" | pee \"$storageprogram > $TARFILE\" \"tar tzvf -\""
+	infomsg "Running $TARCMD"
+	eval $TARCMD > $DATE.idx
+
+	if [ $? -eq 0 ] && [ -s $TARFILE ]; then
+		# File is >0 in size and neither cat or tar tzvf failed; we assume it worked.
+ 
+		if [ "$remotesnar" ]; then
+			if ! scp $username@$computer:$remotesnar $localsnar.tmp >&2; then
+				diemsg "Could not copy .incremental.snar from $computer"
+			fi
+		fi
+
+		# Move tar file in place
+		mv $TARFILE $DATE.tgz
+		if [ "$remotesnar" ]; then
+			mv $localsnar.tmp $localsnar
+		fi
+
+		# Update timestamp
+		echo $DATEs > ../.date && touch -t $DATE ../.date
+
+		# Fix permissions
+		chmod 600 *tgz                      #only for us
+		chmod 644 *idx 2>/dev/null          #everyone can read
+
+		# Let the remote computer know that we ran a successful backup (for nagios)
+		ssh -n $username@$computer touch $filesystem/.lastbackup
+	else
+		# Something wrong happened.
+		rm $TARFILE
+		diemsg "tar failed or $TARFILE empty. $backuplevel backup of $computer:$filesystem failed and deleted"
+	fi
+}
+
+# Non-privileged backups currently have a few limitations compared to regular ones:
+#
+#  - No .idx files.
+#  - No .snar-style incremental backups, only date-based.
+#  - No touching of .lastbackup for Nagios.
+#  - Failed tar operations may go undetected, since we only see the error code
+#    the last process in the pipe chain, which is gpg.
+#  - No storageprogram support (see above), because the file is typically already
+#    encrypted.
+nonprivbackup()
+{
+	infomsg "$computer:$filesystem $backuplevel non-privileged backup"
+
+	if [ "$backuplevel" = "daily" ]; then
+		lastd=`cat ../.date`
+		lastcmd="'$lastd'"
+	else
+		lastcmd=""
+	fi
+
+	TARFILE=$DATE.tmp
+	TARCMD="ssh -n $username@$computer \"sudo /usr/local/sbin/output-encrypted-backup $filesystem $lastcmd\""
+	infomsg "Running $TARCMD"
+	eval $TARCMD > $TARFILE
+
+	if [ $? -eq 0 ] && [ -s $TARFILE ]; then
+		# File is >0 in size and the remote side did not report any fatal errors; we assume it worked.
+
+		# Move tar file in place
+		mv $TARFILE $DATE.tgz.gpg
+
+		# Update timestamp
+		echo $DATEs > ../.date && touch -t $DATE ../.date
+
+		# Fix permissions
+		chmod 600 *tgz.gpg                  #only for us
+	else
+		# Something wrong happened.
+		rm $TARFILE
+		diemsg "tar failed or $TARFILE empty. $backuplevel backup of $computer:$filesystem failed and deleted"
+	fi
+}
+
+# Get basic configuration.
+storagedir=$( findconf storagedir $computer )
+username=$( findconf username $computer )
+exclude=$( findconf excludefile $computer )
+
+# Check that the target filesystem is mounted (actually check that it's not
+# the root filesystem)
+if [ ! -d "$storagedir/$computer" ]; then
+	diemsg "Target filesystem ($storagedir/$computer) does not exist."
+fi
+rootfilesystem=`df -P /`
+targetfilesystem=`df -P "$storagedir/$computer"`
+if [ "$rootfilesystem" == "$targetfilesystem" ]; then
+	diemsg "Target filesystem ($storagedir/$computer) was mounted on /."
+fi
+ 
+infomsg "Backing up $computer"
+
+# Try to SSH to the computer without entering a password.
+if ! ssh -n -o NumberOfPasswordPrompts=0 $username@$computer /bin/true; then
+	diemsg "Could not use passwordless SSH."
+fi
+
+# Find the home directory of the backup user
+remotehome=`ssh -n $username@$computer "echo ~"`
+if [ -z "$remotehome" ]; then
+	diemsg "Could not expand ~ for user $username"
+fi
+
+# Check if pigz is available
+if ssh -n $username@$computer "pigz -V 2>/dev/null"; then
+	compressor=pigz
+else
+	infomsg "pigz missing; falling back to gzip."
+	compressor=gzip
+fi
+
+# Check if nice and ionice are available
+if ssh -n $username@$computer "nice -n 19 ionice -c3 /bin/true 2>/dev/null"; then
+	nice="nice -n 19 ionice -c3"
+else
+	infomsg "nice and/or ionice missing; will run at normal priority."
+	nice=""
+fi
+
+# Check dump bit in fstab
+filesystems=`ssh -n $username@$computer "cat /etc/fstab" \
+	| grep -v nfs \
+	| grep -v "^#" \
+	| grep -v "^$" \
+	| awk '{ if ( $(NF-1) != "0" ) print $2}' `
+
+# Clean up our dir at this client
+if ! ssh -n $username@$computer "rm -r $remotehome/.backup ; mkdir -m 700 $remotehome/.backup"; then
+	diemsg "Could not create backup staging area at $computer:$remotehome/.backup"
+fi
+
+# Try to copy $exclude to $computer
+if ! scp $exclude $username@$computer:$remotehome/.backup/exclude >&2; then
+	diemsg "Could not copy exclude.txt to $computer"
+fi
+
+# Try to copy preeexec and postexec if they exist
+if [ -f $confdir/preexec.$computer ]; then
+	if ! scp $confdir/preexec.$computer $username@$computer:$remotehome/.backup/preexec >&2; then
+		diemsg "Could not copy preexec.$computer to $computer:$remotehome/.backup/preexec"
+	fi
+fi
+if [ -f $confdir/postexec.$computer ]; then
+	if ! scp $confdir/postexec.$computer $username@$computer:$remotehome/.backup/postexec >&2; then
+		diemsg "Could not copy postexec.$computer to $computer:$remotehome/.backup/postexec"
+	fi
+fi
+
+# Try to run preexec if it exists
+if ! ssh -n $username@$computer "[ ! -f $remotehome/.backup/preexec ] || /bin/bash -x $remotehome/.backup/preexec" >&2; then
+	diemsg "Could not run $computer:$remotehome/.backup/preexec"
+fi
+
+for filesystem in $filesystems; do
+	# Remove / and $ (for Windows) for path names
+	sfilesystem=`echo $filesystem | tr '\/\$' '__'`
+
+	# Prepare storage area
+	mkdir -m 755 -p $storagedir/$computer/$sfilesystem/full 2>/dev/null
+	mkdir -m 755 -p $storagedir/$computer/$sfilesystem/daily 2>/dev/null
+
+	# Default backuplevel
+	backuplevel=daily
+
+	if [ ! -s $storagedir/$computer/$sfilesystem/.date ]; then
+		# Take the first full backup of this filesystem on this computer
+		backuplevel=full
+	fi
+
+	# Check if we want a full backup
+	fixedfullbackupday=$( findconf fixedfullbackupday $computer $filesystem )
+	if [ "$fixedfullbackupday" ]; then
+		fullbackup_min_for_this_machine=$( findconf daysbetweenfullforfixed $computer $filesystem )
+		if [ "$DAY_OF_MONTH" = "$fixedfullbackupday" ]; then
+			backuplevel=full
+		fi
+	else
+		fullbackup_min_for_this_machine=$( findconf daysbetweenfull $computer $filesystem )
+	fi
+
+	if [ -z "`find $storagedir/$computer/$sfilesystem/full/ -name \*tgz\* -mtime -$fullbackup_min_for_this_machine`" ]; then
+		backuplevel=full
+	fi
+
+	# We want to be here
+	cd $storagedir/$computer/$sfilesystem/$backuplevel || diemsg "$storagedir/$computer/$sfilesystem/$backuplevel does not exist"
+
+	# Perform the actual backup
+	if [ "$( findconf nonpriv $computer )" ]; then
+		nonprivbackup
+	else
+		backup
+	fi
+
+	# Delete old full backups
+	mf=$( findconf maxnumfull $computer $filesystem )
+	mf=$(( mf + 1 ))
+	for full in `ls -1t $storagedir/$computer/$sfilesystem/full/*tgz* | tail -n +$mf`; do
+		prefix=`echo $full | sed "s/\.[^.]*$//"`
+		infomsg "$computer:$filesystem Deleting full backup $prefix"
+		rm $prefix*
+	done
+
+	# Delete incremental backups older than the oldest full backup
+	oldf=`ls -t1 $storagedir/$computer/$sfilesystem/full/*tgz* | tail -1`
+	find \
+		$storagedir/$computer/$sfilesystem/daily \
+		-type f \
+		\! -newer $oldf \
+		-printf "`date`: $computer: Deleting old incremental backup: %p\n" \
+		-exec rm {} \; >&2
+done
+
+# Try to run postexec if it exist
+if ! ssh -n $username@$computer "[ ! -f $remotehome/.backup/postexec ] || /bin/bash -x $remotehome/.backup/postexec" >&2; then
+	diemsg "Could not run $computer:$remotehome/.backup/postexec"
+fi
+
+# Use warn so that we will get an email even on success.
+warnmsg "Backup completed successfully."
+
+# Remove lockfile
+rm $LOCKFILE
