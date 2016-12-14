@@ -20,6 +20,7 @@
 import ayrton
 import ayrton.execute
 import os
+import signal
 
 import logging
 logger= logging.getLogger ('ayrton.functions')
@@ -97,6 +98,11 @@ def shift (n=1):
         raise ValueError ()
 
     return ans
+
+
+def trap(handler, *signals):
+    for signal in signals:
+        signal.signal(signal, handler)
 
 
 def unset (*args):

@@ -100,6 +100,11 @@ Functions
     1, the value returned is just the first element; if it's bigger than 1, it
     returns a list with those *n* elements.
 
+.. py:function:: trap(handler, *signals)
+
+    Associates `handler` to all the `signals`. You will need to ``import signal``
+    and use the ``SIG*`` constants.
+
 .. py:function:: unset (*args)
 
     For each variable name in *\*args*, unset the variable and remove it from

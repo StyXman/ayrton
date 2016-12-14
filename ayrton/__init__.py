@@ -181,7 +181,7 @@ class Environment (dict):
                                   'N', 'S', 'nt', 'ot' ],
             'ayrton.expansion': [ 'bash', ],
             'ayrton.functions': [ 'cd', ('cd', 'chdir'), 'exit', 'export',
-                                  'option', 'run', 'shift', 'unset', ],
+                                  'option', 'run', 'shift', 'trap', 'unset', ],
             'ayrton.execute': [ 'o', 'Capture', 'CommandFailed', 'CommandNotFound',
                                 'Pipe', 'Command'],
             'ayrton.remote': [ 'remote' ]
