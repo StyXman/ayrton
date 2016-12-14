@@ -579,9 +579,12 @@ class Command:
             s= ''.join (self.captured_lines)
         else:
             self.prepare_capture_file ()
-            s= self.capture_file.read ()
-            logger.debug ('closing %r', self.capture_file)
-            self.capture_file.close ()
+            if self.capture_file is not None:  # TODO: test
+                s= self.capture_file.read ()
+                logger.debug ('closing %r', self.capture_file)
+                self.capture_file.close ()
+            else:
+                s = None
 
         return s
 
@@ -597,19 +600,22 @@ class Command:
         else:
             self.prepare_capture_file ()
 
-            for line in self.capture_file.readlines ():
-                # while iterating we always remove the trailing \n
-                line= line.rstrip (os.linesep)
+            if self.capture_file is not None:  # TODO: test
+                for line in self.capture_file.readlines ():
+                    # while iterating we always remove the trailing \n
+                    line= line.rstrip (os.linesep)
 
-                logger.debug2 ('read line: %s', line.encode(encoding))
-                yield line
+                    logger.debug2 ('read line: %s', line.encode(encoding))
+                    yield line
 
-            # finish him!
-            logger.debug ('finished!')
-            logger.debug ('closing %r', self.capture_file)
-            self.capture_file.close ()
-            # if we're iterating, then the Command is in _bg
-            self.wait ()
+                # finish him!
+                logger.debug ('finished!')
+                logger.debug ('closing %r', self.capture_file)
+                self.capture_file.close ()
+                # if we're iterating, then the Command is in _bg
+                self.wait ()
+            else:
+                yield None
 
 
     def readlines (self):
@@ -619,9 +625,12 @@ class Command:
             lines= self.captured_lines
         else:
             self.prepare_capture_file ()
-            lines= self.capture_file.readlines ()
-            logger.debug ('closing %r', self.capture_file)
-            self.capture_file.close ()
+            if self.capture_file is not None:  # TODO: test
+                lines= self.capture_file.readlines ()
+                logger.debug ('closing %r', self.capture_file)
+                self.capture_file.close ()
+            else:
+                lines = None
 
         return lines
 
