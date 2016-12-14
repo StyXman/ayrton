@@ -171,7 +171,8 @@ class Environment (dict):
         # these functions will be loaded from each module and put in the globals
         # tuples (src, dst) renames function src to dst
         ayrton_builtins= {
-            'os': [ ('getcwd', 'pwd'), 'uname', 'listdir', 'makedirs', 'stat' ],
+            'os': [ ('getcwd', 'pwd'), 'uname', 'listdir', 'makedirs', 'stat',
+                    'umask', ],
             'os.path': [ 'abspath', 'basename', 'commonprefix', 'dirname',  ],
             'time': [ 'sleep', ],
             'sys': [  ],  # argv is handled just before execution
