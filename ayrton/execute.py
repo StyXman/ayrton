@@ -388,18 +388,23 @@ class Command:
         ans= [cmd]
 
         for arg in args:
+            logger.debug("%r", arg)
             if isinstance (arg, o):
                 self.prepare_arg (ans, arg.key, arg.value)
             else:
                 if isiterable (arg):
                     # a sequence type that is not string like
                     for elem in arg:
-                        ans.append (str (elem))
+                        if elem is not None:  # TODO: test
+                            ans.append (str (elem))
                 else:
-                    ans.append (str (arg))
+                    if arg is not None:  # TODO: test
+                        ans.append (str (arg))
 
         for k, v in kwargs.items ():
-            self.prepare_arg (ans, k, v)
+            logger.debug("%r: %r", k, v)
+            if k is not None and v is not None:
+                self.prepare_arg (ans, k, v)
 
         return ans
 
