@@ -92,6 +92,9 @@ as possible, but as long as ``ayrton`` uses Python's parser, some will be
 impossible to fix. Having said that, we think that ``ayrton`` will be powerful
 enough that the benefits will overweight this.
 
+* You can't reference undefined variables, which makes impossible to use
+  environment variables that might be defined or not. Use `define()` to declare
+  them.
 * You don't call ``[``, see the reference.
 * Redirection is better accomplished with _out, _err, etc.
 * Currently, absolute and relative paths do not work directly, you have to use ``run()``.
