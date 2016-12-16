@@ -1,0 +1,5 @@
+#! /usr/bin/env ayrton
+
+define(this_variable_did_not_exist=6)
+
+ayrton_return_value = this_variable_did_not_exist

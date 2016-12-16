@@ -389,6 +389,15 @@ class MiscTests (ScriptExecution):
     def testZEnvVar(self):
         self.doTest('testZEnvVar.ay', False)
 
+    def testDefine(self):
+        self.doTest('testDefine.ay', None)
+
+    def testDefine(self):
+        self.doTest('testDefineValue.ay', 6)
+
+    def testDefineAgain(self):
+        self.doTest('testDefineAgain.ay', False)
+
 
 class CommandDetection (ScriptExecution):
 

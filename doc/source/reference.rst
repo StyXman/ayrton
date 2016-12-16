@@ -51,6 +51,14 @@ Functions
     context manager, it restores the original path when the context finishes,
     efectively working more or less like `pushd`/`popd` or `( cd path; ... )`.
 
+.. py:function:: define(*names, **defaults)
+
+    Defines variables in sush a way that they doesn't redefine existing values,
+    notably of environment variables. This is needed because `ayrton` does
+    not allow references to undefined variables, so you have to define them.
+    Names in *names* will be defined with a value of *None*; names in defaults
+    will be defined with their associated value.
+
 .. py:function:: export (key=value, ...)
 
     For each *key* and *value* pair, set the variable *key* to the string

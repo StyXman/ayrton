@@ -520,11 +520,25 @@ class CrazyASTTransformer (ast.NodeTransformer):
                     else:
                         if first_kw:
                             raise SyntaxError (self.file_name, node.lineno, node.col_offset,
-                                               "non-keyword arg after keyword arg")
+                                            "non-keyword arg after keyword arg")
 
                         new_args.append (arg)
 
                 node.args= new_args
+
+                # except for define, for which we also have to convert undefined
+                # names into strings
+                if name == 'define':
+                    # for define we just convert Names to Str
+                    new_args = []
+                    for index, arg in enumerate (node.args):
+                        if type(arg) == Name:
+                            # Call(func=Name(id='foo', ctx=Load()), args=[Name(id='bar', ctx=Load())], keywords=[]))
+                            arg = Str(s=arg.id)
+                            # Call(func=Name(id='foo', ctx=Load()), args=[Str(s='bar')], keywords=[])
+                        new_args.append(arg)
+
+                    node.args= new_args
 
         return node
 

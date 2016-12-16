@@ -1,0 +1,5 @@
+#! /usr/bin/env ayrton
+
+define(HOME)
+
+ayrton_return_value= -z(HOME)

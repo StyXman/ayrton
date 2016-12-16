@@ -39,6 +39,20 @@ class cd (object):
         os.chdir (self.old_dir)
 
 
+def define(*varnames, **defaults):
+    # defaults have priority over simple names (because they provide a value)
+    for varname in varnames:
+        if varname not in defaults:
+            defaults[varname] = None
+
+    for varname, value in defaults.items():
+        if not isinstance(varname, str):
+            raise ValueError('variable name cannot be non-string: %r' % varname)
+
+        if varname not in ayrton.runner.globals:
+            ayrton.runner.globals[varname] = value
+
+
 class Exit (Exception):
     # exit() has to be implemented with a exception
     # because sys.exit() makes the whole interpreter go down

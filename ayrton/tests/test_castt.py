@@ -17,13 +17,13 @@
 
 import unittest
 import ast
-from ast import Attribute, Name, Load, Subscript, Index, Num, With
+from ast import Attribute, Name, Load, Subscript, Index, Num, With, Str
 from ast import Break, Continue, Return, Raise, Yield
 from ast import Del, Pass, Import, ImportFrom, Global, Assert
 
 from ayrton import castt
 from ayrton.execute import o
-from ayrton.functions import cd
+from ayrton.functions import cd, define
 import ayrton
 
 flow_stmt= [ Break, Continue, Return, Raise, Yield, ]
@@ -165,6 +165,17 @@ class TestVisits (unittest.TestCase):
 
         self.assertEqual (node.args[0].keywords[0].arg, '--long-option')
         self.check_attrs (node)
+
+    def testDefine(self):
+        c= castt.CrazyASTTransformer ({ 'define': define })
+        t= ayrton.parse ("""define(foo)""")
+
+        node= c.visit_Call (t.body[0].value)
+
+        self.assertEqual (type(node.args[0]), Str)
+        self.assertEqual (node.args[0].s, 'foo')
+        self.check_attrs (node)
+
 
 class TestHelperFunctions (unittest.TestCase):
 
