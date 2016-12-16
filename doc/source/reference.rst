@@ -266,6 +266,12 @@ Note: *-t*, *-G*, *-O* and *-ef* are not implemented yet.
     True if *file2* exists and *file1* does not, or if *file1*'s *mtime* is older
     than *file2*'s.
 
+.. py:function:: -z(value)
+
+    Similar to ``bash``'s ``-z``, it checks that the velue is not the empty
+    string, and is not `None`. But ``ayrton`` does not allow references to
+    undefined variables.
+
 
 Python functions
 ----------------

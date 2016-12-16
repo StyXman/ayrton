@@ -179,7 +179,7 @@ class Environment (dict):
 
             'ayrton.file_test': [ 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h',
                                   'k', 'p', 'r', 's', 'u', 'w', 'x', 'L',
-                                  'N', 'S', 'nt', 'ot' ],
+                                  'N', 'S', 'nt', 'ot', 'z' ],
             'ayrton.expansion': [ 'bash', ],
             'ayrton.functions': [ 'cd', ('cd', 'chdir'), 'exit', 'export',
                                   'option', 'run', 'shift', 'trap', 'unset', ],

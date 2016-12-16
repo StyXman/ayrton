@@ -137,3 +137,8 @@ def ot (a, b):
     s2= simple_stat (b)
     return FalseBool (   (s2 is not None and s1 is None)
                       or (s2.st_mtime_ns > s1.st_mtime_ns))
+
+def z(value):
+    ans = value is None or value == ''
+
+    return FalseBool(ans)

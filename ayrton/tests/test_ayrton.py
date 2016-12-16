@@ -371,6 +371,24 @@ class MiscTests (ScriptExecution):
     def testExit1 (self):
         self.doTest ('testExit1.ay', 1)
 
+    def testZUndefined(self):
+        self.assertRaises(NameError, self.doTest, 'testZNotDefined.ay', True)
+
+    def testZEmptyString(self):
+        self.doTest('testZEmptyString.ay', True)
+
+    def testZNone(self):
+        self.doTest('testZNone.ay', True)
+
+    def testZString(self):
+        self.doTest('testZString.ay', False)
+
+    def testZInt(self):
+        self.doTest('testZInt.ay', False)
+
+    def testZEnvVar(self):
+        self.doTest('testZEnvVar.ay', False)
+
 
 class CommandDetection (ScriptExecution):
 
