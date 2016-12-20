@@ -272,7 +272,8 @@ class Ayrton (object):
         else:
             self.locals= l
 
-        self.options= {}
+        # by default commands not expected to fail make the whole script to fail
+        self.options= dict(errexit=True)
         self.pending_children= []
         self.file_name= None
         self.script= None
