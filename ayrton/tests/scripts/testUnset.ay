@@ -6,7 +6,7 @@ ayrton_return_value= []
 export (testUnset=45)
 # ... so this appends '45'
 ayrton_return_value.append (testUnset)
-unset ("testUnset") # TODO: ugly
+unset (testUnset)
 
 try:
     testUnset

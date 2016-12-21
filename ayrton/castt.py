@@ -526,9 +526,9 @@ class CrazyASTTransformer (ast.NodeTransformer):
 
                 node.args= new_args
 
-                # except for define, for which we also have to convert undefined
-                # names into strings
-                if name == 'define':
+                # except for define and unset, for which we also have to convert
+                # undefined names into strings
+                if name in ('define', 'unset'):
                     # for define we just convert Names to Str
                     new_args = []
                     for index, arg in enumerate (node.args):
