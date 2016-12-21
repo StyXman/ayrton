@@ -149,7 +149,7 @@ class Argv (list):
     def __len__ (self):
         return super ().__len__ ()-1
 
-    def pop (self, i=0):
+    def pop (self, i=-1):
         return super ().pop (i+1)
 
 

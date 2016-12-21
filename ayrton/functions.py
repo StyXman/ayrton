@@ -104,12 +104,12 @@ def shift (n=1):
     # we start at 1 because 0 is the script's path
     # this closely follows bash's behavior
     if n==1:
-        ans= ayrton.runner.globals['argv'].pop ()
+        ans= ayrton.runner.globals['argv'].pop (0)
     elif n>1:
-        ans= [ ayrton.runner.globals['argv'].pop ()
+        ans= [ ayrton.runner.globals['argv'].pop (0)
                for i in range (n) ]
     else:
-        raise ValueError ()
+        raise ValueError("Integer parameter must be >= 0.")
 
     return ans
 
