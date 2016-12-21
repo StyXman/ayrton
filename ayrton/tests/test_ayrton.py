@@ -337,6 +337,10 @@ class MiscTests (ScriptExecution):
         self.doTest ('testShifts.ay', [ '49', '27' ], argv=[ '49', '27' ])
 
 
+    def testShiftArray (self):
+        self.doTest ('testShiftArray.ay', [ 1, 2 ])
+
+
     def testO (self):
         # this should not explode
         self.doTest ('testO.ay')
