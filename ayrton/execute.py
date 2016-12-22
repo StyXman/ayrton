@@ -654,8 +654,6 @@ class Command:
 
     def close (self):
         self.wait ()
-        # close first, then wait
-        # usefull for 'canceling' a background task we don't want anymore
         logger.debug ('closing %r', self.capture_file)
         self.capture_file.close ()
 

@@ -27,7 +27,6 @@ import ayrton
 from ayrton.execute import CommandNotFound
 
 import logging
-
 logger= logging.getLogger ('ayrton.tests.ayrton')
 
 # create one of these
@@ -67,6 +66,7 @@ class Argv (unittest.TestCase):
 
 
 class ScriptExecution (unittest.TestCase):
+    """Runs tests from a script in disk, compares return value."""
 
     def setUp (self):
         self.runner= ayrton.Ayrton ()

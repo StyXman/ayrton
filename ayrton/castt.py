@@ -101,7 +101,7 @@ def func_name2dotted_exec (node):
 class CrazyASTTransformer (ast.NodeTransformer):
     def __init__ (self, environ, file_name=None):
         super ().__init__ ()
-        # the whole ayrton instace globals
+        # the whole ayrton instance globals
         self.environ= environ
         # names defined in the global namespace
         self.known_names= defaultdict (lambda: 0)
@@ -433,13 +433,12 @@ class CrazyASTTransformer (ast.NodeTransformer):
         name= None
         unknown= False
 
-        if type (node.func)==Name:
+        if type (node.func) == Name:
             name= func_name= node.func.id
             defs= self.known_names[func_name]
-            if defs==0:
-                unknown= True
+            unknown = defs == 0
 
-        elif type (node.func)==Attribute:
+        elif type (node.func) == Attribute:
             name, func_name= func_name2dotted_exec (node.func)
             # node.func is not completely formed by Names
             # so leave it alone

@@ -57,3 +57,9 @@ Think deeply about:
 * check whether we can replace a lot of code with Popen/subprocess
 
 * convert tests to function calls
+
+* -P=True, ok; -P=False?
+* format strings -> bash expansion
+* s/bash/expand/
+
+* case/matching?

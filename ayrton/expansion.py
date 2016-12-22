@@ -125,7 +125,8 @@ class ToExpand (object):
         comma_found= False
         # index for the position in the original string of the beginning of
         # the current body starts
-        # we need it because the indexes are base on the positions on the original string
+        # we need it because the indexes are based on the positions on the
+        # original string
         base= left_cb+1
 
         for i, c in enumerate (body):
@@ -230,7 +231,7 @@ def tilde_expand (s):
 # functions needed for parameter expansion
 ###########################################
 
-# these ones is actually *used* by the functions
+# these are actually *used* by the functions
 def get_var (parameter):
     try:
         value= ayrton.runner.globals[parameter]
@@ -239,6 +240,7 @@ def get_var (parameter):
     else:
         if not isinstance (value, str):
             # all these operations apply only to strings
+            # TODO: what about converting them to string?
             raise ValueError
 
         return value

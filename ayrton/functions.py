@@ -55,9 +55,10 @@ def define(*varnames, **defaults):
 
 
 class Exit (Exception):
-    # exit() has to be implemented with a exception
+    # exit() has to be implemented with an exception
     # because sys.exit() makes the whole interpreter go down
     # that is, the interpreter interpreting ayrton :)
+    # in fact sys.exit() is *also* implemented with an exception :)
     def __init__ (self, exit_value):
         self.exit_value= exit_value
 
@@ -144,7 +145,7 @@ def trap(handler, *signals):
 
 def unset (*args):
     for k in args:
-        if k in ayrton.runner.globals.keys ():
+        if k in ayrton.runner.globals:
             # found, remove it
             del ayrton.runner.globals[k]
             del os.environ[k]

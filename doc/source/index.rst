@@ -88,7 +88,7 @@ I will not lie to you. This proto-language *will* feel somewhat alien to you.
 A lot of things will look like too verbose or explicit, paths now need to be
 closed in quotes (``"`` or ``'``), arguments are separated by commas or
 sometimes have to be given within a string. We will try to minimize them as much
-as possible, but as long as ``ayrton`` uses Python's parser, some will be
+as possible, but as long as ``ayrton`` stays closer to Python that to ``bash``, some will be
 impossible to fix. Having said that, we think that ``ayrton`` will be powerful
 enough that the benefits will overweight this.
 
@@ -100,12 +100,25 @@ enough that the benefits will overweight this.
 * Currently, absolute and relative paths do not work directly, you have to use ``run()``.
 * Expansions are not done automatically; variables can be expanded with %;
   brace, tilde and glob expansions can be done with ``bash()``,
-  command substitution is yet to come. Also, expansions can return either one string,
-  an empty list, or a list with two or more elements.
+  command substitution is yet to come. Expansions return lists.
 * If you name a variable with the same name as an executable, you can't execute it until
-  you're out of that scope. This is exactly the same thing that happens when you
+  the variable is out of scope. This is exactly the same thing that happens when you
   eclipse a Python variable from an outer scope, and similar to when you define a function
   in `bash` with the same names as the executable (but that you can go around by giving
-  the full path if you know it, which you can't do in `ayrton`).
+  the full path if you know it, which you can't do in `ayrton` yet).
 * You can't use Python keywords except where they are valid Python code. For instance,
   you can't use an ``--continue`` option).
+* Special parameters are replaced as following:
+
+  * ``$*`` and ``$@`` are mostly replaced with :py:data:`argv`; ``$0`` is `argv[0]`.
+  * ``$#`` is replaced by ``len(argv)``.
+  * ``$?`` and ``$!`` are implemented as methods of the `Command` objects.
+  * ``$-`` and ``$_`` do not have an equivalent yet, sorry.
+  * ``$$`` can be replaced with ``os.getpid()``.
+
+* ``ayrton`` does not make
+  a difference whether you're double quoting or not; everything remains intact
+  and no further tokenizing is applied to positional parameters or program
+  output (except for line cutting). If you rely on that, you will have to do it
+  yourself.
+

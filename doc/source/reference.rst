@@ -313,5 +313,6 @@ Please check ``ayrton/__init__.py``'s ``polute()`` function for more details.
 
 There are some Python functions that would seem to also make sense to include here.
 Most of them are C-based functions that have the same name as a more powerful
-executable, like ``chmod``, ``mkdir``, etc. If you think we oversaw an useful
+executable, like ``chmod``, ``mkdir``, etc. If you think we oversaw a useful
 function, drop us a line.
+o

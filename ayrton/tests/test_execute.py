@@ -123,6 +123,7 @@ class MockedStdOut (unittest.TestCase):
         self.assertEqual (self.mock_stdout.read (), 'environments works: yes\n')
         self.mock_stdout.close ()
 
+
 def setUpMockStdErr (self):
     # save the original stderr fd
     self.save_stderr= os.dup (1)
@@ -136,10 +137,13 @@ def setUpMockStdErr (self):
 
     # save the reading fd for reference in the tests
     self.mock_stderr= open (r)
+    self.addCleanup(self.mock_stderr.close)
+
 
 def tearDownMockStdErr (self):
     os.dup2 (self.save_stderr, 2)
     os.close (self.save_stderr)
+
 
 class MockedStdErr (unittest.TestCase):
     setUp=    setUpMockStdErr
@@ -147,8 +151,9 @@ class MockedStdErr (unittest.TestCase):
     def testErrNone (self):
         a= ls ('_err=None', _err=None, _fails=True)
         tearDownMockStdErr (self)
+
         self.assertEqual (self.mock_stderr.read (), '')
-        self.mock_stderr.close ()
+
 
 class Redirected (unittest.TestCase):
 
@@ -159,6 +164,7 @@ class Redirected (unittest.TestCase):
 
         l= a.readline ()
         self.assertEqual (l, 'stdin_from_file!')
+
 
     def testOutToFile (self):
         file_path= 'ayrton/tests/data/string_stdout.txt'
@@ -172,6 +178,7 @@ class Redirected (unittest.TestCase):
         self.assertEqual (f.read (), bytes ('stdout_to_file: %d\n' % r, 'ascii'))
         f.close ()
         os.unlink (file_path)
+
 
     def testOutAsIterable (self):
         text= '_out=Capture'
