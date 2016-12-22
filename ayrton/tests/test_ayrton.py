@@ -61,7 +61,7 @@ class Argv (unittest.TestCase):
         data= ['foo', 'bar', 'baz']
         argv= ayrton.Argv (data)
 
-        i= argv.pop ()
+        i= argv.pop (0)
 
         self.assertEqual (i, data[1])
 
