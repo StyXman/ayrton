@@ -145,7 +145,7 @@ class MockedStdErr (unittest.TestCase):
     setUp=    setUpMockStdErr
 
     def testErrNone (self):
-        a= ls ('_err=None', _err=None)
+        a= ls ('_err=None', _err=None, _fails=True)
         tearDownMockStdErr (self)
         self.assertEqual (self.mock_stderr.read (), '')
         self.mock_stderr.close ()
@@ -231,7 +231,7 @@ class Redirected (unittest.TestCase):
 
 class CommandExecution (unittest.TestCase):
     def testFalse (self):
-        a= false ()
+        a= false (_fails=True)
         self.assertEqual (a.exit_code (), 1)
 
     def testTrue (self):
@@ -242,8 +242,8 @@ class CommandExecution (unittest.TestCase):
         if not true ():
             self.fail ()
 
-    def testIfFrue (self):
-        if false ():
+    def testIfFalse (self):
+        if false (_fails=True):
             self.fail ()
 
     def testCatGrep (self):

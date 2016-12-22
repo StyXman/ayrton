@@ -1,4 +1,5 @@
 #! /usr/bin/env ayrton
 
-# TODO
+option('+e')
+
 echo ("yes") > "/foo/bar/baz/quux/moo"

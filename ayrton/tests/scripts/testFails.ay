@@ -1,6 +1,3 @@
 #! /usr/bin/env ayrton
 
-# if -e, ... uhm?
-option ('-e')
-
 false (_fails=True)

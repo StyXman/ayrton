@@ -216,7 +216,7 @@ with remote ('127.0.0.1', _test=True, _ncserver=True):
 
     def testRemoteCommandStderr (self):
         self.runner.run_script ('''with remote ('127.0.0.1', _test=True, _ncserver=True):
-    ls('foobarbaz')''', 'testRemoteCommand.py')
+    ls('foobarbaz', _fails=True)''', 'testRemoteCommand.py')
 
 
 def skip_if_AuthException (test):
