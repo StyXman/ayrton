@@ -1,6 +1,6 @@
 #! /usr/bin/env ayrton
 
-for line in find ("/usr"):
+for line in find ("/usr", _fails=True):
     pass
 
 ayrton_return_value= "yes!"
