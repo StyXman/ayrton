@@ -19,6 +19,8 @@ for file in astcompiler/__init__.py \
             pyparser/data/Grammar2.7 \
             pyparser/data/Grammar3.2 \
             pyparser/data/Grammar3.3 \
+            pyparser/data/Grammar3.5 \
+            pyparser/data/Grammar3.6 \
             pyparser/dfa_generated.py \
             pyparser/error.py \
             pyparser/future.py \
