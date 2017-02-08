@@ -12,7 +12,6 @@ for file in astcompiler/__init__.py \
             astcompiler/tools/Python.asdl \
             astcompiler/tools/asdl.py \
             astcompiler/tools/asdl_py.py \
-            astcompiler/tools/spark.py \
             pyparser/__init__.py \
             pyparser/automata.py \
             pyparser/data/Grammar2.5 \
