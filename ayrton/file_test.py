@@ -19,6 +19,9 @@ import os
 import stat
 import os.path
 
+import logging
+logger= logging.getLogger ('ayrton.file_test')
+
 # these functions imitate the -* tests from [ (as per bash's man page)
 
 def simple_stat (fname):
@@ -138,6 +141,7 @@ def ot (a, b):
     return FalseBool (   (s2 is not None and s1 is None)
                       or (s2.st_mtime_ns > s1.st_mtime_ns))
 
+# string
 def z(value):
     ans = value is None or value == ''
 
