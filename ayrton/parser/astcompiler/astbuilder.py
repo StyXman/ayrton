@@ -82,7 +82,7 @@ def find_kwargs (keywords):
 
 # py3.3 and py3.5 support
 def CompatCall(name, args, keywords):
-    logger.debug2(ast.dump (name))
+    logger.debug2(ast.dump(name))
     for arg in args:
         logger.debug2 (ast.dump(arg))
     for keyword in keywords:
@@ -221,7 +221,7 @@ class ASTBuilder(object):
 
     def handle_del_stmt(self, del_node):
         targets = self.handle_exprlist(del_node.children[1], ast.Del())
-        new_node = ast.Delete (targets)
+        new_node = ast.Delete(targets)
         new_node.lineno = ( del_node.lineno)
         new_node.col_offset = del_node.col_offset
         return new_node
@@ -230,18 +230,18 @@ class ASTBuilder(object):
         first_child = flow_node.children[0]
         first_child_type = first_child.type
         if first_child_type == syms.break_stmt:
-            new_node = ast.Break ()
+            new_node = ast.Break()
             new_node.lineno = flow_node.lineno
             new_node.col_offset = flow_node.col_offset
             return new_node
         elif first_child_type == syms.continue_stmt:
-            new_node = ast.Continue ()
+            new_node = ast.Continue()
             new_node.lineno = flow_node.lineno
             new_node.col_offset = flow_node.col_offset
             return new_node
         elif first_child_type == syms.yield_stmt:
             yield_expr = self.handle_expr(first_child.children[0])
-            new_node = ast.Expr (yield_expr)
+            new_node = ast.Expr(yield_expr)
             new_node.lineno = flow_node.lineno
             new_node.col_offset = flow_node.col_offset
             return new_node
@@ -250,7 +250,7 @@ class ASTBuilder(object):
                 values = None
             else:
                 values = self.handle_testlist(first_child.children[1])
-            new_node = ast.Return (values)
+            new_node = ast.Return(values)
             new_node.lineno = flow_node.lineno
             new_node.col_offset = flow_node.col_offset
             return new_node
@@ -262,7 +262,7 @@ class ASTBuilder(object):
                 exc = self.handle_expr(first_child.children[1])
             if child_count >= 4:
                 cause = self.handle_expr(first_child.children[3])
-            new_node = ast.Raise (exc, cause)
+            new_node = ast.Raise(exc, cause)
             new_node.lineno = flow_node.lineno
             new_node.col_offset = flow_node.col_offset
             return new_node
@@ -313,7 +313,7 @@ class ASTBuilder(object):
             dotted_as_names = import_node.children[1]
             aliases = [self.alias_for_import_name(dotted_as_names.children[i])
                        for i in range(0, len(dotted_as_names.children), 2)]
-            new_node = ast.Import (aliases)
+            new_node = ast.Import(aliases)
             new_node.lineno = import_node.lineno
             new_node.col_offset = import_node.col_offset
             return new_node
@@ -359,7 +359,7 @@ class ASTBuilder(object):
                            for i in range(0, len(names_node.children), 2)]
             if module is not None:
                 modname = module.name
-            new_node = ast.ImportFrom (modname, aliases, dot_count)
+            new_node = ast.ImportFrom(modname, aliases, dot_count)
             new_node.lineno = import_node.lineno
             new_node.col_offset = import_node.col_offset
             return new_node
@@ -369,7 +369,7 @@ class ASTBuilder(object):
     def handle_global_stmt(self, global_node):
         names = [self.new_identifier(global_node.children[i].value)
                  for i in range(1, len(global_node.children), 2)]
-        new_node = ast.Global (names)
+        new_node = ast.Global(names)
         new_node.lineno = global_node.lineno
         new_node.col_offset = global_node.col_offset
         return new_node
@@ -377,7 +377,7 @@ class ASTBuilder(object):
     def handle_nonlocal_stmt(self, nonlocal_node):
         names = [self.new_identifier(nonlocal_node.children[i].value)
                  for i in range(1, len(nonlocal_node.children), 2)]
-        new_node = ast.Nonlocal (names)
+        new_node = ast.Nonlocal(names)
         new_node.lineno = nonlocal_node.lineno
         new_node.col_offset = nonlocal_node.col_offset
         return new_node
@@ -387,7 +387,7 @@ class ASTBuilder(object):
         msg = None
         if len(assert_node.children) == 4:
             msg = self.handle_expr(assert_node.children[3])
-        new_node = ast.Assert (expr, msg)
+        new_node = ast.Assert(expr, msg)
         new_node.lineno = assert_node.lineno
         new_node.col_offset = assert_node.col_offset
         return new_node
@@ -422,7 +422,7 @@ class ASTBuilder(object):
             # simple if-then
             test = self.handle_expr(if_node.children[1])
             suite = self.handle_suite(if_node.children[3])
-            new_node = ast.If (test, suite, [])
+            new_node = ast.If(test, suite, [])
             new_node.lineno = if_node.lineno
             new_node.col_offset = if_node.col_offset
             return new_node
@@ -432,7 +432,7 @@ class ASTBuilder(object):
             test = self.handle_expr(if_node.children[1])
             suite = self.handle_suite(if_node.children[3])
             else_suite = self.handle_suite(if_node.children[6])
-            new_node = ast.If (test, suite, else_suite)
+            new_node = ast.If(test, suite, else_suite)
             new_node.lineno = if_node.lineno
             new_node.col_offset = if_node.col_offset
             return new_node
@@ -464,13 +464,13 @@ class ASTBuilder(object):
                 elif_test_node = if_node.children[offset]
                 elif_test = self.handle_expr(elif_test_node)
                 elif_body = self.handle_suite(if_node.children[offset + 2])
-                new_if = ast.If (elif_test, elif_body, otherwise)
+                new_if = ast.If(elif_test, elif_body, otherwise)
                 new_if.lineno = elif_test_node.lineno
                 new_if.col_offset = elif_test_node.col_offset
                 otherwise = [new_if]
             expr = self.handle_expr(if_node.children[1])
             body = self.handle_suite(if_node.children[3])
-            new_node = ast.If (expr, body, otherwise)
+            new_node = ast.If(expr, body, otherwise)
             new_node.lineno = if_node.lineno
             new_node.col_offset = if_node.col_offset
             return new_node
@@ -484,7 +484,7 @@ class ASTBuilder(object):
             otherwise = self.handle_suite(while_node.children[6])
         else:
             otherwise = []
-        new_node = ast.While (loop_test, body, otherwise)
+        new_node = ast.While(loop_test, body, otherwise)
         new_node.lineno = while_node.lineno
         new_node.col_offset = while_node.col_offset
         return new_node
@@ -495,7 +495,7 @@ class ASTBuilder(object):
         if len(target_node.children) == 1:
             target = target_as_exprlist[0]
         else:
-            target = ast.Tuple (target_as_exprlist, ast.Store())
+            target = ast.Tuple(target_as_exprlist, ast.Store())
             target.lineno = target_node.lineno
             target.col_offset = target_node.col_offset
         expr = self.handle_testlist(for_node.children[3])
@@ -504,7 +504,7 @@ class ASTBuilder(object):
             otherwise = self.handle_suite(for_node.children[8])
         else:
             otherwise = []
-        new_node = ast.For (target, expr, body, otherwise)
+        new_node = ast.For(target, expr, body, otherwise)
         new_node.lineno = for_node.lineno
         new_node.col_offset = for_node.col_offset
         return new_node
@@ -520,7 +520,7 @@ class ASTBuilder(object):
             name_node = exc.children[3]
             name = self.new_identifier(name_node.value)
             self.check_forbidden_name(name, name_node)
-        new_node = ast.ExceptHandler (test, name, suite)
+        new_node = ast.ExceptHandler(test, name, suite)
         new_node.lineno = exc.lineno
         new_node.col_offset = exc.col_offset
         return new_node
@@ -550,7 +550,7 @@ class ASTBuilder(object):
                 exc = try_node.children[3 + base_offset]
                 except_body = try_node.children[5 + base_offset]
                 handlers.append(self.handle_except_clause(exc, except_body))
-        new_node = ast.Try (body, handlers, otherwise, finally_suite)
+        new_node = ast.Try(body, handlers, otherwise, finally_suite)
         new_node.lineno = try_node.lineno
         new_node.col_offset = try_node.col_offset
         return new_node
@@ -567,7 +567,7 @@ class ASTBuilder(object):
                 self.set_context(target, ast.Store())
             else:
                 target = None
-            wi = ast.With (test, target, body)
+            wi = ast.With(test, target, body)
             wi.lineno = with_node.lineno
             wi.col_offset = with_node.col_offset
             if i == 1:
@@ -588,7 +588,7 @@ class ASTBuilder(object):
         body = self.handle_suite(with_node.children[-1])
         items = [self.handle_with_item(with_node.children[i])
                  for i in range(1, len(with_node.children)-2, 2)]
-        new_node = ast.With (items, body)
+        new_node = ast.With(items, body)
         new_node.lineno = with_node.lineno
         new_node.col_offset = with_node.col_offset
         return new_node
@@ -619,7 +619,7 @@ class ASTBuilder(object):
         # what it's doing is use handle_call() to parse the 'arguments'
         # see ClassDef(name='Foo', bases=[], keywords=[], starargs=None, kwargs=None, body=[Pass()], decorator_list=[])
         # and handle_suite() to parse the body
-        call_name = ast.Name (name, ast.Load())
+        call_name = ast.Name(name, ast.Load())
         call_name.lineno = classdef_node.lineno
         call_name.col_offset = classdef_node.col_offset
         call = self.handle_call(classdef_node.children[3], call_name)
@@ -647,7 +647,7 @@ class ASTBuilder(object):
             returns = self.handle_expr(funcdef_node.children[4])
             suite += 2
         body = self.handle_suite(funcdef_node.children[suite])
-        new_node = ast.FunctionDef (name, args, body, decorators, returns)
+        new_node = ast.FunctionDef(name, args, body, decorators, returns)
         new_node.lineno = funcdef_node.lineno
         new_node.col_offset = funcdef_node.col_offset
         return new_node
@@ -682,13 +682,13 @@ class ASTBuilder(object):
 
     def handle_dotted_name(self, dotted_name_node):
         base_value = self.new_identifier(dotted_name_node.children[0].value)
-        name = ast.Name (base_value, ast.Load())
+        name = ast.Name(base_value, ast.Load())
         name.lineno = dotted_name_node.lineno
         name.col_offset = dotted_name_node.col_offset
         for i in range(2, len(dotted_name_node.children), 2):
             attr = dotted_name_node.children[i].value
             attr = self.new_identifier(attr)
-            name = ast.Attribute (name, attr, ast.Load())
+            name = ast.Attribute(name, attr, ast.Load())
             name.lineno = dotted_name_node.lineno
             name.col_offset = dotted_name_node.col_offset
         return name
@@ -852,7 +852,7 @@ class ASTBuilder(object):
             elif stmt_type == syms.del_stmt:
                 return self.handle_del_stmt(stmt)
             elif stmt_type == syms.pass_stmt:
-                new_node = ast.Pass ()
+                new_node = ast.Pass()
                 new_node.lineno = stmt.lineno
                 new_node.col_offset = stmt.col_offset
                 return new_node
@@ -895,7 +895,7 @@ class ASTBuilder(object):
     def handle_expr_stmt(self, stmt):
         if len(stmt.children) == 1:
             expression = self.handle_testlist(stmt.children[0])
-            new_node = ast.Expr (expression)
+            new_node = ast.Expr(expression)
             new_node.lineno = stmt.lineno
             new_node.col_offset = stmt.col_offset
             return new_node
@@ -911,7 +911,7 @@ class ASTBuilder(object):
                 value_expr = self.handle_expr(value_child)
             op_str = stmt.children[1].children[0].value
             operator = augassign_operator_map[op_str]
-            new_node = ast.AugAssign (target_expr, operator(), value_expr)
+            new_node = ast.AugAssign(target_expr, operator(), value_expr)
             new_node.lineno = stmt.lineno
             new_node.col_offset = stmt.col_offset
             return new_node
@@ -931,7 +931,7 @@ class ASTBuilder(object):
                 value_expr = self.handle_testlist(value_child)
             else:
                 value_expr = self.handle_expr(value_child)
-            new_node = ast.Assign (targets, value_expr)
+            new_node = ast.Assign(targets, value_expr)
             new_node.lineno = stmt.lineno
             new_node.col_offset = stmt.col_offset
             return new_node
@@ -945,7 +945,7 @@ class ASTBuilder(object):
             return self.handle_expr(tests.children[0])
         else:
             elts = self.get_expression_list(tests)
-            new_node = ast.Tuple (elts, ast.Load())
+            new_node = ast.Tuple(elts, ast.Load())
             new_node.lineno = tests.lineno
             new_node.col_offset = tests.col_offset
             return new_node
@@ -973,7 +973,7 @@ class ASTBuilder(object):
                     op = ast.Or
                 else:
                     op = ast.And
-                new_node = ast.BoolOp (op(), seq)
+                new_node = ast.BoolOp(op(), seq)
                 new_node.lineno = expr_node.lineno
                 new_node.col_offset = expr_node.col_offset
                 return new_node
@@ -982,7 +982,7 @@ class ASTBuilder(object):
                     expr_node = expr_node.children[0]
                     continue
                 expr = self.handle_expr(expr_node.children[1])
-                new_node = ast.UnaryOp (ast.Not(), expr)
+                new_node = ast.UnaryOp(ast.Not(), expr)
                 new_node.lineno = expr_node.lineno
                 new_node.col_offset = expr_node.col_offset
                 return new_node
@@ -996,7 +996,7 @@ class ASTBuilder(object):
                 for i in range(1, len(expr_node.children), 2):
                     operators.append(self.handle_comp_op(expr_node.children[i]))
                     operands.append(self.handle_expr(expr_node.children[i + 1]))
-                new_node = ast.Compare (expr, operators, operands)
+                new_node = ast.Compare(expr, operators, operands)
                 new_node.lineno = expr_node.lineno
                 new_node.col_offset = expr_node.col_offset
                 return new_node
@@ -1024,11 +1024,11 @@ class ASTBuilder(object):
                 else:
                     expr = None
                 if is_from:
-                    new_node = ast.YieldFrom (expr)
+                    new_node = ast.YieldFrom(expr)
                     new_node.lineno = expr_node.lineno
                     new_node.col_offset = expr_node.col_offset
                     return new_node
-                new_node = ast.Yield (expr)
+                new_node = ast.Yield(expr)
                 new_node.lineno = expr_node.lineno
                 new_node.col_offset = expr_node.col_offset
                 return new_node
@@ -1044,7 +1044,7 @@ class ASTBuilder(object):
 
     def handle_star_expr(self, star_expr_node):
         expr = self.handle_expr(star_expr_node.children[1])
-        new_node = ast.Starred (expr, ast.Load())
+        new_node = ast.Starred(expr, ast.Load())
         new_node.lineno = star_expr_node.lineno
         new_node.col_offset = star_expr_node.col_offset
         return new_node
@@ -1055,7 +1055,7 @@ class ASTBuilder(object):
             args = ast.arguments([], None, [], [], None, [])
         else:
             args = self.handle_arguments(lambdef_node.children[1])
-        new_node = ast.Lambda (args, expr)
+        new_node = ast.Lambda(args, expr)
         new_node.lineno = lambdef_node.lineno
         new_node.col_offset = lambdef_node.col_offset
         return new_node
@@ -1064,7 +1064,7 @@ class ASTBuilder(object):
         body = self.handle_expr(if_expr_node.children[0])
         expression = self.handle_expr(if_expr_node.children[2])
         otherwise = self.handle_expr(if_expr_node.children[4])
-        new_node = ast.IfExp (expression, body, otherwise)
+        new_node = ast.IfExp(expression, body, otherwise)
         new_node.lineno = if_expr_node.lineno
         new_node.col_offset = if_expr_node.col_offset
         return new_node
@@ -1111,7 +1111,7 @@ class ASTBuilder(object):
         left = self.handle_expr(binop_node.children[0])
         right = self.handle_expr(binop_node.children[2])
         op = operator_map(binop_node.children[1].type)
-        result = ast.BinOp (left, op(), right)
+        result = ast.BinOp(left, op(), right)
         result.lineno = binop_node.lineno
         result.col_offset = binop_node.col_offset
         number_of_ops = (len(binop_node.children) - 1) // 2
@@ -1119,7 +1119,7 @@ class ASTBuilder(object):
             op_node = binop_node.children[i * 2 + 1]
             op = operator_map(op_node.type)
             sub_right = self.handle_expr(binop_node.children[i * 2 + 2])
-            result = ast.BinOp (result, op(), sub_right)
+            result = ast.BinOp(result, op(), sub_right)
             result.lineno = op_node.lineno
             result.col_offset = op_node.col_offset
         return result
@@ -1135,7 +1135,7 @@ class ASTBuilder(object):
             op = ast.Invert
         else:
             raise AssertionError("invalid factor node")
-        new_node = ast.UnaryOp (op(), expr)
+        new_node = ast.UnaryOp(op(), expr)
         new_node.lineno = factor_node.lineno
         new_node.col_offset = factor_node.col_offset
         return new_node
@@ -1154,7 +1154,7 @@ class ASTBuilder(object):
             atom_expr = tmp_atom_expr
         if power_node.children[-1].type == syms.factor:
             right = self.handle_expr(power_node.children[-1])
-            atom_expr = ast.BinOp (atom_expr, ast.Pow(), right)
+            atom_expr = ast.BinOp(atom_expr, ast.Pow(), right)
             atom_expr.lineno = power_node.lineno
             atom_expr.col_offset = power_node.col_offset
         return atom_expr
@@ -1198,7 +1198,7 @@ class ASTBuilder(object):
                 return self.handle_call(trailer_node.children[1], left_expr)
         elif first_child.type == tokens.DOT:
             attr = self.new_identifier(trailer_node.children[1].value)
-            new_node = ast.Attribute (left_expr, attr, ast.Load())
+            new_node = ast.Attribute(left_expr, attr, ast.Load())
             new_node.lineno = trailer_node.lineno
             new_node.col_offset = trailer_node.col_offset
             return new_node
@@ -1206,7 +1206,7 @@ class ASTBuilder(object):
             middle = trailer_node.children[1]
             if len(middle.children) == 1:
                 slice = self.handle_slice(middle.children[0])
-                new_node = ast.Subscript (left_expr, slice, ast.Load())
+                new_node = ast.Subscript(left_expr, slice, ast.Load())
                 new_node.lineno = middle.lineno
                 new_node.col_offset = middle.col_offset
                 return new_node
@@ -1219,7 +1219,7 @@ class ASTBuilder(object):
                 slices.append(slc)
             if not simple:
                 ext_slice = ast.ExtSlice(slices)
-                new_node = ast.Subscript (left_expr, ext_slice, ast.Load())
+                new_node = ast.Subscript(left_expr, ext_slice, ast.Load())
                 new_node.lineno = middle.lineno
                 new_node.col_offset = middle.col_offset
                 return new_node
@@ -1227,10 +1227,10 @@ class ASTBuilder(object):
             for idx in slices:
                 assert isinstance(idx, ast.Index)
                 elts.append(idx.value)
-            tup = ast.Tuple (elts, ast.Load())
+            tup = ast.Tuple(elts, ast.Load())
             tup.lineno = middle.lineno
             tup.col_offset = middle.col_offset
-            new_node = ast.Subscript(left_expr, ast.Index (tup), ast.Load())
+            new_node = ast.Subscript(left_expr, ast.Index(tup), ast.Load())
             new_node.lineno = middle.lineno
             new_node.col_offset = middle.col_offset
             return new_node
@@ -1293,7 +1293,7 @@ class ASTBuilder(object):
                         kw = ast.keyword(keyword, keyword_value)
                         kw.lineno = keyword_node.lineno
                         kw.col_offset = keyword_node.col_offset
-                        name = ast.Name ('o', ast.Load())
+                        name = ast.Name('o', ast.Load())
                         name.lineno = keyword_node.lineno
                         name.col_offset = keyword_node.col_offset
                         arg = CompatCall(name, [], [ kw ])
@@ -1332,7 +1332,7 @@ class ASTBuilder(object):
         first_child_type = first_child.type
         if first_child_type == tokens.NAME:
             name = self.new_identifier(first_child.value)
-            new_node = ast.Name (name, ast.Load())
+            new_node = ast.Name(name, ast.Load())
             new_node.lineno = first_child.lineno
             new_node.col_offset = first_child.col_offset
             return new_node
@@ -1368,19 +1368,19 @@ class ASTBuilder(object):
             return new_node
         elif first_child_type == tokens.NUMBER:
             num_value = self.parse_number(first_child.value)
-            new_node = ast.Num (num_value)
+            new_node = ast.Num(num_value)
             new_node.lineno = atom_node.lineno
             new_node.col_offset = atom_node.col_offset
             return new_node
         elif first_child_type == tokens.ELLIPSIS:
-            new_node = ast.Ellipsis ()
+            new_node = ast.Ellipsis()
             new_node.lineno = atom_node.lineno
             new_node.col_offset = atom_node.col_offset
             return new_node
         elif first_child_type == tokens.LPAR:
             second_child = atom_node.children[1]
             if second_child.type == tokens.RPAR:
-                new_node = ast.Tuple (None, ast.Load())
+                new_node = ast.Tuple(None, ast.Load())
                 new_node.lineno = atom_node.lineno
                 new_node.col_offset = atom_node.col_offset
                 return new_node
@@ -1390,14 +1390,14 @@ class ASTBuilder(object):
         elif first_child_type == tokens.LSQB:
             second_child = atom_node.children[1]
             if second_child.type == tokens.RSQB:
-                new_node = ast.List ([], ast.Load())
+                new_node = ast.List([], ast.Load())
                 new_node.lineno = atom_node.lineno
                 new_node.col_offset = atom_node.col_offset
                 return new_node
             if len(second_child.children) == 1 or \
                     second_child.children[1].type == tokens.COMMA:
                 elts = self.get_expression_list(second_child)
-                new_node = ast.List (elts, ast.Load())
+                new_node = ast.List(elts, ast.Load())
                 new_node.lineno = atom_node.lineno
                 new_node.col_offset = atom_node.col_offset
                 return new_node
@@ -1405,7 +1405,7 @@ class ASTBuilder(object):
         elif first_child_type == tokens.LBRACE:
             maker = atom_node.children[1]
             if maker.type == tokens.RBRACE:
-                new_node = ast.Dict (None, None)
+                new_node = ast.Dict(None, None)
                 new_node.lineno = atom_node.lineno
                 new_node.col_offset = atom_node.col_offset
                 return new_node
@@ -1414,7 +1414,7 @@ class ASTBuilder(object):
                 elts = []
                 for i in range(0, n_maker_children, 2):
                     elts.append(self.handle_expr(maker.children[i]))
-                new_node = ast.Set (elts)
+                new_node = ast.Set(elts)
                 new_node.lineno = atom_node.lineno
                 new_node.col_offset = atom_node.col_offset
                 return new_node
@@ -1428,7 +1428,7 @@ class ASTBuilder(object):
             for i in range(0, n_maker_children, 4):
                 keys.append(self.handle_expr(maker.children[i]))
                 values.append(self.handle_expr(maker.children[i + 2]))
-            new_node = ast.Dict (keys, values)
+            new_node = ast.Dict(keys, values)
             new_node.lineno = atom_node.lineno
             new_node.col_offset = atom_node.col_offset
             return new_node
@@ -1514,7 +1514,7 @@ class ASTBuilder(object):
     def handle_genexp(self, genexp_node):
         elt = self.handle_expr(genexp_node.children[0])
         comps = self.comprehension_helper(genexp_node.children[1])
-        new_node = ast.GeneratorExp (elt, comps)
+        new_node = ast.GeneratorExp(elt, comps)
         new_node.lineno = genexp_node.lineno
         new_node.col_offset = genexp_node.col_offset
         return new_node
@@ -1522,7 +1522,7 @@ class ASTBuilder(object):
     def handle_listcomp(self, listcomp_node):
         elt = self.handle_expr(listcomp_node.children[0])
         comps = self.comprehension_helper(listcomp_node.children[1])
-        new_node = ast.ListComp (elt, comps)
+        new_node = ast.ListComp(elt, comps)
         new_node.lineno = listcomp_node.lineno
         new_node.col_offset = listcomp_node.col_offset
         return new_node
@@ -1530,7 +1530,7 @@ class ASTBuilder(object):
     def handle_setcomp(self, set_maker):
         elt = self.handle_expr(set_maker.children[0])
         comps = self.comprehension_helper(set_maker.children[1])
-        new_node = ast.SetComp (elt, comps)
+        new_node = ast.SetComp(elt, comps)
         new_node.lineno = set_maker.lineno
         new_node.col_offset = set_maker.col_offset
         return new_node
@@ -1539,7 +1539,7 @@ class ASTBuilder(object):
         key = self.handle_expr(dict_maker.children[0])
         value = self.handle_expr(dict_maker.children[2])
         comps = self.comprehension_helper(dict_maker.children[3])
-        new_node = ast.DictComp (key, value, comps)
+        new_node = ast.DictComp(key, value, comps)
         new_node.lineno = dict_maker.lineno
         new_node.col_offset = dict_maker.col_offset
         return new_node
