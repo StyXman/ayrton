@@ -343,7 +343,7 @@ class Ayrton (object):
 
 
     def run_tree (self, tree, file_name, argv=None, params=None):
-        logger.debug2 ('AST: %s', ast.dump (tree))
+        logger.debug2 ('AST: %s', ast.dump (tree, True, True))
         logger.debug2 ('code: \n%s', pprint (tree))
 
         if params is not None:
