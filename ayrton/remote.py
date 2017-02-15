@@ -202,7 +202,7 @@ class remote:
 
         # and that's why the whole string MUST be in triple double quotes (""")
 
-        return """exec python3 -c "#!                                     #  1
+        return """exec python3.6 -c "#!                                   #  1
 import pickle                                                             #  2
 # names needed for unpickling                                             #  3
 from ast import Module, Assign, Name, Store, Call, Load, Expr             #  4

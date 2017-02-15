@@ -1,7 +1,9 @@
 DEBUG_MULTI=strace -tt -T -ff -o debug/runner -s 128
 DEBUG_SIMPLE=strace -tt -T -o debug/runner -s 128
-# RUNNER=python3.5
-RUNNER=python3-coverage run
+PYTHON=python3.6
+RUNNER=$(PYTHON)
+# no python3.6-coverage yet :(
+# RUNNER=$(PYTHON)-coverage run
 # can't use --buffer because:
 #   File "/home/mdione/src/projects/ayrton/ayrton/__init__.py", line 191, in polute
 #     self[std]= getattr (sys, std).buffer
@@ -28,15 +30,15 @@ docs:
 	RUNNERPATH=${PWD} make -C doc html
 
 install: tests
-	$(RUNNER) setup.py install --prefix=$(INSTALL_DIR)
+	$(PYTHON) setup.py install --prefix=$(INSTALL_DIR)
 
 unsafe-install:
 	@echo "unsafe install, are you sure?"
 	@read foo
-	$(RUNNER) setup.py install --prefix=$(INSTALL_DIR)
+	$(PYTHON) setup.py install --prefix=$(INSTALL_DIR)
 
 upload: tests upload-docs
-	$(RUNNER) setup.py sdist upload
+	$(PYTHON) setup.py sdist upload
 
 upload-docs: docs
 	rsync --archive --verbose --compress --rsh ssh doc/build/html/ www.grulic.org.ar:www/projects/ayrton/
@@ -63,4 +65,4 @@ debugserver: rsa_server_key
 	/usr/sbin/sshd -dd -e -h $(shell pwd)/rsa_server_key -p 2244
 
 covreport:
-	python3-coverage report -m | grep ayrton | egrep -v '/(parser|tests)/'
+	$(PYTHON)-coverage report -m | grep ayrton | egrep -v '/(parser|tests)/'
