@@ -291,7 +291,7 @@ class Ayrton (object):
         # and now we read it anyways in the case of tracing
         logger.debug ('running from file %s', file_name)
 
-        f= open (file_name)
+        f= open (file_name, 'rb')
         script= f.read ()
         f.close ()
 
@@ -318,7 +318,7 @@ class Ayrton (object):
     def run_script (self, script, file_name, argv=None, params=None):
         logger.debug ('running script:\n-----------\n%s\n-----------', script)
         self.file_name= file_name
-        self.script= script.split ('\n')
+        self.script= script.split (b'\n')
 
         tree= self.parse (script, file_name)
 
