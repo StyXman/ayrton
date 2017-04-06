@@ -315,14 +315,20 @@ class Ayrton (object):
 
         return tree
 
+
     def run_script (self, script, file_name, argv=None, params=None):
         logger.debug ('running script:\n-----------\n%s\n-----------', script)
         self.file_name= file_name
         self.script= script.split ('\n')
 
-        tree= self.parse (script, file_name)
+        try:
+            tree= self.parse (script, file_name)
 
-        return self.run_tree (tree, file_name, argv, params)
+            return self.run_tree (tree, file_name, argv, params)
+        except Exception as e:
+            if self.params.pdb:
+                pdb.set_trace ()
+            raise
 
 
     def run_tree (self, tree, file_name, argv=None, params=None):
