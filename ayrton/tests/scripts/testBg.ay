@@ -1,4 +1,4 @@
 #! /usr/bin/env ayrton
 
-a= find ("/usr", _bg=True, _out=None)
+a= find ("/usr", _bg=True, _out=None, _fails=True)
 ayrton_return_value= "yes!"

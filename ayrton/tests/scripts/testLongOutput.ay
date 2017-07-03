@@ -1,5 +1,5 @@
 #! /usr/bin/env ayrton
 
-lines= find ("/usr", _out=Capture)
+lines= find ("/usr", _out=Capture, _fails=True)
 
 ayrton_return_value= "yes!"
