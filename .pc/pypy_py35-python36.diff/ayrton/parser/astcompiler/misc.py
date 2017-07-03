@@ -1,5 +1,33 @@
+from pypy.interpreter import gateway
+from rpython.rlib.objectmodel import we_are_translated
+from rpython.rlib.unroll import unrolling_iterable
+
+
+app = gateway.applevel("""
+def syntax_warning(msg, fn, lineno, offset):
+    import warnings
+    try:
+        warnings.warn_explicit(msg, SyntaxWarning, fn, lineno)
+    except SyntaxWarning:
+        raise SyntaxError(msg, (fn, lineno, offset, msg))
+""", filename=__file__)
+_emit_syntax_warning = app.interphook("syntax_warning")
+del app
+
+def syntax_warning(space, msg, fn, lineno, offset):
+    """Raise an applevel SyntaxWarning.
+
+    If the user has set this warning to raise an error, a SyntaxError will be
+    raised."""
+    w_msg = space.newtext(msg)
+    w_filename = space.newfilename(fn)
+    w_lineno = space.newint(lineno)
+    w_offset = space.newint(offset)
+    _emit_syntax_warning(space, w_msg, w_filename, w_lineno, w_offset)
+
+
 def parse_future(tree, feature_flags):
-    from ayrton.parser.astcompiler import ast
+    from pypy.interpreter.astcompiler import ast
     future_lineno = 0
     future_column = 0
     flags = 0
@@ -47,41 +75,19 @@ def check_forbidden_name(name, node=None):
     # XXX Warn about using True and False
 
 
-# shamelessly lifted off rpython
-class unrolling_iterable:
-
-    def __init__(self, iterable):
-        self._items = list(iterable)
-        self._head = _unroller(self._items)
-
-    def __iter__(self):
-        return iter(self._items)
-
-    def get_unroller(self):
-        return self._head
-
-
-# ditto
-class _unroller:
-
-    def __init__(self, items, i=0):
-        self._items = items
-        self._i = i
-        self._next = None
-
-    def step(self):
-        v = self._items[self._i]
-        if self._next is None:
-            self._next = _unroller(self._items, self._i+1)
-        return v, self._next
-
-
 def dict_to_switch(d):
     """Convert of dictionary with integer keys to a switch statement."""
     def lookup(query):
-        return d[query]
+        if we_are_translated():
+            for key, value in unrolling_iteritems:
+                if key == query:
+                    return value
+            else:
+                raise KeyError
+        else:
+            return d[query]
     lookup._always_inline_ = True
-    unrolling_items = unrolling_iterable(d.items())
+    unrolling_iteritems = unrolling_iterable(d.iteritems())
     return lookup
 
 

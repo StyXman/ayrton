@@ -74,6 +74,7 @@ def which(program):
             return None
 
         for path in os.environ["PATH"].split(os.pathsep):
+            logger.debug("%r / %r", path, program)
             exe_file = os.path.join(path, program)
             if is_exe(exe_file):
                 return exe_file

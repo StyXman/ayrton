@@ -95,7 +95,7 @@ def counter_handler ():  # pragma: no cover
 # uncomment next line and change level for way too much debugging
 # during tests execution
 # for running ayrton in the same mode, use the -d options
-# set_debug (level=logging.DEBUG)
+set_debug (level=logging.DEBUG)
 
 logger= logging.getLogger ('ayrton')
 
@@ -291,7 +291,9 @@ class Ayrton (object):
         # and now we read it anyways in the case of tracing
         logger.debug ('running from file %s', file_name)
 
-        f= open (file_name)
+        # not in text mode, the parser expects bytes, and it could be in any
+        # encoding anyways...
+        f= open (file_name, 'rb')
         script= f.read ()
         f.close ()
 
@@ -299,6 +301,7 @@ class Ayrton (object):
         # so we can find relative modules to it
         # this is mostly because the python interpreter is running ayrton
         # and not the script, so the interpreter only adds ayrton's path
+        # TODO: import all modules and then remove ayrton's path
         file_name_parent_dir= os.path.abspath (os.path.dirname (file_name))
         if file_name_parent_dir not in sys.path:
             sys.path.insert (0, file_name_parent_dir)
@@ -319,7 +322,7 @@ class Ayrton (object):
     def run_script (self, script, file_name, argv=None, params=None):
         logger.debug ('running script:\n-----------\n%s\n-----------', script)
         self.file_name= file_name
-        self.script= script.split ('\n')
+        self.script= script.split(b'\n')
 
         try:
             tree= self.parse (script, file_name)

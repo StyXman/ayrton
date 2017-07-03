@@ -1,0 +1,268 @@
+--- a/ayrton/parser/astcompiler/astbuilder.py
++++ b/ayrton/parser/astcompiler/astbuilder.py
+@@ -1,8 +1,9 @@
+ from ayrton.parser.astcompiler import consts, misc
+ from ayrton.parser.astcompiler import fstring
+ from ayrton.parser import error
+ from ayrton.parser.pyparser.pygram import syms, tokens
+ from ayrton.parser.pyparser.error import SyntaxError
++from ayrton.execute import Command
+ import ast
+ from ast import Starred
+ 
+@@ -6,6 +6,10 @@
+ import ast
+ 
+ 
++import logging
++logger= logging.getLogger ('ayrton.parser.astcompiler.astbuilder')
++
++
+ def ast_from_node(space, node, compile_info, recursive_parser=None):
+     """Turn a parse tree, node, to AST."""
+     ast = ASTBuilder(space, node, compile_info, recursive_parser).build_ast()
+@@ -60,6 +64,75 @@
+     return new_node
+ 
+ 
++def find_starargs (args):
++    # find the Starred in args, take it out, pass its value as starargs
++    # the most intriguing thing here is that Starred is defined in py3.3
++    # but it doesn't seem to be used anywhere
++    starargs = None
++    for arg in args:
++        if isinstance(arg, Starred):
++            # this works!
++            args.remove(arg)
++            starargs = arg.value
++
++    return starargs
++
++
++def find_kwargs (keywords):
++    # find the keyword with arg==None, take it out, pass its value as kwargs
++    kwargs = None
++    for kwarg in keywords:
++        if kwarg.arg is None:
++            # this works!
++            keywords.remove(kwarg)
++            kwargs = kwarg.value
++
++    return kwargs
++
++
++# py3.3 and py3.5 support
++def CompatCall(name, args, keywords):
++    logger.debug2(ast.dump(name))
++    for arg in args:
++        logger.debug2 (ast.dump(arg))
++    for keyword in keywords:
++        logger.debug2 (ast.dump(keyword))
++
++    try:
++        # py3.5
++        node = ast.Call(name, args, keywords)
++    except TypeError:
++        # py3.3
++        starargs = find_starargs (args)
++        kwargs = find_kwargs (keywords)
++
++        for arg in args:
++            logger.debug2 (ast.dump(arg))
++        for keyword in keywords:
++            logger.debug2 (ast.dump(keyword))
++        if starargs is not None:
++            logger.debug(ast.dump(starargs))
++        if kwargs is not None:
++            logger.debug(ast.dump(kwargs))
++        node = ast.Call(name, args, keywords, starargs, kwargs)
++
++    return node
++
++
++def CompatClassDef(name, args, keywords, body, decorators):
++    try:
++        # py3.5
++        node = ast.ClassDef(name, args, keywords, body, decorators)
++    except TypeError:
++        # py3.3
++        starargs = find_starargs (args)
++        kwargs = find_kwargs (keywords)
++        node = ast.ClassDef(name, args, keywords, starargs, kwargs, body,
++                            decorators)
++
++    return node
++
++
+ class ASTBuilder(object):
+ 
+     def __init__(self, space, n, compile_info, recursive_parser=None):
+@@ -358,6 +431,7 @@
+     def handle_if_stmt(self, if_node):
+         child_count = if_node.num_children()
+         if child_count == 4:
++            # if-then
+             test = self.handle_expr(if_node.get_child(1))
+             suite = self.handle_suite(if_node.get_child(3))
+             new_node = ast.If(test, suite, [])
+@@ -366,6 +440,7 @@
+             return new_node
+         otherwise_string = if_node.get_child(4).get_value()
+         if otherwise_string == "else":
++            # if-then-else
+             test = self.handle_expr(if_node.get_child(1))
+             suite = self.handle_suite(if_node.get_child(3))
+             else_suite = self.handle_suite(if_node.get_child(6))
+@@ -374,6 +449,7 @@
+             new_node.col_offset = if_node.get_column()
+             return new_node
+         elif otherwise_string == "elif":
++            # if-then-elif...-else
+             elif_count = child_count - 4
+             after_elif = if_node.get_child(elif_count + 1)
+             if after_elif.type == tokens.NAME and \
+@@ -525,28 +601,31 @@
+         if classdef_node.num_children() == 4:
+             # class NAME ':' suite
+             body = self.handle_suite(classdef_node.get_child(3))
+-            new_node = ast.ClassDef(name, [], [], body, decorators)
++            new_node = CompatClassDef(name, [], [], body, decorators)
+             new_node.lineno = classdef_node.get_lineno()
+             new_node.col_offset = classdef_node.get_column()
+             return new_node
+         if classdef_node.get_child(3).type == tokens.RPAR:
+             # class NAME '(' ')' ':' suite
+             body = self.handle_suite(classdef_node.get_child(5))
+-            new_node = ast.ClassDef(name, [], [], body, decorators)
++            new_node = CompatClassDef(name, [], [], body, decorators)
+             new_node.lineno = classdef_node.get_lineno()
+             new_node.col_offset = classdef_node.get_column()
+             return new_node
+ 
+         # class NAME '(' arglist ')' ':' suite
+         # build up a fake Call node so we can extract its pieces
++        # what it's doing is to use handle_call() to parse the 'arguments'
++        # see ClassDef(name='Foo', bases=[], keywords=[], starargs=None, kwargs=None, body=[Pass()], decorator_list=[])
++        # and handle_suite() to parse the body
+         call_name = ast.Name(name, ast.Load())
+         call_name.lineno = classdef_node.get_lineno()
+         call_name.col_offset = classdef_node.get_column()
+ 
+         call = self.handle_call(classdef_node.get_child(3), call_name)
+         body = self.handle_suite(classdef_node.get_child(6))
+-        new_node = ast.ClassDef(name, call.args, call.keywords, body,
+-                                decorators)
++        new_node = CompatClassDef(name, call.args, call.keywords, body,
++                                  decorators)
+         new_node.lineno = classdef_node.get_lineno()
+         new_node.col_offset = classdef_node.get_column()
+         return new_node
+@@ -618,7 +697,7 @@
+         if decorator_node.num_children() == 3:
+             dec = dec_name
+         elif decorator_node.num_children() == 5:
+-            dec = ast.Call(dec_name, [], [])
++            dec = CompatCall(dec_name, [], [])
+             dec.lineno = decorator_node.get_lineno()
+             dec.col_offset = decorator_node.get_column()
+         else:
+@@ -1155,7 +1234,7 @@
+         first_child = trailer_node.get_child(0)
+         if first_child.type == tokens.LPAR:
+             if trailer_node.num_children() == 2:
+-                new_node = ast.Call(left_expr, [], [])
++                new_node = CompatCall(left_expr, [], [])
+                 new_node.lineno = trailer_node.get_lineno()
+                 new_node.col_offset = trailer_node.get_column()
+                 return new_node
+@@ -1227,7 +1306,7 @@
+             self.error("more than 255 arguments", args_node)
+         args = []
+         keywords = []
+-        used_keywords = {}
++        used_keywords = {}  # why not use a set for this?
+         doublestars_count = 0 # just keyword argument unpackings
+         child_count = args_node.num_children()
+         i = 0
+@@ -1237,22 +1316,11 @@
+                 expr_node = argument.get_child(0)
+                 if argument.num_children() == 1:
+                     # a positional argument
+-                    if keywords:
+-                        if doublestars_count:
+-                            self.error("positional argument follows "
+-                                       "keyword argument unpacking",
+-                                       expr_node)
+-                        else:
+-                            self.error("positional argument follows "
+-                                       "keyword argument",
+-                                       expr_node)
++                    # HACK: removed the restriction about mixing parameter types
+                     args.append(self.handle_expr(expr_node))
+                 elif expr_node.type == tokens.STAR:
+                     # an iterable argument unpacking
+-                    if doublestars_count:
+-                        self.error("iterable argument unpacking follows "
+-                                   "keyword argument unpacking",
+-                                   expr_node)
++                    # HACK: removed the restriction about mixing parameter types
+                     expr = self.handle_expr(argument.get_child(1))
+                     new_node = ast.Starred(expr, ast.Load())
+                     new_node.lineno = expr_node.get_lineno()
+@@ -1273,22 +1341,32 @@
+                     if isinstance(keyword_expr, ast.Lambda):
+                         self.error("lambda cannot contain assignment",
+                                    expr_node)
+-                    elif not isinstance(keyword_expr, ast.Name):
+-                        self.error("keyword can't be an expression",
+-                                   expr_node)
+-                    keyword = keyword_expr.id
++                    keyword = keyword_expr
+                     if keyword in used_keywords:
+                         self.error("keyword argument repeated", expr_node)
+-                    used_keywords[keyword] = None
+-                    self.check_forbidden_name(keyword, expr_node)
++                    used_keywords[keyword] = None  # why not use a set for this?
++                    if isinstance (keyword, ast.Name):
++                        self.check_forbidden_name(keyword, expr_node)
+                     keyword_value = self.handle_expr(argument.get_child(2))
+-                    keywords.append(ast.keyword(keyword, keyword_value))
++                    if isinstance (keyword, ast.Name) and keyword.id in Command.supported_options:
++                        keywords.append(ast.keyword(keyword.id, keyword_value))
++                    else:
++                        kw = ast.keyword(keyword, keyword_value)
++                        kw.lineno = keyword.lineno
++                        kw.col_offset = keyword.col_offset
++                        name = ast.Name('o', ast.Load())
++                        name.lineno = keyword.lineno
++                        name.col_offset = keyword.col_offset
++                        arg = CompatCall(name, [], [ kw ])
++                        arg.lineno = keyword.lineno
++                        arg.col_offset = keyword.col_offset
++                        args.append(arg)
+             i += 1
+         if not args:
+             args = []
+         if not keywords:
+             keywords = []
+-        new_node = ast.Call(callable_expr, args, keywords)
++        new_node = CompatCall(callable_expr, args, keywords)
+         new_node.lineno = callable_expr.lineno
+         new_node.col_offset = callable_expr.col_offset
+         return new_node
+--- a/ayrton/parser/pyparser/error.py
++++ b/ayrton/parser/pyparser/error.py
+@@ -39,10 +39,9 @@
+                                                space.wrap(self.lastlineno)])])
+ 
+     def __str__(self):
+-        return "%s at pos (%d, %d) in %r" % (self.__class__.__name__,
+-                                             self.lineno,
+-                                             self.offset,
+-                                             self.text)
++        return "%s at pos (%d, %d) in %r: %s" % (self.__class__.__name__,
++                                                 self.lineno, self.offset,
++                                                 self.text, selg.msg)
+ 
+ class IndentationError(SyntaxError):
+     pass

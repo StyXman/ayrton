@@ -1,10 +1,10 @@
-from ayrton.parser.pyparser import automata
-from ayrton.parser.pyparser.pygram import tokens
-from ayrton.parser.pyparser.pytoken import python_opmap
-from ayrton.parser.pyparser.error import TokenError, TokenIndentationError, TabError
-from ayrton.parser.pyparser.pytokenize import tabsize, alttabsize, whiteSpaceDFA, \
+from pypy.interpreter.pyparser import automata
+from pypy.interpreter.pyparser.pygram import tokens
+from pypy.interpreter.pyparser.pytoken import python_opmap
+from pypy.interpreter.pyparser.error import TokenError, TokenIndentationError, TabError
+from pypy.interpreter.pyparser.pytokenize import tabsize, alttabsize, whiteSpaceDFA, \
     triple_quoted, endDFAs, single_quoted, pseudoDFA
-from ayrton.parser.astcompiler import consts
+from pypy.interpreter.astcompiler import consts
 
 NAMECHARS = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_'
 NUMCHARS = '0123456789'
@@ -19,13 +19,6 @@ def match_encoding_declaration(comment):
     >>> py_encoding = re.compile(r"coding[:=]\s*([-\w.]+)")
     >>> py_encoding.search(comment)
     """
-
-    # the coding line must be ascii
-    try:
-        comment = comment.decode('ascii')
-    except UnicodeDecodeError:
-        return None
-
     index = comment.find('coding')
     if index < 0:
         return None
@@ -51,9 +44,9 @@ def match_encoding_declaration(comment):
     return None
 
 
-def verify_identifier(token):
+def verify_utf8(token):
     for c in token:
-        if ord(c) > 0x80:
+        if ord(c) >= 0x80:
             break
     else:
         return True
@@ -61,9 +54,34 @@ def verify_identifier(token):
         u = token.decode('utf-8')
     except UnicodeDecodeError:
         return False
+    return True
+
+def bad_utf8(location_msg, line, lnum, pos, token_list, flags):
+    msg = 'Non-UTF-8 code in %s' % location_msg
+    if not (flags & consts.PyCF_FOUND_ENCODING):
+        # this extra part of the message is added only if we found no
+        # explicit encoding
+        msg += (' but no encoding declared; see '
+                'http://python.org/dev/peps/pep-0263/ for details')
+    return TokenError(msg, line, lnum, pos, token_list)
+
+
+def verify_identifier(token):
+    # 1=ok; 0=not an identifier; -1=bad utf-8
+    for c in token:
+        if ord(c) >= 0x80:
+            break
+    else:
+        return 1
+    try:
+        u = token.decode('utf-8')
+    except UnicodeDecodeError:
+        return -1
     from pypy.objspace.std.unicodeobject import _isidentifier
     return _isidentifier(u)
 
+
+DUMMY_DFA = automata.DFA([], [])
 
 def generate_tokens(lines, flags):
     """
@@ -91,8 +109,6 @@ def generate_tokens(lines, flags):
         and the line on which the token was found. The line passed is the
         logical line; continuation lines are included.
     """
-    import pdb; pdb.set_trace()
-
     token_list = []
     lnum = parenlev = continued = 0
     namechars = NAMECHARS
@@ -103,16 +119,20 @@ def generate_tokens(lines, flags):
     altindents = [0]
     last_comment = ''
     parenlevstart = (0, 0, "")
+    async_def = False
+    async_def_nl = False
+    async_def_indent = 0
 
     # make the annotator happy
-    endDFA = automata.DFA([], [])
+    endDFA = DUMMY_DFA
     # make the annotator happy
     line = ''
     pos = 0
-    lines.append(b"")
+    lines.append("")
     strstart = (0, 0, "")
     for line in lines:
         lnum = lnum + 1
+        line = universal_newline(line)
         pos, max = 0, len(line)
 
         if contstr:
@@ -149,21 +169,27 @@ def generate_tokens(lines, flags):
             column = 0
             altcolumn = 0
             while pos < max:                   # measure leading whitespace
-                if line[pos] == b' ':
+                if line[pos] == ' ':
                     column = column + 1
                     altcolumn = altcolumn + 1
-                elif line[pos] == b'\t':
+                elif line[pos] == '\t':
                     column = (column/tabsize + 1)*tabsize
                     altcolumn = (altcolumn/alttabsize + 1)*alttabsize
-                elif line[pos] == b'\f':
+                elif line[pos] == '\f':
                     column = 0
                 else:
                     break
                 pos = pos + 1
             if pos == max: break
 
-            if line[pos] in b'#\r\n':
-                # skip comments or blank lines
+            if line[pos] in '\r\n':
+                # skip blank lines
+                continue
+            if line[pos] == '#':
+                # skip full-line comment, but still check that it is valid utf-8
+                if not verify_utf8(line):
+                    raise bad_utf8("comment",
+                                   line, lnum, pos, token_list, flags)
                 continue
 
             if column == indents[-1]:
@@ -187,6 +213,10 @@ def generate_tokens(lines, flags):
                     raise TokenIndentationError(err, line, lnum, 0, token_list)
                 if altcolumn != altindents[-1]:
                     raise TabError(lnum, pos, line)
+            if async_def_nl and async_def_indent >= indents[-1]:
+                async_def = False
+                async_def_nl = False
+                async_def_indent = 0
 
         else:                                  # continued statement
             if not line:
@@ -220,11 +250,16 @@ def generate_tokens(lines, flags):
                     last_comment = ''
                 elif initial in '\r\n':
                     if parenlev <= 0:
+                        if async_def:
+                            async_def_nl = True
                         tok = (tokens.NEWLINE, last_comment, lnum, start, line)
                         token_list.append(tok)
                     last_comment = ''
                 elif initial == '#':
-                    # skip comment
+                    # skip comment, but still check that it is valid utf-8
+                    if not verify_utf8(token):
+                        raise bad_utf8("comment",
+                                       line, lnum, start, token_list, flags)
                     last_comment = token
                 elif token in triple_quoted:
                     endDFA = endDFAs[token]
@@ -256,10 +291,41 @@ def generate_tokens(lines, flags):
                         last_comment = ''
                 elif (initial in namechars or              # ordinary name
                       ord(initial) >= 0x80):               # unicode identifier
-                    if not verify_identifier(token):
+                    valid = verify_identifier(token)
+                    if valid <= 0:
+                        if valid == -1:
+                            raise bad_utf8("identifier", line, lnum, start + 1,
+                                           token_list, flags)
+                        # valid utf-8, but it gives a unicode char that cannot
+                        # be used in identifiers
                         raise TokenError("invalid character in identifier",
                                          line, lnum, start + 1, token_list)
-                    token_list.append((tokens.NAME, token, lnum, start, line))
+
+                    if async_def:                          # inside 'async def' function
+                        if token == 'async':
+                            token_list.append((tokens.ASYNC, token, lnum, start, line))
+                        elif token == 'await':
+                            token_list.append((tokens.AWAIT, token, lnum, start, line))
+                        else:
+                            token_list.append((tokens.NAME, token, lnum, start, line))
+                    elif token == 'async':                 # async token, look ahead
+                        #ahead token
+                        if pos < max:
+                            async_end = pseudoDFA.recognize(line, pos)
+                            assert async_end >= 3
+                            async_start = async_end - 3
+                            assert async_start >= 0
+                            ahead_token = line[async_start:async_end]
+                            if ahead_token == 'def':
+                                async_def = True
+                                async_def_indent = indents[-1]
+                                token_list.append((tokens.ASYNC, token, lnum, start, line))
+                            else:
+                                token_list.append((tokens.NAME, token, lnum, start, line))
+                        else:
+                            token_list.append((tokens.NAME, token, lnum, start, line))
+                    else:
+                        token_list.append((tokens.NAME, token, lnum, start, line))
                     last_comment = ''
                 elif initial == '\\':                      # continued stmt
                     continued = 1
@@ -303,3 +369,14 @@ def generate_tokens(lines, flags):
 
     token_list.append((tokens.ENDMARKER, '', lnum, pos, line))
     return token_list
+
+
+def universal_newline(line):
+    # show annotator that indexes below are non-negative
+    line_len_m2 = len(line) - 2
+    if line_len_m2 >= 0 and line[-2] == '\r' and line[-1] == '\n':
+        return line[:line_len_m2] + '\n'
+    line_len_m1 = len(line) - 1
+    if line_len_m1 >= 0 and line[-1] == '\r':
+        return line[:line_len_m1] + '\n'
+    return line
