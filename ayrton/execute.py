@@ -133,8 +133,6 @@ class Command:
 
     def __init__ (self, path):
         self.path= path
-        self.exe= resolve_program (path)
-        logger.debug ('found exe %s', self.exe)
         self.command= None
 
         self.stdin_pipe= None
@@ -146,6 +144,11 @@ class Command:
         self.captured_lines= None
 
         self.child_pid= None
+
+        # this is at the very bottom so, if anything happens, all the other
+        # attibutes are already defined when __del__() runs
+        self.exe= resolve_program (path)
+        logger.debug ('found exe %s', self.exe)
 
 
     def prepare_fds (self):
