@@ -91,8 +91,6 @@ def generate_tokens(lines, flags):
         and the line on which the token was found. The line passed is the
         logical line; continuation lines are included.
     """
-    import pdb; pdb.set_trace()
-
     token_list = []
     lnum = parenlev = continued = 0
     namechars = NAMECHARS
@@ -109,7 +107,7 @@ def generate_tokens(lines, flags):
     # make the annotator happy
     line = ''
     pos = 0
-    lines.append(b"")
+    lines.append("")
     strstart = (0, 0, "")
     for line in lines:
         lnum = lnum + 1
@@ -149,20 +147,20 @@ def generate_tokens(lines, flags):
             column = 0
             altcolumn = 0
             while pos < max:                   # measure leading whitespace
-                if line[pos] == b' ':
+                if line[pos] == ' ':
                     column = column + 1
                     altcolumn = altcolumn + 1
-                elif line[pos] == b'\t':
+                elif line[pos] == '\t':
                     column = (column/tabsize + 1)*tabsize
                     altcolumn = (altcolumn/alttabsize + 1)*alttabsize
-                elif line[pos] == b'\f':
+                elif line[pos] == '\f':
                     column = 0
                 else:
                     break
                 pos = pos + 1
             if pos == max: break
 
-            if line[pos] in b'#\r\n':
+            if line[pos] in '#\r\n':
                 # skip comments or blank lines
                 continue
 

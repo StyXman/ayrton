@@ -938,7 +938,7 @@
                      posdefaults.append(self.handle_expr(default_node))
                      i += 2
                      have_default = True
-@@ -618,86 +725,100 @@
+@@ -618,86 +725,101 @@
                  if i + 1 >= child_count:
                      self.error("named arguments must follow bare *",
                                 arguments_node)
@@ -1040,6 +1040,7 @@
 +        return ast.arg(name, ann)
  
      def handle_stmt(self, stmt):
++        # peel the onion a little bit
          stmt_type = stmt.type
          if stmt_type == syms.stmt:
 -            stmt = stmt.get_child(0)
@@ -1066,7 +1067,7 @@
              elif stmt_type == syms.flow_stmt:
                  return self.handle_flow_stmt(stmt)
              elif stmt_type == syms.import_stmt:
-@@ -711,18 +832,18 @@
+@@ -711,18 +833,18 @@
              else:
                  raise AssertionError("unhandled small statement")
          elif stmt_type == syms.compound_stmt:
@@ -1088,7 +1089,7 @@
              elif stmt_type == syms.funcdef:
                  return self.handle_funcdef(stmt)
              elif stmt_type == syms.classdef:
-@@ -737,95 +858,113 @@
+@@ -737,95 +859,113 @@
              raise AssertionError("unknown statment type")
  
      def handle_expr_stmt(self, stmt):
@@ -1242,7 +1243,7 @@
              elif expr_node_type == syms.star_expr:
                  return self.handle_star_expr(expr_node)
              elif expr_node_type == syms.expr or \
-@@ -834,27 +973,33 @@
+@@ -834,27 +974,33 @@
                      expr_node_type == syms.shift_expr or \
                      expr_node_type == syms.arith_expr or \
                      expr_node_type == syms.term:
@@ -1287,7 +1288,7 @@
                      continue
                  return self.handle_factor(expr_node)
              elif expr_node_type == syms.power:
-@@ -863,82 +1008,90 @@
+@@ -863,82 +1009,90 @@
                  raise AssertionError("unknown expr")
  
      def handle_star_expr(self, star_expr_node):
@@ -1423,7 +1424,7 @@
          if op_type == tokens.PLUS:
              op = ast.UAdd
          elif op_type == tokens.MINUS:
-@@ -947,21 +1100,26 @@
+@@ -947,21 +1101,26 @@
              op = ast.Invert
          else:
              raise AssertionError("invalid factor node")
@@ -1458,7 +1459,7 @@
              if trailer.type != syms.trailer:
                  break
              tmp_atom_expr = self.handle_trailer(trailer, atom_expr)
-@@ -969,24 +1127,27 @@
+@@ -969,24 +1128,27 @@
              tmp_atom_expr.col_offset = atom_expr.col_offset
              atom_expr = tmp_atom_expr
          if start:
@@ -1497,7 +1498,7 @@
              index = self.handle_expr(first_child)
              return ast.Index(index)
          lower = None
-@@ -995,74 +1156,85 @@
+@@ -995,74 +1157,85 @@
          if first_child.type == syms.test:
              lower = self.handle_expr(first_child)
          if first_child.type == tokens.COLON:
@@ -1618,7 +1619,7 @@
                      # or keyword arg
                      keyword_count += 1
          if generator_count > 1 or \
-@@ -1075,13 +1247,13 @@
+@@ -1075,13 +1248,13 @@
          keywords = []
          used_keywords = {}
          doublestars_count = 0 # just keyword argument unpackings
@@ -1636,17 +1637,19 @@
                      # a positional argument
                      if keywords:
                          if doublestars_count:
-@@ -1099,17 +1271,17 @@
+@@ -1099,17 +1272,18 @@
                          self.error("iterable argument unpacking follows "
                                     "keyword argument unpacking",
                                     expr_node)
 -                    expr = self.handle_expr(argument.get_child(1))
 -                    args.append(ast.Starred(expr, ast.Load,
-+                    expr = self.handle_expr(argument.children[1])
-+                    args.append(ast.Starred(expr, ast.Load(),
-                                             expr_node.get_lineno(),
+-                                            expr_node.get_lineno(),
 -                                            expr_node.get_column()))
-+                                            expr_node.get_col_offset()))
++                    expr = self.handle_expr(argument.children[1])
++                    new_node = ast.Starred(expr, ast.Load())
++                    new_node.lineno = expr_node.lineno
++                    new_node.col_offset = expr_node.col_offset
++                    args.append(new_node)
                  elif expr_node.type == tokens.DOUBLESTAR:
                      # a keyword argument unpacking
                      i += 1
@@ -1659,7 +1662,7 @@
                      # the lone generator expression
                      args.append(self.handle_genexp(argument))
                  else:
-@@ -1126,140 +1298,119 @@
+@@ -1126,140 +1300,119 @@
                          self.error("keyword argument repeated", expr_node)
                      used_keywords[keyword] = None
                      self.check_forbidden_name(keyword, expr_node)
@@ -1767,7 +1770,7 @@
 +                new_node.lineno = first_child.lineno
 +                new_node.col_offset = first_child.col_offset
 +                return new_node
-+            new_node = ast.NameConstant(name, ast.Load())
++            new_node = ast.NameConstant(w_singleton)
 +            new_node.lineno = first_child.lineno
 +            new_node.col_offset = first_child.col_offset
 +            return new_node
@@ -1810,7 +1813,7 @@
 -                                atom_node.get_column())
 -            if second_child.num_children() == 1 or \
 -                    second_child.get_child(1).type == tokens.COMMA:
-+                new_node = ast.List(None, ast.Load())
++                new_node = ast.List([], ast.Load())
 +                new_node.lineno = atom_node.lineno
 +                new_node.col_offset = atom_node.col_offset
 +                return new_node
@@ -1861,7 +1864,7 @@
                      return self.handle_dictcomp(maker, atom_node)
                  else:
                      # a dictionary display
-@@ -1268,8 +1419,8 @@
+@@ -1268,8 +1421,8 @@
              raise AssertionError("unknown atom")
  
      def handle_testlist_gexp(self, gexp_node):
@@ -1872,7 +1875,7 @@
              return self.handle_genexp(gexp_node)
          return self.handle_testlist(gexp_node)
  
-@@ -1278,18 +1429,18 @@
+@@ -1278,18 +1431,18 @@
          current_for = comp_node
          while True:
              count += 1
@@ -1897,7 +1900,7 @@
                      else:
                          return count
                  else:
-@@ -1298,24 +1449,24 @@
+@@ -1298,24 +1451,24 @@
      def count_comp_ifs(self, iter_node):
          count = 0
          while True:
@@ -1930,7 +1933,7 @@
              else:
                  # Modified in python2.7, see http://bugs.python.org/issue6704
                  # Fixing unamed tuple location
-@@ -1323,85 +1474,63 @@
+@@ -1323,85 +1476,63 @@
                  assert isinstance(expr_node, ast.expr)
                  col = expr_node.col_offset
                  line = expr_node.lineno
@@ -2294,7 +2297,7 @@
  syms = _Symbols()
 --- a/ayrton/parser/pyparser/pyparse.py
 +++ b/ayrton/parser/pyparser/pyparse.py
-@@ -1,7 +1,6 @@
+@@ -1,13 +1,12 @@
 -from pypy.interpreter.error import OperationError
 -from pypy.interpreter.pyparser import future, parser, pytokenizer, pygram, error
 -from pypy.interpreter.astcompiler import consts
@@ -2304,8 +2307,52 @@
 +from ayrton.parser.astcompiler import consts
  
  
- def recode_to_utf8(space, bytes, encoding):
-@@ -57,6 +56,12 @@
+-def recode_to_utf8(space, bytes, encoding):
++def recode_to_utf8(space, b, encoding):
+     if encoding == 'utf-8':
+-        return bytes
+-    w_text = space.call_method(space.newbytes(bytes), "decode",
++        return b
++    w_text = space.call_method(space.newbytes(b), "decode",
+                                space.newtext(encoding))
+     w_recoded = space.call_method(w_text, "encode", space.newtext("utf-8"))
+     return space.bytes_w(w_recoded)
+@@ -33,30 +32,38 @@
+             return 'iso-8859-1'
+     return encoding
+ 
+-def _check_for_encoding(s):
+-    eol = s.find('\n')
++def _check_for_encoding(b):
++    """You can use a different encoding from UTF-8 by putting a specially-formatted
++    comment as the first or second line of the source code."""
++    eol = b.find(b'\n')
+     if eol < 0:
+-        return _check_line_for_encoding(s)[0]
+-    enc, again = _check_line_for_encoding(s[:eol])
++        return _check_line_for_encoding(b)[0]
++    enc, again = _check_line_for_encoding(b[:eol])
+     if enc or not again:
+         return enc
+-    eol2 = s.find('\n', eol + 1)
++    eol2 = b.find(b'\n', eol + 1)
+     if eol2 < 0:
+-        return _check_line_for_encoding(s[eol + 1:])[0]
+-    return _check_line_for_encoding(s[eol + 1:eol2])[0]
++        return _check_line_for_encoding(b[eol + 1:])[0]
++    return _check_line_for_encoding(b[eol + 1:eol2])[0]
+ 
+ 
+ def _check_line_for_encoding(line):
+     """returns the declared encoding or None"""
+     i = 0
+     for i in range(len(line)):
+-        if line[i] == '#':
++        if line[i] == b'#':
+             break
+-        if line[i] not in ' \t\014':
++        if line[i] not in b' \t\014':
+             return None, False  # Not a comment, don't read the second line.
      return pytokenizer.match_encoding_declaration(line[i:]), True
  
  
@@ -2318,7 +2365,7 @@
  class CompileInfo(object):
      """Stores information about the source being compiled.
  
-@@ -77,7 +82,7 @@
+@@ -77,7 +84,7 @@
  
      def __init__(self, filename, mode="exec", flags=0, future_pos=(0, 0),
                   hidden_applevel=False, optimize=-1):
@@ -2327,7 +2374,7 @@
          self.filename = filename
          self.mode = mode
          self.encoding = None
-@@ -108,7 +113,6 @@
+@@ -108,31 +115,29 @@
          tree is handled here.
          """
          # Detect source encoding.
@@ -2335,7 +2382,12 @@
          enc = None
          if compile_info.flags & consts.PyCF_SOURCE_IS_UTF8:
              enc = 'utf-8'
-@@ -120,14 +124,12 @@
+ 
+         if compile_info.flags & consts.PyCF_IGNORE_COOKIE:
+             textsrc = bytessrc
+-        elif bytessrc.startswith("\xEF\xBB\xBF"):
++        elif bytessrc.startswith(b"\xEF\xBB\xBF"):
+             bytessrc = bytessrc[3:]
              enc = 'utf-8'
              # If an encoding is explicitly given check that it is utf-8.
              decl_enc = _check_for_encoding(bytessrc)
@@ -2343,14 +2395,23 @@
              if decl_enc and decl_enc != "utf-8":
                  raise error.SyntaxError("UTF-8 BOM with %s coding cookie" % decl_enc,
                                          filename=compile_info.filename)
-             textsrc = bytessrc
+-            textsrc = bytessrc
++            textsrc = bytessrc.decode('utf-8')
          else:
              enc = _normalize_encoding(_check_for_encoding(bytessrc))
 -            explicit_encoding = (enc is not None)
              if enc is None:
                  enc = 'utf-8'
              try:
-@@ -148,8 +150,6 @@
+-                textsrc = recode_to_utf8(self.space, bytessrc, enc)
+-            except OperationError as e:
++                # textsrc = recode_to_utf8(self.space, bytessrc, enc)
++                textsrc = bytessrc.decode(enc)
++            except UnicodeDecodeError as e:
+                 # if the codec is not found, LookupError is raised.  we
+                 # check using 'is_w' not to mask potential IndexError or
+                 # KeyError
+@@ -148,8 +153,6 @@
                  raise
  
          flags = compile_info.flags
@@ -2359,7 +2420,7 @@
  
          # The tokenizer is very picky about how it wants its input.
          source_lines = textsrc.splitlines(True)
-@@ -161,8 +161,6 @@
+@@ -161,8 +164,6 @@
          self.prepare(_targets[compile_info.mode])
          tp = 0
          try:
@@ -2368,7 +2429,7 @@
              try:
                  # Note: we no longer pass the CO_FUTURE_* to the tokenizer,
                  # which is expected to work independently of them.  It's
-@@ -177,12 +175,8 @@
+@@ -177,12 +178,8 @@
                  tokens_stream = iter(tokens)
  
                  for tp, value, lineno, column, line in tokens_stream:
@@ -2381,7 +2442,7 @@
  
                  if compile_info.mode == 'single':
                      for tp, value, lineno, column, line in tokens_stream:
-@@ -218,14 +212,8 @@
+@@ -218,14 +215,8 @@
                      msg = "expected an indented block"
                  else:
                      new_err = error.SyntaxError
@@ -2430,7 +2491,21 @@
  
  NAMECHARS = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_'
  NUMCHARS = '0123456789'
-@@ -44,9 +44,9 @@
+@@ -19,6 +19,13 @@
+     >>> py_encoding = re.compile(r"coding[:=]\s*([-\w.]+)")
+     >>> py_encoding.search(comment)
+     """
++
++    # the coding line must be ascii
++    try:
++        comment = comment.decode('ascii')
++    except UnicodeDecodeError:
++        return None
++
+     index = comment.find('coding')
+     if index < 0:
+         return None
+@@ -44,9 +51,9 @@
      return None
  
  
@@ -2442,7 +2517,7 @@
              break
      else:
          return True
-@@ -54,35 +54,10 @@
+@@ -54,35 +61,10 @@
          u = token.decode('utf-8')
      except UnicodeDecodeError:
          return False
@@ -2478,7 +2553,7 @@
  def generate_tokens(lines, flags):
      """
      This is a rewrite of pypy.module.parser.pytokenize.generate_tokens since
-@@ -119,12 +94,9 @@
+@@ -119,12 +101,9 @@
      altindents = [0]
      last_comment = ''
      parenlevstart = (0, 0, "")
@@ -2492,7 +2567,7 @@
      # make the annotator happy
      line = ''
      pos = 0
-@@ -132,7 +104,6 @@
+@@ -132,7 +111,6 @@
      strstart = (0, 0, "")
      for line in lines:
          lnum = lnum + 1
@@ -2500,7 +2575,7 @@
          pos, max = 0, len(line)
  
          if contstr:
-@@ -182,14 +153,8 @@
+@@ -182,14 +160,8 @@
                  pos = pos + 1
              if pos == max: break
  
@@ -2517,7 +2592,7 @@
                  continue
  
              if column == indents[-1]:
-@@ -213,10 +178,6 @@
+@@ -213,10 +185,6 @@
                      raise TokenIndentationError(err, line, lnum, 0, token_list)
                  if altcolumn != altindents[-1]:
                      raise TabError(lnum, pos, line)
@@ -2528,7 +2603,7 @@
  
          else:                                  # continued statement
              if not line:
-@@ -250,16 +211,11 @@
+@@ -250,16 +218,11 @@
                      last_comment = ''
                  elif initial in '\r\n':
                      if parenlev <= 0:
@@ -2546,7 +2621,7 @@
                      last_comment = token
                  elif token in triple_quoted:
                      endDFA = endDFAs[token]
-@@ -291,41 +247,10 @@
+@@ -291,41 +254,10 @@
                          last_comment = ''
                  elif (initial in namechars or              # ordinary name
                        ord(initial) >= 0x80):               # unicode identifier
@@ -2590,7 +2665,7 @@
                      last_comment = ''
                  elif initial == '\\':                      # continued stmt
                      continued = 1
-@@ -369,14 +294,3 @@
+@@ -369,14 +301,3 @@
  
      token_list.append((tokens.ENDMARKER, '', lnum, pos, line))
      return token_list
@@ -3780,7 +3855,7 @@
  def rpy_encode_error_handler():
      # A RPython version of the "strict" error handler.
      def raise_unicode_exception_encode(errors, encoding, msg, u,
-@@ -120,13 +116,14 @@
+@@ -120,13 +116,19 @@
      return encode_object(space, w_data, encoding, errors)
  
  # These functions take and return unwrapped rpython strings and unicodes
@@ -3797,8 +3872,13 @@
 +# u'a\xc3\xa1e\xc3\xa9y\xc3\xbdi\xc2\xb4oiu\xc3\xb3\xc2\xb4\xc5\xaf'
 +# >>> decode_unicode_escape(space, u'aáeéyýi´oiuó´ů')
 +# u'a\xe1e\xe9y\xfdi\xb4oiu\xf3\xb4\u016f'
++
++# now, that kinda does not make any sense in py3:
++# >>> 'aáeéyýi´oiuó´ů'.encode()
++# b'a\xc3\xa1e\xc3\xa9y\xc3\xbdi\xc2\xb4oiu\xc3\xb3\xc2\xb4\xc5\xaf'
++# 'aÃ¡eÃ©yÃ½iÂ´oiuÃ³Â´Å¯'
 +def decode_unicode_escape(string):
-+    result = string.encode()
++    result = string
      return result
  
  def decode_raw_unicode_escape(space, string):

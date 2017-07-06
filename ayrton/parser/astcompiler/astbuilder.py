@@ -800,6 +800,7 @@ class ASTBuilder(object):
         return ast.arg(name, ann)
 
     def handle_stmt(self, stmt):
+        # peel the onion a little bit
         stmt_type = stmt.type
         if stmt_type == syms.stmt:
             stmt = stmt.children[0]
@@ -1272,9 +1273,10 @@ class ASTBuilder(object):
                                    "keyword argument unpacking",
                                    expr_node)
                     expr = self.handle_expr(argument.children[1])
-                    args.append(ast.Starred(expr, ast.Load(),
-                                            expr_node.get_lineno(),
-                                            expr_node.get_col_offset()))
+                    new_node = ast.Starred(expr, ast.Load())
+                    new_node.lineno = expr_node.lineno
+                    new_node.col_offset = expr_node.col_offset
+                    args.append(new_node)
                 elif expr_node.type == tokens.DOUBLESTAR:
                     # a keyword argument unpacking
                     i += 1
@@ -1341,7 +1343,7 @@ class ASTBuilder(object):
                 new_node.lineno = first_child.lineno
                 new_node.col_offset = first_child.col_offset
                 return new_node
-            new_node = ast.NameConstant(name, ast.Load())
+            new_node = ast.NameConstant(w_singleton)
             new_node.lineno = first_child.lineno
             new_node.col_offset = first_child.col_offset
             return new_node
@@ -1373,7 +1375,7 @@ class ASTBuilder(object):
         elif first_child_type == tokens.LSQB:
             second_child = atom_node.children[1]
             if second_child.type == tokens.RSQB:
-                new_node = ast.List(None, ast.Load())
+                new_node = ast.List([], ast.Load())
                 new_node.lineno = atom_node.lineno
                 new_node.col_offset = atom_node.col_offset
                 return new_node

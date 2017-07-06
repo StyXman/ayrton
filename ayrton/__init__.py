@@ -95,7 +95,7 @@ def counter_handler ():  # pragma: no cover
 # uncomment next line and change level for way too much debugging
 # during tests execution
 # for running ayrton in the same mode, use the -d options
-set_debug (level=logging.DEBUG)
+set_debug (level=logging.DEBUG2)
 
 logger= logging.getLogger ('ayrton')
 
@@ -502,6 +502,10 @@ def run_file_or_script (script=None, file_name='script_from_command_line',
     if script is None:
         v= runner.run_file (file_name, argv, params)
     else:
+        if not isinstance(script, bytes):
+            # the problem here it's that the parser expects the source as bytes
+            # so we must encode the source before passing it
+            script = script.encode()
         v= runner.run_script (script, file_name, argv, params)
 
     return v

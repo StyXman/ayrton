@@ -129,14 +129,15 @@ class PythonParser(parser.Parser):
             if decl_enc and decl_enc != "utf-8":
                 raise error.SyntaxError("UTF-8 BOM with %s coding cookie" % decl_enc,
                                         filename=compile_info.filename)
-            textsrc = bytessrc
+            textsrc = bytessrc.decode('utf-8')
         else:
             enc = _normalize_encoding(_check_for_encoding(bytessrc))
             if enc is None:
                 enc = 'utf-8'
             try:
-                textsrc = recode_to_utf8(self.space, bytessrc, enc)
-            except OperationError as e:
+                # textsrc = recode_to_utf8(self.space, bytessrc, enc)
+                textsrc = bytessrc.decode(enc)
+            except UnicodeDecodeError as e:
                 # if the codec is not found, LookupError is raised.  we
                 # check using 'is_w' not to mask potential IndexError or
                 # KeyError
@@ -155,9 +156,9 @@ class PythonParser(parser.Parser):
 
         # The tokenizer is very picky about how it wants its input.
         source_lines = textsrc.splitlines(True)
-        if source_lines and not source_lines[-1].endswith(b"\n"):
-            source_lines[-1] += b'\n'
-        if textsrc and textsrc[-1] == b"\n":
+        if source_lines and not source_lines[-1].endswith("\n"):
+            source_lines[-1] += '\n'
+        if textsrc and textsrc[-1] == "\n":
             flags &= ~consts.PyCF_DONT_IMPLY_DEDENT
 
         self.prepare(_targets[compile_info.mode])
