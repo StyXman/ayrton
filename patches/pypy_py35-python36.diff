@@ -37,7 +37,7 @@
      func._always_inline_ = True
 --- a/ayrton/parser/astcompiler/astbuilder.py
 +++ b/ayrton/parser/astcompiler/astbuilder.py
-@@ -1,23 +1,15 @@
+@@ -1,23 +1,20 @@
 -from pypy.interpreter.astcompiler import ast, consts, misc
 -from pypy.interpreter.astcompiler import asthelpers # Side effects
 -from pypy.interpreter.astcompiler import fstring
@@ -50,11 +50,16 @@
 +from ayrton.parser import error
 +from ayrton.parser.pyparser.pygram import syms, tokens
 +from ayrton.parser.pyparser.error import SyntaxError
++from ayrton.execute import Command
 +import ast
 +from ast import Starred
  
  
 -def ast_from_node(space, node, compile_info, recursive_parser=None):
++import logging
++logger = logging.getLogger('ayrton.parser.astcompiler.astbuilder')
++
++
 +def ast_from_node(space, node, compile_info):
      """Turn a parse tree, node, to AST."""
 -    ast = ASTBuilder(space, node, compile_info, recursive_parser).build_ast()
@@ -70,7 +75,7 @@
  
  
  augassign_operator_map = {
-@@ -52,37 +44,47 @@
+@@ -52,37 +49,116 @@
  })
  
  
@@ -83,6 +88,75 @@
 +def parsestr(space, encoding, literal):
 +    # return space.wrap(eval (literal))
 +    return eval (literal)
++
++
++def find_starargs (args):
++    # find the Starred in args, take it out, pass its value as starargs
++    # the most intriguing thing here is that Starred is defined in py3.3
++    # but it doesn't seem to be used anywhere
++    starargs = None
++    for arg in args:
++        if isinstance(arg, Starred):
++            # this works!
++            args.remove(arg)
++            starargs = arg.value
++
++    return starargs
++
++
++def find_kwargs (keywords):
++    # find the keyword with arg==None, take it out, pass its value as kwargs
++    kwargs = None
++    for kwarg in keywords:
++        if kwarg.arg is None:
++            # this works!
++            keywords.remove(kwarg)
++            kwargs = kwarg.value
++
++    return kwargs
++
++
++# py3.3 and py3.5 support
++def CompatCall(name, args, keywords):
++    logger.debug2(ast.dump(name))
++    for arg in args:
++        logger.debug2 (ast.dump(arg))
++    for keyword in keywords:
++        logger.debug2 (ast.dump(keyword))
++
++    try:
++        # py3.5
++        node = ast.Call(name, args, keywords)
++    except TypeError:
++        # py3.3
++        starargs = find_starargs (args)
++        kwargs = find_kwargs (keywords)
++
++        for arg in args:
++            logger.debug2 (ast.dump(arg))
++        for keyword in keywords:
++            logger.debug2 (ast.dump(keyword))
++        if starargs is not None:
++            logger.debug(ast.dump(starargs))
++        if kwargs is not None:
++            logger.debug(ast.dump(kwargs))
++        node = ast.Call(name, args, keywords, starargs, kwargs)
++
++    return node
++
++
++def CompatClassDef(name, args, keywords, body, decorators):
++    try:
++        # py3.5
++        node = ast.ClassDef(name, args, keywords, body, decorators)
++    except TypeError:
++        # py3.3
++        starargs = find_starargs (args)
++        kwargs = find_kwargs (keywords)
++        node = ast.ClassDef(name, args, keywords, starargs, kwargs, body,
++                            decorators)
++
++    return node
 +
 +
  class ASTBuilder(object):
@@ -126,7 +200,7 @@
              if first_child.type == tokens.NEWLINE:
                  # An empty line.
                  return ast.Interactive([])
-@@ -92,8 +94,8 @@
+@@ -92,8 +168,8 @@
                      stmts = [self.handle_stmt(first_child)]
                  else:
                      stmts = []
@@ -137,7 +211,7 @@
                          if stmt.type == tokens.NEWLINE:
                              break
                          stmts.append(self.handle_stmt(stmt))
-@@ -107,16 +109,16 @@
+@@ -107,16 +183,16 @@
          if stmt_type == syms.compound_stmt:
              return 1
          elif stmt_type == syms.stmt:
@@ -158,7 +232,7 @@
                            filename=self.compile_info.filename)
  
      def error_ast(self, msg, ast_node):
-@@ -134,42 +136,68 @@
+@@ -134,42 +210,68 @@
  
      def set_context(self, expr, ctx):
          """Set the context of an expression to Store or Del if possible."""
@@ -244,7 +318,7 @@
          else:
              raise AssertionError("unknown flow statement")
  
-@@ -177,33 +205,33 @@
+@@ -177,33 +279,33 @@
          while True:
              import_name_type = import_name.type
              if import_name_type == syms.import_as_name:
@@ -293,7 +367,7 @@
                  name = ".".join(name_parts)
                  return ast.alias(name, None)
              elif import_name_type == tokens.STAR:
-@@ -212,20 +240,23 @@
+@@ -212,20 +314,23 @@
                  raise AssertionError("unknown import name")
  
      def handle_import_stmt(self, import_node):
@@ -324,7 +398,7 @@
                  child_type = child.type
                  if child_type == syms.dotted_name:
                      module = self.alias_for_import_name(child, False)
-@@ -239,16 +270,16 @@
+@@ -239,16 +344,16 @@
                  i += 1
                  dot_count += 1
              i += 1
@@ -346,7 +420,7 @@
                      self.error("trailing comma is only allowed with "
                                 "surronding parenthesis", names_node)
              else:
-@@ -256,251 +287,323 @@
+@@ -256,251 +361,329 @@
              if star_import:
                  aliases = [self.alias_for_import_name(names_node)]
              else:
@@ -741,6 +815,11 @@
 -        return ast.ClassDef(
 -            name, call.args, call.keywords,
 -            body, decorators, classdef_node.get_lineno(), classdef_node.get_column())
++
++        # what it's doing is to use handle_call() to parse the 'arguments'
++        # see ClassDef(name='Foo', bases=[], keywords=[], starargs=None, kwargs=None, body=[Pass()], decorator_list=[])
++        # and handle_suite() to parse the body
++
 +        call_name = ast.Name (name, ast.Load())
 +        call_name.lineno = classdef_node.lineno
 +        call_name.col_offset = classdef_node.col_offset
@@ -805,10 +884,11 @@
 +
      def handle_async_stmt(self, node):
 -        ch = node.get_child(1)
++        ch = node.children[1]
          if ch.type == syms.funcdef:
              return self.handle_funcdef_impl(ch, 1)
          elif ch.type == syms.with_stmt:
-@@ -511,8 +614,8 @@
+@@ -511,8 +694,8 @@
              raise AssertionError("invalid async statement")
  
      def handle_decorated(self, decorated_node):
@@ -819,7 +899,7 @@
          if definition.type == syms.funcdef:
              node = self.handle_funcdef(definition, decorators)
          elif definition.type == syms.classdef:
-@@ -521,55 +624,57 @@
+@@ -521,55 +704,57 @@
              node = self.handle_async_funcdef(definition, decorators)
          else:
              raise AssertionError("unkown decorated")
@@ -900,7 +980,7 @@
                      if (next_arg_type == syms.tfpdef or
                          next_arg_type == syms.vfpdef):
                          i += 1
-@@ -582,7 +687,7 @@
+@@ -582,7 +767,7 @@
                  n_pos_def += 1
              i += 1
          while i < child_count:
@@ -909,7 +989,7 @@
              if arg_type == tokens.DOUBLESTAR:
                  break
              if arg_type == syms.vfpdef or arg_type == syms.tfpdef:
-@@ -590,22 +695,24 @@
+@@ -590,22 +775,24 @@
              i += 1
          pos = []
          posdefaults = []
@@ -938,7 +1018,7 @@
                      posdefaults.append(self.handle_expr(default_node))
                      i += 2
                      have_default = True
-@@ -618,86 +725,101 @@
+@@ -618,86 +805,101 @@
                  if i + 1 >= child_count:
                      self.error("named arguments must follow bare *",
                                 arguments_node)
@@ -1067,7 +1147,7 @@
              elif stmt_type == syms.flow_stmt:
                  return self.handle_flow_stmt(stmt)
              elif stmt_type == syms.import_stmt:
-@@ -711,18 +833,18 @@
+@@ -711,18 +913,18 @@
              else:
                  raise AssertionError("unhandled small statement")
          elif stmt_type == syms.compound_stmt:
@@ -1089,7 +1169,7 @@
              elif stmt_type == syms.funcdef:
                  return self.handle_funcdef(stmt)
              elif stmt_type == syms.classdef:
-@@ -737,95 +859,113 @@
+@@ -737,95 +939,113 @@
              raise AssertionError("unknown statment type")
  
      def handle_expr_stmt(self, stmt):
@@ -1243,7 +1323,7 @@
              elif expr_node_type == syms.star_expr:
                  return self.handle_star_expr(expr_node)
              elif expr_node_type == syms.expr or \
-@@ -834,27 +974,33 @@
+@@ -834,27 +1054,33 @@
                      expr_node_type == syms.shift_expr or \
                      expr_node_type == syms.arith_expr or \
                      expr_node_type == syms.term:
@@ -1288,7 +1368,7 @@
                      continue
                  return self.handle_factor(expr_node)
              elif expr_node_type == syms.power:
-@@ -863,82 +1009,90 @@
+@@ -863,82 +1089,90 @@
                  raise AssertionError("unknown expr")
  
      def handle_star_expr(self, star_expr_node):
@@ -1424,7 +1504,7 @@
          if op_type == tokens.PLUS:
              op = ast.UAdd
          elif op_type == tokens.MINUS:
-@@ -947,21 +1101,26 @@
+@@ -947,21 +1181,26 @@
              op = ast.Invert
          else:
              raise AssertionError("invalid factor node")
@@ -1459,7 +1539,7 @@
              if trailer.type != syms.trailer:
                  break
              tmp_atom_expr = self.handle_trailer(trailer, atom_expr)
-@@ -969,24 +1128,27 @@
+@@ -969,24 +1208,27 @@
              tmp_atom_expr.col_offset = atom_expr.col_offset
              atom_expr = tmp_atom_expr
          if start:
@@ -1498,7 +1578,7 @@
              index = self.handle_expr(first_child)
              return ast.Index(index)
          lower = None
-@@ -995,74 +1157,85 @@
+@@ -995,74 +1237,85 @@
          if first_child.type == syms.test:
              lower = self.handle_expr(first_child)
          if first_child.type == tokens.COLON:
@@ -1619,9 +1699,12 @@
                      # or keyword arg
                      keyword_count += 1
          if generator_count > 1 or \
-@@ -1075,13 +1248,13 @@
+@@ -1073,15 +1326,15 @@
+             self.error("more than 255 arguments", args_node)
+         args = []
          keywords = []
-         used_keywords = {}
+-        used_keywords = {}
++        used_keywords = {}  # why not use a set for this?
          doublestars_count = 0 # just keyword argument unpackings
 -        child_count = args_node.num_children()
 +        child_count = len(args_node.children)
@@ -1637,7 +1720,7 @@
                      # a positional argument
                      if keywords:
                          if doublestars_count:
-@@ -1099,17 +1272,18 @@
+@@ -1099,17 +1352,18 @@
                          self.error("iterable argument unpacking follows "
                                     "keyword argument unpacking",
                                     expr_node)
@@ -1662,11 +1745,23 @@
                      # the lone generator expression
                      args.append(self.handle_genexp(argument))
                  else:
-@@ -1126,140 +1300,119 @@
+@@ -1118,148 +1372,125 @@
+                     if isinstance(keyword_expr, ast.Lambda):
+                         self.error("lambda cannot contain assignment",
+                                    expr_node)
+-                    elif not isinstance(keyword_expr, ast.Name):
+-                        self.error("keyword can't be an expression",
+-                                   expr_node)
+-                    keyword = keyword_expr.id
++                    keyword = keyword_expr
+                     if keyword in used_keywords:
                          self.error("keyword argument repeated", expr_node)
-                     used_keywords[keyword] = None
-                     self.check_forbidden_name(keyword, expr_node)
+-                    used_keywords[keyword] = None
+-                    self.check_forbidden_name(keyword, expr_node)
 -                    keyword_value = self.handle_expr(argument.get_child(2))
++                    used_keywords[keyword] = None  # why not use a set for this?
++                    if isinstance (keyword, ast.Name):
++                        self.check_forbidden_name(keyword, expr_node)
 +                    keyword_value = self.handle_expr(argument.children[2])
                      keywords.append(ast.keyword(keyword, keyword_value))
              i += 1
@@ -1864,7 +1959,7 @@
                      return self.handle_dictcomp(maker, atom_node)
                  else:
                      # a dictionary display
-@@ -1268,8 +1421,8 @@
+@@ -1268,8 +1499,8 @@
              raise AssertionError("unknown atom")
  
      def handle_testlist_gexp(self, gexp_node):
@@ -1875,7 +1970,7 @@
              return self.handle_genexp(gexp_node)
          return self.handle_testlist(gexp_node)
  
-@@ -1278,18 +1431,18 @@
+@@ -1278,18 +1509,18 @@
          current_for = comp_node
          while True:
              count += 1
@@ -1900,7 +1995,7 @@
                      else:
                          return count
                  else:
-@@ -1298,24 +1451,24 @@
+@@ -1298,24 +1529,24 @@
      def count_comp_ifs(self, iter_node):
          count = 0
          while True:
@@ -1933,7 +2028,7 @@
              else:
                  # Modified in python2.7, see http://bugs.python.org/issue6704
                  # Fixing unamed tuple location
-@@ -1323,85 +1476,63 @@
+@@ -1323,85 +1554,63 @@
                  assert isinstance(expr_node, ast.expr)
                  col = expr_node.col_offset
                  line = expr_node.lineno

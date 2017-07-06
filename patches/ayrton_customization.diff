@@ -1,6 +1,33 @@
 --- a/ayrton/parser/astcompiler/astbuilder.py
 +++ b/ayrton/parser/astcompiler/astbuilder.py
-@@ -1256,15 +1256,20 @@
+@@ -564,26 +564,6 @@
+         new_node.col_offset = try_node.col_offset
+         return new_node
+ 
+-    def handle_with_stmt(self, with_node):
+-        body = self.handle_suite(with_node.children[-1])
+-        i = len(with_node.children) - 1
+-        while True:
+-            i -= 2
+-            item = with_node.children[i]
+-            test = self.handle_expr(item.children[0])
+-            if len(item.children) == 3:
+-                target = self.handle_expr(item.children[2])
+-                self.set_context(target, ast.Store())
+-            else:
+-                target = None
+-            wi = ast.With (test, target, body)
+-            wi.lineno = with_node.lineno
+-            wi.col_offset = with_node.col_offset
+-            if i == 1:
+-                break
+-            body = [wi]
+-        return wi
+-
+     def handle_with_item(self, item_node):
+         test = self.handle_expr(item_node.children[0])
+         if len(item_node.children) == 3:
+@@ -1336,15 +1316,20 @@
                  expr_node = argument.children[0]
                  if len(argument.children) == 1:
                      # a positional argument
@@ -30,20 +57,23 @@
                      args.append(self.handle_expr(expr_node))
                  elif expr_node.type == tokens.STAR:
                      # an iterable argument unpacking
-@@ -1301,7 +1306,16 @@
-                     used_keywords[keyword] = None
-                     self.check_forbidden_name(keyword, expr_node)
+@@ -1379,7 +1364,19 @@
+                     if isinstance (keyword, ast.Name):
+                         self.check_forbidden_name(keyword, expr_node)
                      keyword_value = self.handle_expr(argument.children[2])
 -                    keywords.append(ast.keyword(keyword, keyword_value))
-+                    if keyword in Command.supported_options:
++                    if isinstance (keyword, ast.Name) and keyword in Command.supported_options:
 +                        keywords.append(ast.keyword(keyword, keyword_value))
 +                    else:
 +                        kw = ast.keyword(keyword, keyword_value)
-+                        kw.lineno = keyword_node.lineno
-+                        name = ast.Name ('o', ast.Load())
-+                        name.lineno = keyword_node.lineno
-+                        arg = ast.Call(name, [], [ kw ], None, None)
-+                        arg.lineno = keyword_node.lineno
++                        kw.lineno = keyword.lineno
++                        kw.col_offset = keyword.col_offset
++                        name = ast.Name('o', ast.Load())
++                        name.lineno = keyword.lineno
++                        name.col_offset = keyword.col_offset
++                        arg = ast.Call(name, [], [ kw ])
++                        arg.lineno = keyword.lineno
++                        arg.col_offset = keyword.col_offset
 +                        args.append(arg)
              i += 1
          if not args:

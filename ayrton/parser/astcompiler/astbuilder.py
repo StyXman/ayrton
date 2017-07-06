@@ -3,8 +3,13 @@ from ayrton.parser.astcompiler import fstring
 from ayrton.parser import error
 from ayrton.parser.pyparser.pygram import syms, tokens
 from ayrton.parser.pyparser.error import SyntaxError
+from ayrton.execute import Command
 import ast
 from ast import Starred
+
+
+import logging
+logger = logging.getLogger('ayrton.parser.astcompiler.astbuilder')
 
 
 def ast_from_node(space, node, compile_info):
@@ -53,6 +58,75 @@ expression_name_map = {
 def parsestr(space, encoding, literal):
     # return space.wrap(eval (literal))
     return eval (literal)
+
+
+def find_starargs (args):
+    # find the Starred in args, take it out, pass its value as starargs
+    # the most intriguing thing here is that Starred is defined in py3.3
+    # but it doesn't seem to be used anywhere
+    starargs = None
+    for arg in args:
+        if isinstance(arg, Starred):
+            # this works!
+            args.remove(arg)
+            starargs = arg.value
+
+    return starargs
+
+
+def find_kwargs (keywords):
+    # find the keyword with arg==None, take it out, pass its value as kwargs
+    kwargs = None
+    for kwarg in keywords:
+        if kwarg.arg is None:
+            # this works!
+            keywords.remove(kwarg)
+            kwargs = kwarg.value
+
+    return kwargs
+
+
+# py3.3 and py3.5 support
+def CompatCall(name, args, keywords):
+    logger.debug2(ast.dump(name))
+    for arg in args:
+        logger.debug2 (ast.dump(arg))
+    for keyword in keywords:
+        logger.debug2 (ast.dump(keyword))
+
+    try:
+        # py3.5
+        node = ast.Call(name, args, keywords)
+    except TypeError:
+        # py3.3
+        starargs = find_starargs (args)
+        kwargs = find_kwargs (keywords)
+
+        for arg in args:
+            logger.debug2 (ast.dump(arg))
+        for keyword in keywords:
+            logger.debug2 (ast.dump(keyword))
+        if starargs is not None:
+            logger.debug(ast.dump(starargs))
+        if kwargs is not None:
+            logger.debug(ast.dump(kwargs))
+        node = ast.Call(name, args, keywords, starargs, kwargs)
+
+    return node
+
+
+def CompatClassDef(name, args, keywords, body, decorators):
+    try:
+        # py3.5
+        node = ast.ClassDef(name, args, keywords, body, decorators)
+    except TypeError:
+        # py3.3
+        starargs = find_starargs (args)
+        kwargs = find_kwargs (keywords)
+        node = ast.ClassDef(name, args, keywords, starargs, kwargs, body,
+                            decorators)
+
+    return node
 
 
 class ASTBuilder(object):
@@ -490,26 +564,6 @@ class ASTBuilder(object):
         new_node.col_offset = try_node.col_offset
         return new_node
 
-    def handle_with_stmt(self, with_node):
-        body = self.handle_suite(with_node.children[-1])
-        i = len(with_node.children) - 1
-        while True:
-            i -= 2
-            item = with_node.children[i]
-            test = self.handle_expr(item.children[0])
-            if len(item.children) == 3:
-                target = self.handle_expr(item.children[2])
-                self.set_context(target, ast.Store())
-            else:
-                target = None
-            wi = ast.With (test, target, body)
-            wi.lineno = with_node.lineno
-            wi.col_offset = with_node.col_offset
-            if i == 1:
-                break
-            body = [wi]
-        return wi
-
     def handle_with_item(self, item_node):
         test = self.handle_expr(item_node.children[0])
         if len(item_node.children) == 3:
@@ -557,6 +611,11 @@ class ASTBuilder(object):
 
         # class NAME '(' arglist ')' ':' suite
         # build up a fake Call node so we can extract its pieces
+
+        # what it's doing is to use handle_call() to parse the 'arguments'
+        # see ClassDef(name='Foo', bases=[], keywords=[], starargs=None, kwargs=None, body=[Pass()], decorator_list=[])
+        # and handle_suite() to parse the body
+
         call_name = ast.Name (name, ast.Load())
         call_name.lineno = classdef_node.lineno
         call_name.col_offset = classdef_node.col_offset
@@ -604,6 +663,7 @@ class ASTBuilder(object):
         return self.handle_funcdef_impl(node, 0, decorators)
 
     def handle_async_stmt(self, node):
+        ch = node.children[1]
         if ch.type == syms.funcdef:
             return self.handle_funcdef_impl(ch, 1)
         elif ch.type == syms.with_stmt:
@@ -1246,7 +1306,7 @@ class ASTBuilder(object):
             self.error("more than 255 arguments", args_node)
         args = []
         keywords = []
-        used_keywords = {}
+        used_keywords = {}  # why not use a set for this?
         doublestars_count = 0 # just keyword argument unpackings
         child_count = len(args_node.children)
         i = 0
@@ -1256,15 +1316,20 @@ class ASTBuilder(object):
                 expr_node = argument.children[0]
                 if len(argument.children) == 1:
                     # a positional argument
-                    if keywords:
-                        if doublestars_count:
-                            self.error("positional argument follows "
-                                       "keyword argument unpacking",
-                                       expr_node)
-                        else:
-                            self.error("positional argument follows "
-                                       "keyword argument",
-                                       expr_node)
+
+                    # we disable these checks so we can get
+                    # grep(quiet=True, **user_args, '/etc/passwd')
+                    # they will be converted to o()'s later
+
+                    # if keywords:
+                    #     if doublestars_count:
+                    #         self.error("positional argument follows "
+                    #                    "keyword argument unpacking",
+                    #                    expr_node)
+                    #     else:
+                    #         self.error("positional argument follows "
+                    #                    "keyword argument",
+                    #                    expr_node)
                     args.append(self.handle_expr(expr_node))
                 elif expr_node.type == tokens.STAR:
                     # an iterable argument unpacking
@@ -1292,16 +1357,26 @@ class ASTBuilder(object):
                     if isinstance(keyword_expr, ast.Lambda):
                         self.error("lambda cannot contain assignment",
                                    expr_node)
-                    elif not isinstance(keyword_expr, ast.Name):
-                        self.error("keyword can't be an expression",
-                                   expr_node)
-                    keyword = keyword_expr.id
+                    keyword = keyword_expr
                     if keyword in used_keywords:
                         self.error("keyword argument repeated", expr_node)
-                    used_keywords[keyword] = None
-                    self.check_forbidden_name(keyword, expr_node)
+                    used_keywords[keyword] = None  # why not use a set for this?
+                    if isinstance (keyword, ast.Name):
+                        self.check_forbidden_name(keyword, expr_node)
                     keyword_value = self.handle_expr(argument.children[2])
-                    keywords.append(ast.keyword(keyword, keyword_value))
+                    if isinstance (keyword, ast.Name) and keyword in Command.supported_options:
+                        keywords.append(ast.keyword(keyword, keyword_value))
+                    else:
+                        kw = ast.keyword(keyword, keyword_value)
+                        kw.lineno = keyword.lineno
+                        kw.col_offset = keyword.col_offset
+                        name = ast.Name('o', ast.Load())
+                        name.lineno = keyword.lineno
+                        name.col_offset = keyword.col_offset
+                        arg = ast.Call(name, [], [ kw ])
+                        arg.lineno = keyword.lineno
+                        arg.col_offset = keyword.col_offset
+                        args.append(arg)
             i += 1
         if not args:
             args = []
