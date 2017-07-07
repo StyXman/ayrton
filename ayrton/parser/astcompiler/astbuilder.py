@@ -1479,7 +1479,7 @@ class ASTBuilder(object):
                 if (n_maker_children == 1 or
                     (n_maker_children > 1 and
                      maker.children[1].type == tokens.COMMA)):
-                    # a set display
+                    # a set display, {1, 2, ...}
                     return self.handle_setdisplay(maker, atom_node)
                 elif n_maker_children > 1 and maker.children[1].type == syms.comp_for:
                     # a set comprehension
@@ -1493,7 +1493,7 @@ class ASTBuilder(object):
 
                     return self.handle_dictcomp(maker, atom_node)
                 else:
-                    # a dictionary display
+                    # a dictionary display, {1: 2, ...}
                     return self.handle_dictdisplay(maker, atom_node)
         else:
             raise AssertionError("unknown atom")
@@ -1546,7 +1546,8 @@ class ASTBuilder(object):
             expr = self.handle_expr(comp_node.children[3])
             assert isinstance(expr, ast.expr)
             if len(for_node.children) == 1:
-                comp = ast.comprehension(for_targets[0], expr, [])
+                # TODO: support async comprehensions
+                comp = ast.comprehension(for_targets[0], expr, [], False)
             else:
                 # Modified in python2.7, see http://bugs.python.org/issue6704
                 # Fixing unamed tuple location
@@ -1555,7 +1556,7 @@ class ASTBuilder(object):
                 col = expr_node.col_offset
                 line = expr_node.lineno
                 target = ast.Tuple(for_targets, ast.Store(), line, col)
-                comp = ast.comprehension(target, expr, [])
+                comp = ast.comprehension(target, expr, [], False)
             if len(comp_node.children) == 5:
                 comp_node = comp_iter = comp_node.children[4]
                 assert comp_iter.type == syms.comp_iter

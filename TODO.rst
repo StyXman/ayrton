@@ -63,3 +63,8 @@ Think deeply about:
 * s/bash/expand/
 
 * case/matching?
+
+If we have the time:
+--------------------
+
+* ast.Name('x', ast.Load(), lineno=1, col_offset=6)

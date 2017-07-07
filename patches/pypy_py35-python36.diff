@@ -1995,7 +1995,7 @@
                      else:
                          return count
                  else:
-@@ -1298,24 +1529,24 @@
+@@ -1298,24 +1529,25 @@
      def count_comp_ifs(self, iter_node):
          count = 0
          while True:
@@ -2024,11 +2024,12 @@
 -            if for_node.num_children() == 1:
 -                comp = ast.comprehension(for_targets[0], expr, None)
 +            if len(for_node.children) == 1:
-+                comp = ast.comprehension(for_targets[0], expr, [])
++                # TODO: support async comprehensions
++                comp = ast.comprehension(for_targets[0], expr, [], False)
              else:
                  # Modified in python2.7, see http://bugs.python.org/issue6704
                  # Fixing unamed tuple location
-@@ -1323,85 +1554,63 @@
+@@ -1323,85 +1555,63 @@
                  assert isinstance(expr_node, ast.expr)
                  col = expr_node.col_offset
                  line = expr_node.lineno
@@ -2037,7 +2038,7 @@
 -            if comp_node.num_children() == 5:
 -                comp_node = comp_iter = comp_node.get_child(4)
 +                target = ast.Tuple(for_targets, ast.Store(), line, col)
-+                comp = ast.comprehension(target, expr, [])
++                comp = ast.comprehension(target, expr, [], False)
 +            if len(comp_node.children) == 5:
 +                comp_node = comp_iter = comp_node.children[4]
                  assert comp_iter.type == syms.comp_iter
@@ -2373,6 +2374,15 @@
  
  class PythonGrammar(parser.Grammar):
  
+@@ -9,7 +9,7 @@
+ 
+ def _get_python_grammar():
+     here = os.path.dirname(__file__)
+-    fp = open(os.path.join(here, "data", "Grammar3.5"))
++    fp = open(os.path.join(here, "data", "Grammar3.6"))
+     try:
+         gram_source = fp.read()
+     finally:
 @@ -22,14 +22,14 @@
  
  class _Tokens(object):

@@ -88,3 +88,21 @@
              i += 1
          if not args:
              args = []
+@@ -1479,7 +1479,7 @@
+                 if (n_maker_children == 1 or
+                     (n_maker_children > 1 and
+                      maker.children[1].type == tokens.COMMA)):
+-                    # a set display
++                    # a set display, {1, 2, ...}
+                     return self.handle_setdisplay(maker, atom_node)
+                 elif n_maker_children > 1 and maker.children[1].type == syms.comp_for:
+                     # a set comprehension
+@@ -1493,7 +1493,7 @@
+ 
+                     return self.handle_dictcomp(maker, atom_node)
+                 else:
+-                    # a dictionary display
++                    # a dictionary display, {1: 2, ...}
+                     return self.handle_dictdisplay(maker, atom_node)
+         else:
+             raise AssertionError("unknown atom")
