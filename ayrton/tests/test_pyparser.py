@@ -80,14 +80,14 @@ class Parser(unittest.TestCase):
                          "\n%s != \n%s" % (ast.dump (ast1), ast.dump (ast2)))
 
     def test_comp (self):
-        self.parse ('[ x for x in foo() ]')
+        self.parse (b'[ x for x in foo() ]')
 
     def test_comp_if (self):
-        self.parse ('[ x for x in foo() if x ]')
+        self.parse (b'[ x for x in foo() if x ]')
 
 
     def test_elif (self):
-        self.parse ('''if True:
+        self.parse (b'''if True:
     pass
 elif False:
     pass

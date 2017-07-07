@@ -1358,24 +1358,27 @@ class ASTBuilder(object):
                         self.error("lambda cannot contain assignment",
                                    expr_node)
                     keyword = keyword_expr
+                    # TODO: if we disable this, we can allow
+                    # f(a=1, a=2)
                     if keyword in used_keywords:
                         self.error("keyword argument repeated", expr_node)
                     used_keywords[keyword] = None  # why not use a set for this?
                     if isinstance (keyword, ast.Name):
-                        self.check_forbidden_name(keyword, expr_node)
+                        # NOTE: we could disable this too :)
+                        self.check_forbidden_name(keyword.id, expr_node)
                     keyword_value = self.handle_expr(argument.children[2])
-                    if isinstance (keyword, ast.Name) and keyword in Command.supported_options:
-                        keywords.append(ast.keyword(keyword, keyword_value))
+                    if isinstance (keyword, ast.Name) and keyword.id in Command.supported_options:
+                        keywords.append(ast.keyword(keyword.id, keyword_value))
                     else:
                         kw = ast.keyword(keyword, keyword_value)
-                        kw.lineno = keyword.lineno
-                        kw.col_offset = keyword.col_offset
+                        kw.lineno = expr_node.lineno
+                        kw.col_offset = expr_node.col_offset
                         name = ast.Name('o', ast.Load())
-                        name.lineno = keyword.lineno
-                        name.col_offset = keyword.col_offset
+                        name.lineno = expr_node.lineno
+                        name.col_offset = expr_node.col_offset
                         arg = ast.Call(name, [], [ kw ])
-                        arg.lineno = keyword.lineno
-                        arg.col_offset = keyword.col_offset
+                        arg.lineno = expr_node.lineno
+                        arg.col_offset = expr_node.col_offset
                         args.append(arg)
             i += 1
         if not args:
