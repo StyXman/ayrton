@@ -125,6 +125,10 @@ class ExecParams:
 
 
 def parse (script, file_name=''):
+    if isinstance(script, str):
+        # make sure it's bytes
+        script = script.encode()
+
     parser= PythonParser (None)
     info= CompileInfo (file_name, 'exec')
     return ast_from_node (None, parser.parse_source (script, info), info)
@@ -320,7 +324,11 @@ class Ayrton (object):
 
 
     def run_script (self, script, file_name, argv=None, params=None):
-        logger.debug ('running script:\n-----------\n%s\n-----------', script)
+        if isinstance(script, str):
+            # make sure it's bytes
+            script = script.encode()
+
+        logger.debug ('running script:\n-----------\n%r\n-----------', script)
         self.file_name= file_name
         self.script= script.split(b'\n')
 
