@@ -1,12 +1,13 @@
-from ayrton.parser.error import OperationError
-from ayrton.parser.pyparser import future, parser, pytokenizer, pygram, error
-from ayrton.parser.astcompiler import consts
+from pypy.interpreter.error import OperationError
+from pypy.interpreter.pyparser import future, parser, pytokenizer, pygram, error
+from pypy.interpreter.astcompiler import consts
+from rpython.rlib import rstring
 
 
-def recode_to_utf8(space, b, encoding):
+def recode_to_utf8(space, bytes, encoding):
     if encoding == 'utf-8':
-        return b
-    w_text = space.call_method(space.newbytes(b), "decode",
+        return bytes
+    w_text = space.call_method(space.newbytes(bytes), "decode",
                                space.newtext(encoding))
     w_recoded = space.call_method(w_text, "encode", space.newtext("utf-8"))
     return space.bytes_w(w_recoded)
@@ -32,37 +33,29 @@ def _normalize_encoding(encoding):
             return 'iso-8859-1'
     return encoding
 
-def _check_for_encoding(b):
-    """You can use a different encoding from UTF-8 by putting a specially-formatted
-    comment as the first or second line of the source code."""
-    eol = b.find(b'\n')
+def _check_for_encoding(s):
+    eol = s.find('\n')
     if eol < 0:
-        return _check_line_for_encoding(b)[0]
-    enc, again = _check_line_for_encoding(b[:eol])
+        return _check_line_for_encoding(s)[0]
+    enc, again = _check_line_for_encoding(s[:eol])
     if enc or not again:
         return enc
-    eol2 = b.find(b'\n', eol + 1)
+    eol2 = s.find('\n', eol + 1)
     if eol2 < 0:
-        return _check_line_for_encoding(b[eol + 1:])[0]
-    return _check_line_for_encoding(b[eol + 1:eol2])[0]
+        return _check_line_for_encoding(s[eol + 1:])[0]
+    return _check_line_for_encoding(s[eol + 1:eol2])[0]
 
 
 def _check_line_for_encoding(line):
     """returns the declared encoding or None"""
     i = 0
     for i in range(len(line)):
-        if line[i] == b'#':
+        if line[i] == '#':
             break
-        if line[i] not in b' \t\014':
+        if line[i] not in ' \t\014':
             return None, False  # Not a comment, don't read the second line.
     return pytokenizer.match_encoding_declaration(line[i:]), True
 
-
-# shamelessly ripped off rpython to avoid dependency
-def check_str0(fname):
-    """A 'probe' to trigger a failure at translation time, if the
-    string was not proved to not contain NUL characters."""
-    assert '\x00' not in fname, "NUL byte in string"
 
 class CompileInfo(object):
     """Stores information about the source being compiled.
@@ -84,7 +77,7 @@ class CompileInfo(object):
 
     def __init__(self, filename, mode="exec", flags=0, future_pos=(0, 0),
                  hidden_applevel=False, optimize=-1):
-        check_str0(filename)
+        rstring.check_str0(filename)
         self.filename = filename
         self.mode = mode
         self.encoding = None
@@ -115,29 +108,31 @@ class PythonParser(parser.Parser):
         tree is handled here.
         """
         # Detect source encoding.
+        explicit_encoding = False
         enc = None
         if compile_info.flags & consts.PyCF_SOURCE_IS_UTF8:
             enc = 'utf-8'
 
         if compile_info.flags & consts.PyCF_IGNORE_COOKIE:
             textsrc = bytessrc
-        elif bytessrc.startswith(b"\xEF\xBB\xBF"):
+        elif bytessrc.startswith("\xEF\xBB\xBF"):
             bytessrc = bytessrc[3:]
             enc = 'utf-8'
             # If an encoding is explicitly given check that it is utf-8.
             decl_enc = _check_for_encoding(bytessrc)
+            explicit_encoding = (decl_enc is not None)
             if decl_enc and decl_enc != "utf-8":
                 raise error.SyntaxError("UTF-8 BOM with %s coding cookie" % decl_enc,
                                         filename=compile_info.filename)
-            textsrc = bytessrc.decode('utf-8')
+            textsrc = bytessrc
         else:
             enc = _normalize_encoding(_check_for_encoding(bytessrc))
+            explicit_encoding = (enc is not None)
             if enc is None:
                 enc = 'utf-8'
             try:
-                # textsrc = recode_to_utf8(self.space, bytessrc, enc)
-                textsrc = bytessrc.decode(enc)
-            except UnicodeDecodeError as e:
+                textsrc = recode_to_utf8(self.space, bytessrc, enc)
+            except OperationError as e:
                 # if the codec is not found, LookupError is raised.  we
                 # check using 'is_w' not to mask potential IndexError or
                 # KeyError
@@ -153,6 +148,8 @@ class PythonParser(parser.Parser):
                 raise
 
         flags = compile_info.flags
+        if explicit_encoding:
+            flags |= consts.PyCF_FOUND_ENCODING
 
         # The tokenizer is very picky about how it wants its input.
         source_lines = textsrc.splitlines(True)
@@ -164,6 +161,8 @@ class PythonParser(parser.Parser):
         self.prepare(_targets[compile_info.mode])
         tp = 0
         try:
+            last_value_seen = None
+            next_value_seen = None
             try:
                 # Note: we no longer pass the CO_FUTURE_* to the tokenizer,
                 # which is expected to work independently of them.  It's
@@ -178,8 +177,12 @@ class PythonParser(parser.Parser):
                 tokens_stream = iter(tokens)
 
                 for tp, value, lineno, column, line in tokens_stream:
+                    next_value_seen = value
                     if self.add_token(tp, value, lineno, column, line):
                         break
+                    last_value_seen = value
+                last_value_seen = None
+                next_value_seen = None
 
                 if compile_info.mode == 'single':
                     for tp, value, lineno, column, line in tokens_stream:
@@ -215,8 +218,14 @@ class PythonParser(parser.Parser):
                     msg = "expected an indented block"
                 else:
                     new_err = error.SyntaxError
-                    msg = "invalid syntax"
-                raise new_err(msg, e.lineno, e.col_offset, e.line,
+                    if (last_value_seen in ('print', 'exec') and
+                            bool(next_value_seen) and
+                            next_value_seen != '('):
+                        msg = "Missing parentheses in call to '%s'" % (
+                            last_value_seen,)
+                    else:
+                        msg = "invalid syntax"
+                raise new_err(msg, e.lineno, e.column, e.line,
                               compile_info.filename)
             else:
                 tree = self.root

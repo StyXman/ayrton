@@ -1,5 +1,5 @@
 #! /usr/bin/env ayrton
 
 # failing executables can be tested as booleans
-if not false (_fails=True):
-    ayrton_return_value= "yes!"
+if not false(_fails=True):
+    ayrton_return_value = "yes!"

@@ -56,6 +56,7 @@ class ASTNodeVisitor(ASDLVisitor):
 
     def visitSum(self, sum, base):
         if is_simple_sum(sum):
+            assert not sum.attributes
             self.emit("class %s(AST):" % (base,))
             self.emit("@staticmethod", 1)
             self.emit("def from_object(space, w_node):", 1)
@@ -85,7 +86,7 @@ class ASTNodeVisitor(ASDLVisitor):
             self.emit("class %s(AST):" % (base,))
             if sum.attributes:
                 self.emit("")
-                args = ", ".join(attr.name.value for attr in sum.attributes)
+                args = ", ".join(attr.name for attr in sum.attributes)
                 self.emit("def __init__(self, %s):" % (args,), 1)
                 for attr in sum.attributes:
                     self.visit(attr)
@@ -101,8 +102,8 @@ class ASTNodeVisitor(ASDLVisitor):
                           % (typ.name,), 3)
             self.emit("raise oefmt(space.w_TypeError,", 2)
             self.emit("        \"Expected %s node, got %%T\", w_node)" % (base,), 2)
-            self.emit("State.ast_type('%r', 'AST', None, %s)" %
-                      (base, [repr(attr.name) for attr in sum.attributes]))
+            self.emit("State.ast_type(%r, 'AST', None, %s)" %
+                      (base, [attr.name for attr in sum.attributes]))
             self.emit("")
             for cons in sum.types:
                 self.visit(cons, base, sum.attributes)
@@ -208,7 +209,7 @@ class ASTNodeVisitor(ASDLVisitor):
         else:
             value = self.get_value_extractor(field, "w_%s" % (field.name,))
             lines = ["_%s = %s" % (field.name, value)]
-            if not field.opt and field.type.value not in ("int",):
+            if not field.opt and field.type not in ("int",):
                 lines.append("if _%s is None:" % (field.name,))
                 lines.append("    raise_required_value(space, w_node, '%s')"
                              % (field.name,))
@@ -254,20 +255,27 @@ class ASTNodeVisitor(ASDLVisitor):
     def make_mutate_over(self, cons, name):
         self.emit("def mutate_over(self, visitor):", 1)
         for field in cons.fields:
-            if (field.type.value not in asdl.builtin_types and
-                field.type.value not in self.data.simple_types):
+            if (field.type not in asdl.builtin_types and
+                field.type not in self.data.simple_types):
                 if field.opt or field.seq:
                     level = 3
                     self.emit("if self.%s:" % (field.name,), 2)
                 else:
                     level = 2
                 if field.seq:
-                    sub = (field.name,)
-                    self.emit("visitor._mutate_sequence(self.%s)" % sub, level)
+                    sub = field.name
+                    self.emit("for i in range(len(self.{})):".format(sub),
+                        level)
+                    self.emit("if self.{}[i] is not None:".format(sub),
+                        level + 1)
+                    self.emit(
+                        "self.{0}[i] = self.{0}[i].mutate_over(visitor)".format(sub),
+                        level + 2)
                 else:
-                    sub = (field.name, field.name)
-                    self.emit("self.%s = self.%s.mutate_over(visitor)" % sub,
-                              level)
+                    sub = field.name
+                    self.emit(
+                        "self.{0} = self.{0}.mutate_over(visitor)".format(sub),
+                        level)
         self.emit("return visitor.visit_%s(self)" % (name,), 2)
         self.emit("")
 
@@ -281,8 +289,8 @@ class ASTNodeVisitor(ASDLVisitor):
         self.emit("")
         self.make_mutate_over(cons, cons.name)
         self.make_converters(cons.fields, cons.name, extra_attributes)
-        self.emit("State.ast_type('%r', '%s', %s)" %
-                  (cons.name, base, [repr(f.name) for f in cons.fields]))
+        self.emit("State.ast_type(%r, '%s', %s)" %
+                  (cons.name, base, [f.name for f in cons.fields]))
         self.emit("")
 
     def visitField(self, field):
@@ -298,7 +306,8 @@ class ASTVisitorVisitor(ASDLVisitor):
         self.emit("def visit_sequence(self, seq):", 1)
         self.emit("if seq is not None:", 2)
         self.emit("for node in seq:", 3)
-        self.emit("node.walkabout(self)", 4)
+        self.emit("if node is not None:", 4)
+        self.emit("node.walkabout(self)", 5)
         self.emit("")
         self.emit("def visit_kwonlydefaults(self, seq):", 1)
         self.emit("if seq is not None:", 2)
@@ -308,11 +317,6 @@ class ASTVisitorVisitor(ASDLVisitor):
         self.emit("")
         self.emit("def default_visitor(self, node):", 1)
         self.emit("raise NodeVisitorNotImplemented", 2)
-        self.emit("")
-        self.emit("def _mutate_sequence(self, seq):", 1)
-        self.emit("for i in range(len(seq)):", 2)
-        self.emit("if seq[i] is not None:", 3)
-        self.emit("seq[i] = seq[i].mutate_over(self)", 4)
         self.emit("")
         super(ASTVisitorVisitor, self).visitModule(mod)
         self.emit("")
@@ -361,8 +365,8 @@ class GenericASTVisitorVisitor(ASDLVisitor):
         self.emit("")
 
     def visitField(self, field):
-        if (field.type.value not in asdl.builtin_types and
-            field.type.value not in self.data.simple_types):
+        if (field.type not in asdl.builtin_types and
+            field.type not in self.data.simple_types):
             level = 2
             template = "node.%s.walkabout(self)"
             if field.seq:
@@ -403,7 +407,7 @@ class ASDLData(object):
             if isinstance(tp.value, asdl.Sum):
                 sum = tp.value
                 if is_simple_sum(sum):
-                    simple_types.add(tp.name.value)
+                    simple_types.add(tp.name)
                 else:
                     attrs = [field for field in sum.attributes]
                     for cons in sum.types:
@@ -411,7 +415,7 @@ class ASDLData(object):
                         cons_attributes[cons] = attrs
             else:
                 prod = tp.value
-                prod_simple.add(tp.name.value)
+                prod_simple.add(tp.name)
                 add_masks(prod.fields, prod)
         prod_simple.update(simple_types)
         self.cons_attributes = cons_attributes
@@ -439,8 +443,8 @@ def raise_required_value(space, w_obj, name):
 def check_string(space, w_obj):
     if not (space.isinstance_w(w_obj, space.w_bytes) or
             space.isinstance_w(w_obj, space.w_unicode)):
-        raise OperationError(space.w_TypeError, space.wrap(
-                'AST string must be of type str or unicode'))
+        raise oefmt(space.w_TypeError,
+                    "AST string must be of type str or unicode")
     return w_obj
 
 def get_field(space, w_node, name, optional):
@@ -455,6 +459,7 @@ def get_field(space, w_node, name, optional):
 
 class AST(object):
     __metaclass__ = extendabletype
+    _attrs_ = ['lineno', 'col_offset']
 
     def walkabout(self, visitor):
         raise AssertionError("walkabout() implementation not provided")

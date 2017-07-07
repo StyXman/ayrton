@@ -74,6 +74,7 @@ def which(program):
             return None
 
         for path in os.environ["PATH"].split(os.pathsep):
+            logger.debug("%r / %r", path, program)
             exe_file = os.path.join(path, program)
             if is_exe(exe_file):
                 return exe_file
@@ -132,8 +133,6 @@ class Command:
 
     def __init__ (self, path):
         self.path= path
-        self.exe= resolve_program (path)
-        logger.debug ('found exe %s', self.exe)
         self.command= None
 
         self.stdin_pipe= None
@@ -145,6 +144,11 @@ class Command:
         self.captured_lines= None
 
         self.child_pid= None
+
+        # this is at the very bottom so, if anything happens, all the other
+        # attibutes are already defined when __del__() runs
+        self.exe= resolve_program (path)
+        logger.debug ('found exe %s', self.exe)
 
 
     def prepare_fds (self):
@@ -476,21 +480,24 @@ class Command:
             ayrton.runner.pending_children.append (self)
 
 
-    def wait (self):
-        logger.debug (self.child_pid)
+    def wait(self):
+        logger.debug(self.child_pid)
+        logger.debug(self._exit_code)
 
         if self._exit_code is None:
-            self._exit_code= os.waitpid (self.child_pid, 0)[1] >> 8
+            self._exit_code = os.waitpid(self.child_pid, 0)[1] >> 8
 
-            if self._exit_code==127:
+            if self._exit_code == 127:
                 # NOTE: when running bash, it returns 127 when it can't find the script to run
-                raise CommandNotFound (self.path)
+                raise CommandNotFound(self.path)
 
-            if (ayrton.runner.options.get ('errexit', False) and
-                self._exit_code!=0 and
-                not self.options.get ('_fails', False)):
+            logger.debug2(ayrton.runner.options)
+            logger.debug2(self.options)
+            if ( ayrton.runner.options.get('errexit', False) and
+                 self._exit_code != 0 and
+                 not self.options.get('_fails', False) ):
 
-                raise CommandFailed (self)
+                raise CommandFailed(self)
 
 
     def exit_code (self):
@@ -503,16 +510,14 @@ class Command:
         if self.exe is None:
             raise CommandNotFound (self.path)
 
-        self.options= self.default_options.copy ()
+        self.options = self.default_options.copy ()
         for option in self.supported_options:
-            try:
+            if option in kwargs:
+                logger.debug2("%s: %r", option, kwargs[option])
                 # update with the passed value
                 self.options[option]= kwargs[option]
                 # we don't need the option anymore
                 del kwargs[option]
-            except KeyError:
-                # ignore
-                pass
 
         self.options['_env'].update (os.environ)
         self.args= self.prepare_args (self.exe, args, kwargs)

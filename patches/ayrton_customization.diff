@@ -1,0 +1,90 @@
+--- a/ayrton/parser/astcompiler/astbuilder.py
++++ b/ayrton/parser/astcompiler/astbuilder.py
+@@ -564,26 +564,6 @@
+         new_node.col_offset = try_node.col_offset
+         return new_node
+ 
+-    def handle_with_stmt(self, with_node):
+-        body = self.handle_suite(with_node.children[-1])
+-        i = len(with_node.children) - 1
+-        while True:
+-            i -= 2
+-            item = with_node.children[i]
+-            test = self.handle_expr(item.children[0])
+-            if len(item.children) == 3:
+-                target = self.handle_expr(item.children[2])
+-                self.set_context(target, ast.Store())
+-            else:
+-                target = None
+-            wi = ast.With (test, target, body)
+-            wi.lineno = with_node.lineno
+-            wi.col_offset = with_node.col_offset
+-            if i == 1:
+-                break
+-            body = [wi]
+-        return wi
+-
+     def handle_with_item(self, item_node):
+         test = self.handle_expr(item_node.children[0])
+         if len(item_node.children) == 3:
+@@ -1336,15 +1316,20 @@
+                 expr_node = argument.children[0]
+                 if len(argument.children) == 1:
+                     # a positional argument
+-                    if keywords:
+-                        if doublestars_count:
+-                            self.error("positional argument follows "
+-                                       "keyword argument unpacking",
+-                                       expr_node)
+-                        else:
+-                            self.error("positional argument follows "
+-                                       "keyword argument",
+-                                       expr_node)
++
++                    # we disable these checks so we can get
++                    # grep(quiet=True, **user_args, '/etc/passwd')
++                    # they will be converted to o()'s later
++
++                    # if keywords:
++                    #     if doublestars_count:
++                    #         self.error("positional argument follows "
++                    #                    "keyword argument unpacking",
++                    #                    expr_node)
++                    #     else:
++                    #         self.error("positional argument follows "
++                    #                    "keyword argument",
++                    #                    expr_node)
+                     args.append(self.handle_expr(expr_node))
+                 elif expr_node.type == tokens.STAR:
+                     # an iterable argument unpacking
+@@ -1373,13 +1358,28 @@
+                         self.error("lambda cannot contain assignment",
+                                    expr_node)
+                     keyword = keyword_expr
++                    # TODO: if we disable this, we can allow
++                    # f(a=1, a=2)
+                     if keyword in used_keywords:
+                         self.error("keyword argument repeated", expr_node)
+                     used_keywords[keyword] = None  # why not use a set for this?
+                     if isinstance (keyword, ast.Name):
+-                        self.check_forbidden_name(keyword, expr_node)
++                        # NOTE: we could disable this too :)
++                        self.check_forbidden_name(keyword.id, expr_node)
+                     keyword_value = self.handle_expr(argument.children[2])
+-                    keywords.append(ast.keyword(keyword, keyword_value))
++                    if isinstance (keyword, ast.Name) and keyword.id in Command.supported_options:
++                        keywords.append(ast.keyword(keyword.id, keyword_value))
++                    else:
++                        kw = ast.keyword(keyword, keyword_value)
++                        kw.lineno = expr_node.lineno
++                        kw.col_offset = expr_node.col_offset
++                        name = ast.Name('o', ast.Load())
++                        name.lineno = expr_node.lineno
++                        name.col_offset = expr_node.col_offset
++                        arg = ast.Call(name, [], [ kw ])
++                        arg.lineno = expr_node.lineno
++                        arg.col_offset = expr_node.col_offset
++                        args.append(arg)
+             i += 1
+         if not args:
+             args = []

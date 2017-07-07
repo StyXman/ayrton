@@ -1,4 +1,5 @@
 from ayrton.parser.astcompiler import consts, misc
+from ayrton.parser.astcompiler import fstring
 from ayrton.parser import error
 from ayrton.parser.pyparser.pygram import syms, tokens
 from ayrton.parser.pyparser.error import SyntaxError
@@ -6,8 +7,10 @@ from ayrton.execute import Command
 import ast
 from ast import Starred
 
+
 import logging
-logger= logging.getLogger ('ayrton.parser.astcompiler.astbuilder')
+logger = logging.getLogger('ayrton.parser.astcompiler.astbuilder')
+
 
 def ast_from_node(space, node, compile_info):
     """Turn a parse tree, node, to AST."""
@@ -20,6 +23,7 @@ augassign_operator_map = {
     '/='  : ast.Div,
     '//=' : ast.FloorDiv,
     '%='  : ast.Mod,
+    '@='  : ast.MatMult,
     '<<='  : ast.LShift,
     '>>='  : ast.RShift,
     '&='  : ast.BitAnd,
@@ -40,8 +44,10 @@ operator_map = misc.dict_to_switch({
     tokens.STAR : ast.Mult,
     tokens.SLASH : ast.Div,
     tokens.DOUBLESLASH : ast.FloorDiv,
-    tokens.PERCENT : ast.Mod
+    tokens.PERCENT : ast.Mod,
+    tokens.AT : ast.MatMult
 })
+
 
 expression_name_map = {
     ast.Attribute: 'attr',
@@ -82,7 +88,7 @@ def find_kwargs (keywords):
 
 # py3.3 and py3.5 support
 def CompatCall(name, args, keywords):
-    logger.debug2(ast.dump (name))
+    logger.debug2(ast.dump(name))
     for arg in args:
         logger.debug2 (ast.dump(arg))
     for keyword in keywords:
@@ -185,7 +191,7 @@ class ASTBuilder(object):
             raise AssertionError("non-statement node")
 
     def error(self, msg, n):
-        """Raise a SyntaxError with the lineno and column set to n's."""
+        """Raise a SyntaxError with the lineno and col_offset set to n's."""
         raise SyntaxError(msg, n.lineno, n.col_offset,
                           filename=self.compile_info.filename)
 
@@ -419,7 +425,6 @@ class ASTBuilder(object):
     def handle_if_stmt(self, if_node):
         child_count = len(if_node.children)
         if child_count == 4:
-            # simple if-then
             test = self.handle_expr(if_node.children[1])
             suite = self.handle_suite(if_node.children[3])
             new_node = ast.If (test, suite, [])
@@ -428,7 +433,6 @@ class ASTBuilder(object):
             return new_node
         otherwise_string = if_node.children[4].value
         if otherwise_string == "else":
-            # if-then-else
             test = self.handle_expr(if_node.children[1])
             suite = self.handle_suite(if_node.children[3])
             else_suite = self.handle_suite(if_node.children[6])
@@ -437,7 +441,6 @@ class ASTBuilder(object):
             new_node.col_offset = if_node.col_offset
             return new_node
         elif otherwise_string == "elif":
-            # if-then-elif...
             elif_count = child_count - 4
             after_elif = if_node.children[elif_count + 1]
             if after_elif.type == tokens.NAME and \
@@ -489,13 +492,13 @@ class ASTBuilder(object):
         new_node.col_offset = while_node.col_offset
         return new_node
 
-    def handle_for_stmt(self, for_node):
+    def handle_for_stmt(self, for_node, is_async):
         target_node = for_node.children[1]
         target_as_exprlist = self.handle_exprlist(target_node, ast.Store())
         if len(target_node.children) == 1:
             target = target_as_exprlist[0]
         else:
-            target = ast.Tuple (target_as_exprlist, ast.Store())
+            target = ast.Tuple(target_as_exprlist, ast.Store())
             target.lineno = target_node.lineno
             target.col_offset = target_node.col_offset
         expr = self.handle_testlist(for_node.children[3])
@@ -504,10 +507,16 @@ class ASTBuilder(object):
             otherwise = self.handle_suite(for_node.children[8])
         else:
             otherwise = []
-        new_node = ast.For (target, expr, body, otherwise)
-        new_node.lineno = for_node.lineno
-        new_node.col_offset = for_node.col_offset
-        return new_node
+        if is_async:
+            new_node = ast.AsyncFor(target, expr, body, otherwise)
+            new_node.lineno = for_node.lineno
+            new_node.col_offset = for_node.col_offset
+            return new_node
+        else:
+            new_node = ast.For(target, expr, body, otherwise)
+            new_node.lineno = for_node.lineno
+            new_node.col_offset = for_node.col_offset
+            return new_node
 
     def handle_except_clause(self, exc, body):
         test = None
@@ -555,26 +564,6 @@ class ASTBuilder(object):
         new_node.col_offset = try_node.col_offset
         return new_node
 
-    def handle_with_stmt(self, with_node):
-        body = self.handle_suite(with_node.children[-1])
-        i = len(with_node.children) - 1
-        while True:
-            i -= 2
-            item = with_node.children[i]
-            test = self.handle_expr(item.children[0])
-            if len(item.children) == 3:
-                target = self.handle_expr(item.children[2])
-                self.set_context(target, ast.Store())
-            else:
-                target = None
-            wi = ast.With (test, target, body)
-            wi.lineno = with_node.lineno
-            wi.col_offset = with_node.col_offset
-            if i == 1:
-                break
-            body = [wi]
-        return wi
-
     def handle_with_item(self, item_node):
         test = self.handle_expr(item_node.children[0])
         if len(item_node.children) == 3:
@@ -584,14 +573,20 @@ class ASTBuilder(object):
             target = None
         return ast.withitem(test, target)
 
-    def handle_with_stmt(self, with_node):
+    def handle_with_stmt(self, with_node, is_async):
         body = self.handle_suite(with_node.children[-1])
         items = [self.handle_with_item(with_node.children[i])
                  for i in range(1, len(with_node.children)-2, 2)]
-        new_node = ast.With (items, body)
-        new_node.lineno = with_node.lineno
-        new_node.col_offset = with_node.col_offset
-        return new_node
+        if is_async:
+            new_node = ast.AsyncWith (items, body)
+            new_node.lineno = with_node.lineno
+            new_node.col_offset = with_node.col_offset
+            return new_node
+        else:
+            new_node = ast.With (items, body)
+            new_node.lineno = with_node.lineno
+            new_node.col_offset = with_node.col_offset
+            return new_node
 
     def handle_classdef(self, classdef_node, decorators=None):
         if decorators is None:
@@ -602,29 +597,31 @@ class ASTBuilder(object):
         if len(classdef_node.children) == 4:
             # class NAME ':' suite
             body = self.handle_suite(classdef_node.children[3])
-            new_node = CompatClassDef (name, [], [], body, decorators)
+            new_node = ast.ClassDef (name, [], [], body, decorators)
             new_node.lineno = classdef_node.lineno
             new_node.col_offset = classdef_node.col_offset
             return new_node
         if classdef_node.children[3].type == tokens.RPAR:
             # class NAME '(' ')' ':' suite
             body = self.handle_suite(classdef_node.children[5])
-            new_node = CompatClassDef (name, [], [], body, decorators)
+            new_node = ast.ClassDef (name, [], [], body, decorators)
             new_node.lineno = classdef_node.lineno
             new_node.col_offset = classdef_node.col_offset
             return new_node
 
         # class NAME '(' arglist ')' ':' suite
         # build up a fake Call node so we can extract its pieces
-        # what it's doing is use handle_call() to parse the 'arguments'
+
+        # what it's doing is to use handle_call() to parse the 'arguments'
         # see ClassDef(name='Foo', bases=[], keywords=[], starargs=None, kwargs=None, body=[Pass()], decorator_list=[])
         # and handle_suite() to parse the body
+
         call_name = ast.Name (name, ast.Load())
         call_name.lineno = classdef_node.lineno
         call_name.col_offset = classdef_node.col_offset
         call = self.handle_call(classdef_node.children[3], call_name)
         body = self.handle_suite(classdef_node.children[6])
-        new_node = CompatClassDef (name, call.args, call.keywords, body, decorators)
+        new_node = ast.ClassDef (name, call.args, call.keywords, body, decorators)
         new_node.lineno = classdef_node.lineno
         new_node.col_offset = classdef_node.col_offset
         return new_node
@@ -634,7 +631,7 @@ class ASTBuilder(object):
             return [self.handle_expr(bases_node.children[0])]
         return self.get_expression_list(bases_node)
 
-    def handle_funcdef(self, funcdef_node, decorators=None):
+    def handle_funcdef_impl(self, funcdef_node, is_async, decorators=None):
         if decorators is None:
             decorators = []
         name_node = funcdef_node.children[1]
@@ -647,10 +644,34 @@ class ASTBuilder(object):
             returns = self.handle_expr(funcdef_node.children[4])
             suite += 2
         body = self.handle_suite(funcdef_node.children[suite])
-        new_node = ast.FunctionDef (name, args, body, decorators, returns)
-        new_node.lineno = funcdef_node.lineno
-        new_node.col_offset = funcdef_node.col_offset
-        return new_node
+        if is_async:
+            new_node = ast.AsyncFunctionDef (name, args, body, decorators,
+                                             returns)
+            new_node.lineno = funcdef_node.lineno
+            new_node.col_offset = funcdef_node.col_offset
+            return new_node
+        else:
+            new_node = ast.FunctionDef (name, args, body, decorators, returns)
+            new_node.lineno = funcdef_node.lineno
+            new_node.col_offset = funcdef_node.col_offset
+            return new_node
+
+    def handle_async_funcdef(self, node, decorators=None):
+        return self.handle_funcdef_impl(node.children[1], 1, decorators)
+
+    def handle_funcdef(self, node, decorators=None):
+        return self.handle_funcdef_impl(node, 0, decorators)
+
+    def handle_async_stmt(self, node):
+        ch = node.children[1]
+        if ch.type == syms.funcdef:
+            return self.handle_funcdef_impl(ch, 1)
+        elif ch.type == syms.with_stmt:
+            return self.handle_with_stmt(ch, 1)
+        elif ch.type == syms.for_stmt:
+            return self.handle_for_stmt(ch, 1)
+        else:
+            raise AssertionError("invalid async statement")
 
     def handle_decorated(self, decorated_node):
         decorators = self.handle_decorators(decorated_node.children[0])
@@ -659,6 +680,8 @@ class ASTBuilder(object):
             node = self.handle_funcdef(definition, decorators)
         elif definition.type == syms.classdef:
             node = self.handle_classdef(definition, decorators)
+        elif definition.type == syms.async_funcdef:
+            node = self.handle_async_funcdef(definition, decorators)
         else:
             raise AssertionError("unkown decorated")
         node.lineno = decorated_node.lineno
@@ -673,7 +696,7 @@ class ASTBuilder(object):
         if len(decorator_node.children) == 3:
             dec = dec_name
         elif len(decorator_node.children) == 5:
-            dec = CompatCall (dec_name, None, None)
+            dec = ast.Call (dec_name, [], [])
             dec.lineno = decorator_node.lineno
             dec.col_offset = decorator_node.col_offset
         else:
@@ -837,6 +860,7 @@ class ASTBuilder(object):
         return ast.arg(name, ann)
 
     def handle_stmt(self, stmt):
+        # peel the onion a little bit
         stmt_type = stmt.type
         if stmt_type == syms.stmt:
             stmt = stmt.children[0]
@@ -876,17 +900,19 @@ class ASTBuilder(object):
             elif stmt_type == syms.while_stmt:
                 return self.handle_while_stmt(stmt)
             elif stmt_type == syms.for_stmt:
-                return self.handle_for_stmt(stmt)
+                return self.handle_for_stmt(stmt, False)
             elif stmt_type == syms.try_stmt:
                 return self.handle_try_stmt(stmt)
             elif stmt_type == syms.with_stmt:
-                return self.handle_with_stmt(stmt)
+                return self.handle_with_stmt(stmt, False)
             elif stmt_type == syms.funcdef:
                 return self.handle_funcdef(stmt)
             elif stmt_type == syms.classdef:
                 return self.handle_classdef(stmt)
             elif stmt_type == syms.decorated:
                 return self.handle_decorated(stmt)
+            elif stmt_type == syms.async_stmt:
+                return self.handle_async_stmt(stmt)
             else:
                 raise AssertionError("unhandled compound statement")
         else:
@@ -1140,18 +1166,39 @@ class ASTBuilder(object):
         new_node.col_offset = factor_node.col_offset
         return new_node
 
-    def handle_power(self, power_node):
-        atom_expr = self.handle_atom(power_node.children[0])
-        if len(power_node.children) == 1:
+    def handle_atom_expr(self, atom_node):
+        start = 0
+        num_ch = len(atom_node.children)
+        if atom_node.children[0].type == tokens.AWAIT:
+            start = 1
+        atom_expr = self.handle_atom(atom_node.children[start])
+        if num_ch == 1:
             return atom_expr
-        for i in range(1, len(power_node.children)):
-            trailer = power_node.children[i]
+        if start and num_ch == 2:
+            new_node = ast.Await(atom_expr)
+            new_node.lineno = atom_node.lineno
+            new_node.col_offset = atom_node.col_offset
+            return new_node
+        for i in range(1, num_ch):
+            trailer = atom_node.children[i]
             if trailer.type != syms.trailer:
                 break
             tmp_atom_expr = self.handle_trailer(trailer, atom_expr)
             tmp_atom_expr.lineno = atom_expr.lineno
             tmp_atom_expr.col_offset = atom_expr.col_offset
             atom_expr = tmp_atom_expr
+        if start:
+            new_node = ast.Await(atom_expr)
+            new_node.lineno = atom_node.lineno
+            new_node.col_offset = atom_node.col_offset
+            return new_node
+        else:
+            return atom_expr
+
+    def handle_power(self, power_node):
+        atom_expr = self.handle_atom_expr(power_node.children[0])
+        if len(power_node.children) == 1:
+            return atom_expr
         if power_node.children[-1].type == syms.factor:
             right = self.handle_expr(power_node.children[-1])
             atom_expr = ast.BinOp (atom_expr, ast.Pow(), right)
@@ -1190,7 +1237,7 @@ class ASTBuilder(object):
         first_child = trailer_node.children[0]
         if first_child.type == tokens.LPAR:
             if len(trailer_node.children) == 2:
-                new_node = CompatCall (left_expr, [], [])
+                new_node = ast.Call (left_expr, [], [])
                 new_node.lineno = trailer_node.lineno
                 new_node.col_offset = trailer_node.col_offset
                 return new_node
@@ -1236,8 +1283,8 @@ class ASTBuilder(object):
             return new_node
 
     def handle_call(self, args_node, callable_expr):
-        arg_count = 0
-        keyword_count = 0
+        arg_count = 0 # position args + iterable args unpackings
+        keyword_count = 0 # keyword args + keyword args unpackings
         generator_count = 0
         for argument in args_node.children:
             if argument.type == syms.argument:
@@ -1245,7 +1292,11 @@ class ASTBuilder(object):
                     arg_count += 1
                 elif argument.children[1].type == syms.comp_for:
                     generator_count += 1
+                elif argument.children[0].type == tokens.STAR:
+                    arg_count += 1
                 else:
+                    # argument.children[0].type == tokens.DOUBLESTAR
+                    # or keyword arg
                     keyword_count += 1
         if generator_count > 1 or \
                 (generator_count and (keyword_count or arg_count)):
@@ -1255,71 +1306,86 @@ class ASTBuilder(object):
             self.error("more than 255 arguments", args_node)
         args = []
         keywords = []
-        variable_arg = None
-        keywords_arg = None
+        used_keywords = {}  # why not use a set for this?
+        doublestars_count = 0 # just keyword argument unpackings
         child_count = len(args_node.children)
-
-        # Call(func=Name(id='foo', ctx=Load()),
-        #      args=[Num(n=1),
-        #            Starred(value=Name(id='bar', ctx=Load()), ctx=Load())],
-        #      keywords=[keyword(arg='a', value=Num(n=3)),
-        #                keyword(arg=None, value=Name(id='baz', ctx=Load()))]))
-
         i = 0
         while i < child_count:
             argument = args_node.children[i]
             if argument.type == syms.argument:
+                expr_node = argument.children[0]
                 if len(argument.children) == 1:
-                    expr_node = argument.children[0]
-                    if variable_arg:
-                        self.error("only named arguments may follow "
-                                   "*expression", expr_node)
+                    # a positional argument
+
+                    # we disable these checks so we can get
+                    # grep(quiet=True, **user_args, '/etc/passwd')
+                    # they will be converted to o()'s later
+
+                    # if keywords:
+                    #     if doublestars_count:
+                    #         self.error("positional argument follows "
+                    #                    "keyword argument unpacking",
+                    #                    expr_node)
+                    #     else:
+                    #         self.error("positional argument follows "
+                    #                    "keyword argument",
+                    #                    expr_node)
                     args.append(self.handle_expr(expr_node))
+                elif expr_node.type == tokens.STAR:
+                    # an iterable argument unpacking
+                    if doublestars_count:
+                        self.error("iterable argument unpacking follows "
+                                   "keyword argument unpacking",
+                                   expr_node)
+                    expr = self.handle_expr(argument.children[1])
+                    new_node = ast.Starred(expr, ast.Load())
+                    new_node.lineno = expr_node.lineno
+                    new_node.col_offset = expr_node.col_offset
+                    args.append(new_node)
+                elif expr_node.type == tokens.DOUBLESTAR:
+                    # a keyword argument unpacking
+                    i += 1
+                    expr = self.handle_expr(argument.children[1])
+                    keywords.append(ast.keyword(None, expr))
+                    doublestars_count += 1
                 elif argument.children[1].type == syms.comp_for:
+                    # the lone generator expression
                     args.append(self.handle_genexp(argument))
                 else:
-                    keyword_node = argument.children[0]
-                    keyword_expr = self.handle_expr(keyword_node)
+                    # a keyword argument
+                    keyword_expr = self.handle_expr(expr_node)
                     if isinstance(keyword_expr, ast.Lambda):
                         self.error("lambda cannot contain assignment",
-                                   keyword_node)
+                                   expr_node)
                     keyword = keyword_expr
+                    # TODO: if we disable this, we can allow
+                    # f(a=1, a=2)
+                    if keyword in used_keywords:
+                        self.error("keyword argument repeated", expr_node)
+                    used_keywords[keyword] = None  # why not use a set for this?
                     if isinstance (keyword, ast.Name):
-                        self.check_forbidden_name(keyword.id, keyword_node)
+                        # NOTE: we could disable this too :)
+                        self.check_forbidden_name(keyword.id, expr_node)
                     keyword_value = self.handle_expr(argument.children[2])
                     if isinstance (keyword, ast.Name) and keyword.id in Command.supported_options:
                         keywords.append(ast.keyword(keyword.id, keyword_value))
                     else:
                         kw = ast.keyword(keyword, keyword_value)
-                        kw.lineno = keyword_node.lineno
-                        kw.col_offset = keyword_node.col_offset
-                        name = ast.Name ('o', ast.Load())
-                        name.lineno = keyword_node.lineno
-                        name.col_offset = keyword_node.col_offset
-                        arg = CompatCall(name, [], [ kw ])
-                        arg.lineno = keyword_node.lineno
-                        arg.col_offset = keyword.col_offset
+                        kw.lineno = expr_node.lineno
+                        kw.col_offset = expr_node.col_offset
+                        name = ast.Name('o', ast.Load())
+                        name.lineno = expr_node.lineno
+                        name.col_offset = expr_node.col_offset
+                        arg = ast.Call(name, [], [ kw ])
+                        arg.lineno = expr_node.lineno
+                        arg.col_offset = expr_node.col_offset
                         args.append(arg)
-            elif argument.type == tokens.STAR:
-                # variable_arg = self.handle_expr(args_node.children[i + 1])
-                # Starred(value=Name(id='bar', ctx=Load()), ctx=Load())],
-                variable_arg = ast.Starred(value=self.handle_expr(args_node.children[i + 1]),
-                                           ctx=ast.Load())
-                args.append(variable_arg)
-                i += 1
-            elif argument.type == tokens.DOUBLESTAR:
-                # keywords_arg = self.handle_expr(args_node.children[i + 1])
-                # keyword(arg=None, value=Name(id='baz', ctx=Load()))]))
-                keywords_arg = ast.keyword(arg=None,
-                                           value=self.handle_expr(args_node.children[i + 1]))
-                keywords.append(keywords_arg)
-                i += 1
             i += 1
         if not args:
             args = []
         if not keywords:
             keywords = []
-        new_node = CompatCall(callable_expr, args, keywords)
+        new_node = ast.Call(callable_expr, args, keywords)
         new_node.lineno = callable_expr.lineno
         new_node.col_offset = callable_expr.col_offset
         return new_node
@@ -1327,60 +1393,57 @@ class ASTBuilder(object):
     def parse_number(self, raw):
         return eval(raw)
 
+    def handle_dictelement(self, node, i):
+        if node.children[i].type == tokens.DOUBLESTAR:
+            key = None
+            value = self.handle_expr(node.children[i+1])
+            i += 2
+        else:
+            key = self.handle_expr(node.children[i])
+            value = self.handle_expr(node.children[i+2])
+            i += 3
+        return (i,key,value)
+
     def handle_atom(self, atom_node):
         first_child = atom_node.children[0]
         first_child_type = first_child.type
         if first_child_type == tokens.NAME:
-            name = self.new_identifier(first_child.value)
-            new_node = ast.Name (name, ast.Load())
+            name = first_child.value
+            if name == "None":
+                w_singleton = None
+            elif name == "True":
+                w_singleton = True
+            elif name == "False":
+                w_singleton = False
+            else:
+                name = self.new_identifier(name)
+                new_node = ast.Name(name, ast.Load())
+                new_node.lineno = first_child.lineno
+                new_node.col_offset = first_child.col_offset
+                return new_node
+            new_node = ast.NameConstant(w_singleton)
             new_node.lineno = first_child.lineno
             new_node.col_offset = first_child.col_offset
             return new_node
+        #
         elif first_child_type == tokens.STRING:
-            space = self.space
-            encoding = self.compile_info.encoding
-            try:
-                sub_strings_w = [parsestr(space, encoding, s.value)
-                                 for s in atom_node.children]
-            except error.OperationError as e:
-                if not (e.match(space, space.w_UnicodeError) or
-                        e.match(space, space.w_ValueError)):
-                    raise
-                # Unicode/ValueError in literal: turn into SyntaxError
-                self.error(e.errorstr(space), atom_node)
-                sub_strings_w = [] # please annotator
-            # Implement implicit string concatenation.
-            w_string = sub_strings_w[0]
-            for i in range(1, len(sub_strings_w)):
-                try:
-                    w_string = space.add(w_string, sub_strings_w[i])
-                except error.OperationError as e:
-                    if not e.match(space, space.w_TypeError):
-                        raise
-                    self.error("cannot mix bytes and nonbytes literals",
-                              atom_node)
-                # UnicodeError in literal: turn into SyntaxError
-            strdata = type(w_string)==str
-            node_cls = ast.Str if strdata else ast.Bytes
-            new_node = node_cls(w_string)
-            new_node.lineno = atom_node.lineno
-            new_node.col_offset = atom_node.col_offset
-            return new_node
+            return fstring.string_parse_literal(self, atom_node)
+        #
         elif first_child_type == tokens.NUMBER:
             num_value = self.parse_number(first_child.value)
-            new_node = ast.Num (num_value)
+            new_node = ast.Num(num_value)
             new_node.lineno = atom_node.lineno
             new_node.col_offset = atom_node.col_offset
             return new_node
         elif first_child_type == tokens.ELLIPSIS:
-            new_node = ast.Ellipsis ()
+            new_node = ast.Ellipsis()
             new_node.lineno = atom_node.lineno
             new_node.col_offset = atom_node.col_offset
             return new_node
         elif first_child_type == tokens.LPAR:
             second_child = atom_node.children[1]
             if second_child.type == tokens.RPAR:
-                new_node = ast.Tuple (None, ast.Load())
+                new_node = ast.Tuple(None, ast.Load())
                 new_node.lineno = atom_node.lineno
                 new_node.col_offset = atom_node.col_offset
                 return new_node
@@ -1390,48 +1453,48 @@ class ASTBuilder(object):
         elif first_child_type == tokens.LSQB:
             second_child = atom_node.children[1]
             if second_child.type == tokens.RSQB:
-                new_node = ast.List ([], ast.Load())
+                new_node = ast.List([], ast.Load())
                 new_node.lineno = atom_node.lineno
                 new_node.col_offset = atom_node.col_offset
                 return new_node
             if len(second_child.children) == 1 or \
                     second_child.children[1].type == tokens.COMMA:
                 elts = self.get_expression_list(second_child)
-                new_node = ast.List (elts, ast.Load())
+                new_node = ast.List(elts, ast.Load())
                 new_node.lineno = atom_node.lineno
                 new_node.col_offset = atom_node.col_offset
                 return new_node
             return self.handle_listcomp(second_child)
         elif first_child_type == tokens.LBRACE:
             maker = atom_node.children[1]
-            if maker.type == tokens.RBRACE:
-                new_node = ast.Dict (None, None)
-                new_node.lineno = atom_node.lineno
-                new_node.col_offset = atom_node.col_offset
-                return new_node
             n_maker_children = len(maker.children)
-            if n_maker_children == 1 or maker.children[1].type == tokens.COMMA:
-                elts = []
-                for i in range(0, n_maker_children, 2):
-                    elts.append(self.handle_expr(maker.children[i]))
-                new_node = ast.Set (elts)
+            if maker.type == tokens.RBRACE:
+                # an empty dict
+                new_node = ast.Dict(None, None)
                 new_node.lineno = atom_node.lineno
                 new_node.col_offset = atom_node.col_offset
                 return new_node
-            if maker.children[1].type == syms.comp_for:
-                return self.handle_setcomp(maker)
-            if (n_maker_children > 3 and
-                maker.children[3].type == syms.comp_for):
-                return self.handle_dictcomp(maker)
-            keys = []
-            values = []
-            for i in range(0, n_maker_children, 4):
-                keys.append(self.handle_expr(maker.children[i]))
-                values.append(self.handle_expr(maker.children[i + 2]))
-            new_node = ast.Dict (keys, values)
-            new_node.lineno = atom_node.lineno
-            new_node.col_offset = atom_node.col_offset
-            return new_node
+            else:
+                is_dict = maker.children[0].type == tokens.DOUBLESTAR
+                if (n_maker_children == 1 or
+                    (n_maker_children > 1 and
+                     maker.children[1].type == tokens.COMMA)):
+                    # a set display
+                    return self.handle_setdisplay(maker, atom_node)
+                elif n_maker_children > 1 and maker.children[1].type == syms.comp_for:
+                    # a set comprehension
+                    return self.handle_setcomp(maker, atom_node)
+                elif (n_maker_children > (3-is_dict) and
+                      maker.children[3-is_dict].type == syms.comp_for):
+                    # a dictionary comprehension
+                    if is_dict:
+                        raise self.error("dict unpacking cannot be used in "
+                                         "dict comprehension", atom_node)
+
+                    return self.handle_dictcomp(maker, atom_node)
+                else:
+                    # a dictionary display
+                    return self.handle_dictdisplay(maker, atom_node)
         else:
             raise AssertionError("unknown atom")
 
