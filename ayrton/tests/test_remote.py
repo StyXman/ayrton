@@ -75,7 +75,7 @@ class DebugRemoteTests (RemoteTests):
 
         # fork and execute nc
         pid= os.fork ()
-        if pid!=0:
+        if pid != 0:
             logger.debug ('main parent')
             # parent
             self.addCleanup (os.waitpid, pid, 0)
@@ -85,15 +85,17 @@ class DebugRemoteTests (RemoteTests):
         else:
             try:
                 # child
-                logger.debug ('nc')
+                logger.debug('nc')
 
-                server= socket (AF_INET, SOCK_STREAM)
+                server = socket(AF_INET, SOCK_STREAM)
+                logger.debug(server.fileno())
                 server.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
-                server.settimeout (1)
-                server.bind (('127.0.0.1', 2233))
-                server.listen ()
+                server.settimeout(1)
+                server.bind(('127.0.0.1', 2233))
+                server.listen()
 
-                client, _= server.accept ()
+                client, _ = server.accept()
+                logger.debug(client.fileno())
                 # bash resets the O_ONONBLOCK flag
                 # see below
                 # client.settimeout (3)

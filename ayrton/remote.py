@@ -193,9 +193,9 @@ class remote:
         # 2) the remote shell (the following ")
         # 3) the remote Python interpreter (the inner 's)
 
-        # in particular, getcwd()'s output MUST be between single quotes (')
-        # so 2) does not think we're ending the double quotes (") around
-        # the invocation of 3)
+        # in particular, getcwd()'s output up there MUST be between single
+        # quotes (') so 2) does not think we're ending the double quotes (")
+        # around the invocation of 3)
 
         # for the same reason, line #14 MUST have triple single quotes (''') too
         # so quotes in the precommand do not break the string definition
@@ -304,6 +304,7 @@ client.close ()                                                           # 46"
             self.client= socket ()
             logger.debug ('connecting...')
             self.client.connect ((self.hostname, 2233)) # nc listening here, see DebugRemoteTests
+            logger.debug(self.client.fileno())
             # unbuffered
             i= open (self.client.fileno (), 'wb', 0)
             o= open (self.client.fileno (), 'rb', 0)
@@ -311,6 +312,7 @@ client.close ()                                                           # 46"
 
             logger.debug ('setting backchannel_port...')
             self.result_listen= socket ()
+            logger.debug(self.result_listen.fileno())
             self.result_listen.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
             self.result_listen.bind (('', backchannel_port))
             self.result_listen.listen (1)
