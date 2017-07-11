@@ -1,11 +1,11 @@
 #! /bin/sh
 
 case "$1" in
-    -c|--clean)
+    -n|--no-clean)
         shift
-        make testclean
         break;;
     *)
+        make testclean
         break;;
 esac
 
