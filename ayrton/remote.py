@@ -373,10 +373,7 @@ client.close ()                                                           # 46"
             # NOTE: this is the only time we do this
             # please make sure the list of fileobjs is correct
             for fileobj in (self.result_channel, self.result_listen, self.client):
-                try:
-                    close (fileobj)
-                except Exception as inner:
-                    logger.debug (traceback.format_exc (inner))
+                close (fileobj)
 
             raise e
 
@@ -393,15 +390,15 @@ client.close ()                                                           # 46"
         (l, result, e)= pickle.loads (data)
         logger.debug ('result from remote: %r', result)
         logger.debug3 ('locals returned from remote: %s', ayrton.utils.dump_dict (l))
-        logger.debug ('closing %s', self.result_channel)
-        self.result_channel.close ()
+        logger.debug ('closing result_channel %s', self.result_channel)
+        close(self.result_channel)
 
-        logger.debug ('closing %s', self.result_listen)
-        self.result_listen.close ()
-        logger.debug ('closing %s', self.remote)
-        self.remote.close ()
-        logger.debug ('closing %s', self.client)
-        self.client.close ()
+        logger.debug ('closing result_listen %s', self.result_listen)
+        close(self.result_listen)
+        logger.debug ('closing remote %s', self.remote)
+        close(self.remote)
+        logger.debug ('closing client %s', self.client)
+        close(self.client)
 
         # update locals
         callers_frame= sys._getframe().f_back
