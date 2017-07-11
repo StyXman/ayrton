@@ -32,7 +32,7 @@ import os.path
 import ayrton.utils
 from ayrton.functions import Exit
 
-log_format= "%(asctime)s %(name)16s:%(lineno)-4d (%(funcName)-21s) %(levelname)-8s %(message)s"
+log_format= "%(asctime)s [%(process)5d] %(pathname)64s:%(lineno)-4d (%(funcName)-21s) %(levelname)-8s %(message)s"
 date_format= "%H:%M:%S"
 
 
