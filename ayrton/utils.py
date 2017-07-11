@@ -121,7 +121,7 @@ def write (dst, data):
 
 
 def close (f):
-    logger.debug ('closing %s', f)
+    logger.debug ('closing %s', f, callers=1)
     try:
         if isinstance (f, int):
             os.close (f)
