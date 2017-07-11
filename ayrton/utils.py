@@ -17,7 +17,6 @@
 # You should have received a copy of the GNU General Public License
 # along with ayrton.  If not, see <http://www.gnu.org/licenses/>.
 
-import logging
 import functools
 from selectors import DefaultSelector, EVENT_READ
 import os
@@ -28,10 +27,13 @@ import paramiko.channel
 import traceback
 
 import logging
+# I hope this is not toot late...
+import ayrton.logger
 logger= logging.getLogger ('ayrton.utils')
 
 
 # TODO: there's probably a better way to do this
+# TODO: move to logger
 def debug2 (self, msg, *args, **kwargs):  # pragma: no cover
     if self.manager.disable>=logging.DEBUG2:
         return
