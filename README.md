@@ -40,12 +40,12 @@ The second dependency is [`paramiko`](https://github.com/paramiko/paramiko).
 
 So, in short:
 
-    # apt-get install python3-paramiko # this also brings deps and python3 :)
+    # apt-get install python3-paramiko python3.6
 
     # git clone https://github.com/StyXman/ayrton.git
     # cd ayrton
     # make tests
-    # python3 setup.py install
+    # python3.6 setup.py install
     or edit Makefile and
     # make install
 

@@ -40,7 +40,7 @@ if make ('install'):  # this includes tests
            'doc/build/html/', 'www.grulic.org.ar:www/projects/ayrton/')
 
     # release
-    python3 ('setup.py', 'sdist', 'upload')
+    python3.6 ('setup.py', 'sdist', 'upload')
     nvie ('release', 'release-'+ayrton.__version__)
     git ('push')
     # TODO: does github have an API for making a release?

@@ -1,4 +1,4 @@
-#! /usr/bin/env python3
+#! /usr/bin/env python3.6
 # -*- coding: utf-8 -*-
 
 # (c) 2013 Marcos Dione <mdione@grulic.org.ar>

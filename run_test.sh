@@ -9,4 +9,4 @@ case "$1" in
         break;;
 esac
 
-exec python3 -m unittest -v ayrton.tests.$1
+exec python3.6 -m unittest -v ayrton.tests.$1
