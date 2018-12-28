@@ -31,10 +31,8 @@ clone it, use the branch `develop`.
 
 # Installation
 
-`ayrton` depends on two pieces of code. Python is the most obvious; it has been
-developed in its version 3.3. Python 3.2 is not enough, sorry. On the other hand,
-as Python3 has not completely caught yet, most probably even less
-in stable server environments, in the future we plan to support at least Python2.7.
+`ayrton` depends on two pieces of code. It currently only runs in python3.7.
+Other versions like 3.6 or less are planned, but I hadn't had the time, sorry.
 
 The second dependency is [`paramiko`](https://github.com/paramiko/paramiko).
 
