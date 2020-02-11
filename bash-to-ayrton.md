@@ -153,7 +153,35 @@
     * ${!name[@]}                                         `name.keys()`         DONE
     * ${#parameter}                                       `len(name)`           DONE
       * even for array lengths
-    * ${parameter#word}
+    * ${parameter#word}                                                         TODO
+      * word is filename expanded
+      * doable with `str` methods
+    * ${parameter%word}                                                         TODO
+      * word is filename expanded
+      * doable with `str` methods
+    * ${parameter/pattern/string}                         `parameter.replace()`, `re.replace`
+                                                                                DONE
+      * pattern is file-expanded
+      * /                                                 `count` in `replace()`
+                                                                                DONE
+      * #                                                 `re.replace()`, `^`   DONE
+      * %                                                 `re.replace()`, `$`   DONE
+      * //                                                repalce with `''`     DONE
+      * `nocasematch`                                     `re.replace()`        DONE
+      * @                                                 `args`, but not on functions
+                                                                                DONE
+      * apply on all elements in an array
+    * ${parameter^pattern}
+      * pattern is file-expanded
+    * ${parameter@operator}                                                     WONTDO
+      * Q
+      * E
+      * P
+      * A
+      * a
+
+  * Command substitution
+
 
   * command substitution (LtR)
   * arithmetic
